@@ -71,17 +71,17 @@ Create a live demo environment that potential buyers can access to test all feat
 
 1. **Admin Account:**
    - Email: `admin@demo.studyqna.com`
-   - Password: `DemoAdmin2024!`
+   - Password: `<DEMO_ADMIN_PASSWORD>`
    - Role: Admin
 
 2. **Premium User:**
    - Email: `premium@demo.studyqna.com`
-   - Password: `DemoPremium2024!`
+   - Password: `<DEMO_PREMIUM_PASSWORD>`
    - Status: Premium (approved)
 
 3. **Free User:**
    - Email: `free@demo.studyqna.com`
-   - Password: `DemoFree2024!`
+   - Password: `<DEMO_FREE_PASSWORD>`
    - Status: Free
 
 ### **Setup Script:**
@@ -258,15 +258,15 @@ Here are the demo credentials:
 
 👤 Admin Account:
    Email: admin@demo.studyqna.com
-   Password: DemoAdmin2024!
+   Password: <DEMO_ADMIN_PASSWORD>
 
 👤 Premium User:
    Email: premium@demo.studyqna.com
-   Password: DemoPremium2024!
+   Password: <DEMO_PREMIUM_PASSWORD>
 
 👤 Free User:
    Email: free@demo.studyqna.com
-   Password: DemoFree2024!
+   Password: <DEMO_FREE_PASSWORD>
 
 📋 What to Test:
 1. Login with different accounts

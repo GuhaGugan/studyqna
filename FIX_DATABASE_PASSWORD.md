@@ -103,7 +103,7 @@ nano .env
 
 # 4. Test connection
 psql -U studyqna_user -d studyqna -h localhost
-# Enter: YourNewPassword123!
+# Enter: <YOUR_NEW_PASSWORD>
 ```
 
 ---
@@ -159,7 +159,8 @@ DROP DATABASE IF EXISTS studyqna;
 DROP USER IF EXISTS studyqna_user;
 
 CREATE DATABASE studyqna;
-CREATE USER studyqna_user WITH PASSWORD 'YourSecurePassword123!';
+CREATE USER studyqna_user WITH PASSWORD '<YOUR_NEW_PASSWORD>
+';
 GRANT ALL PRIVILEGES ON DATABASE studyqna TO studyqna_user;
 
 \c studyqna
@@ -172,7 +173,8 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO studyqna_use
 
 **Then update .env:**
 ```env
-DATABASE_URL=postgresql://studyqna_user:YourSecurePassword123!@localhost:5432/studyqna
+DATABASE_URL=postgresql://studyqna_user:<YOUR_NEW_PASSWORD>
+@localhost:5432/studyqna
 ```
 
 ---

@@ -44,7 +44,7 @@ This setup runs only PostgreSQL in Docker, while you run backend/frontend locall
 Create `.env` file in project root:
 
 ```env
-DB_PASSWORD=SecurePass123!
+DB_PASSWORD=<DEMO_ADMIN_PASSWORD>
 ```
 
 ### Step 2: Start PostgreSQL
@@ -87,7 +87,7 @@ python init_db.py
 pgAdmin is available at: http://localhost:5050
 
 - **Email**: `admin@studyqna.com`
-- **Password**: `admin123` (or your PGADMIN_PASSWORD)
+- **Password**: `<DEMO_ADMIN_PASSWORD>` (or your PGADMIN_PASSWORD)
 
 To connect to PostgreSQL in pgAdmin (web version):
 - **Host**: `postgres` (container name - use this in Docker pgAdmin web UI)
