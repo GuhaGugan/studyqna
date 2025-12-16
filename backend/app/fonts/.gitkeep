@@ -1,0 +1,5 @@
+# This directory stores downloaded Google Noto fonts
+# Fonts are automatically downloaded on first use
+# Font files are excluded from git via .gitignore
+
+

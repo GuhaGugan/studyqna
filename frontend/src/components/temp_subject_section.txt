@@ -1,0 +1,38 @@
+﻿    <div className="space-y-4">
+      {/* Subject Selection Dropdown */}
+      <div className="mb-4">
+        <label htmlFor="subject-select" className="block text-sm font-medium text-gray-700 mb-2">
+          Select Subject <span className="text-gray-500 text-xs">(for better Q/A generation)</span>
+        </label>
+        <select
+          id="subject-select"
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
+          disabled={uploading}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <option value="general">General</option>
+          <option value="mathematics">Mathematics</option>
+          <option value="english">English</option>
+          <option value="tamil">Tamil</option>
+          <option value="science">Science</option>
+          <option value="social_science">Social Science</option>
+        </select>
+        <p className="mt-1 text-xs text-gray-500">
+          {selectedSubject === 'mathematics' && 'âœ“ Will use exam-friendly notation and math-specific answer format'}
+          {selectedSubject === 'english' && 'âœ“ Will use literature-style answer format with Introduction, Explanation, Analysis, Conclusion'}
+          {selectedSubject === 'tamil' && 'âœ“ Will use Tamil literature format with à®…à®±à®¿à®®à¯à®•à®®à¯, à®µà®¿à®³à®•à¯à®•à®®à¯, à®ªà®•à¯à®ªà¯à®ªà®¾à®¯à¯à®µà¯, à®®à¯à®Ÿà®¿à®µà¯ (exam-style Tamil)'}
+          {selectedSubject === 'science' && 'âœ“ Will use science-specific answer format with Definition, Explanation, Example, Conclusion'}
+          {selectedSubject === 'social_science' && 'âœ“ Will use social science format with Background, Key Points, Explanation, Conclusion'}
+          {selectedSubject === 'general' && 'Will auto-detect subject from content'}
+        </p>
+      </div>
+
+      {/* Mobile Camera Button (Mobile Only - Hidden on Desktop) */}
+      {isMobile && (
+        <div className="block md:hidden">
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"

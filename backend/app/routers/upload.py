@@ -1,0 +1,623 @@
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Response, Request
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.routers.dependencies import get_current_user, get_premium_user
+from app.models import User, Upload, FileType, UsageLog, PdfSplitPart
+from app.schemas import UploadResponse, PdfSplitPartResponse, PdfSplitResponse, PdfSplitPartRenameRequest
+from app.storage_service import save_file
+from app.content_validation import validate_content, check_image_quality
+from app.pdf_split_service import split_pdf_into_parts, get_part_preview
+from app.config import settings
+from app.error_logger import log_api_error
+from datetime import datetime
+from PyPDF2 import PdfReader
+import io
+from PIL import Image
+import tempfile
+import os
+from typing import Tuple, List, Optional
+
+router = APIRouter()
+
+def count_pdf_pages(pdf_content: bytes) -> int:
+    """Count pages in PDF"""
+    try:
+        pdf_reader = PdfReader(io.BytesIO(pdf_content))
+        return len(pdf_reader.pages)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid PDF file: {str(e)}"
+        )
+
+def validate_image(file_content: bytes, user: User) -> Tuple[bool, str]:
+    """
+    Comprehensive image validation:
+    - Blocks: humans, nudity, violence, weapons, PII, IDs, certificates
+    - Allows: textbook pages, study materials, diagrams, charts, clean text
+    """
+    # Save to temp file for detection
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
+        tmp.write(file_content)
+        tmp_path = tmp.name
+    
+    try:
+        print(f"🔍 Starting image validation for file: {tmp_path}")
+        print(f"📏 File size: {len(file_content)} bytes")
+        
+        # Comprehensive content validation (blocks inappropriate content)
+        try:
+            is_valid, error_msg = validate_content(tmp_path)
+            print(f"📋 Content validation result: valid={is_valid}, error={error_msg}")
+            
+            if not is_valid:
+                # Use the specific error message from validation, or default
+                error_message = error_msg or "Image contains blocked content. This app supports only educational text images."
+                print(f"❌ Content validation failed: {error_message}")
+                print(f"❌ Full error details: {error_msg}")
+                return False, error_message
+            else:
+                print(f"✅ Content validation passed")
+        except Exception as e:
+            print(f"⚠️ Content validation exception: {e}")
+            import traceback
+            print(f"⚠️ Traceback: {traceback.format_exc()}")
+            # On validation error, allow but log (better to allow than block legitimate content)
+            print(f"⚠️ Allowing image despite validation error (non-blocking)")
+            # Don't block on validation errors - allow the image
+            # return False, f"Image validation failed: {str(e)}. This app supports only educational text images."
+        
+        # Check quality
+        try:
+            is_readable, quality_error = check_image_quality(tmp_path)
+            print(f"📊 Quality check result: readable={is_readable}, error={quality_error}")
+            
+            if not is_readable:
+                error_message = quality_error or "Image not readable. Retake closer and clearer photo."
+                print(f"❌ Quality check failed: {error_message}")
+                return False, error_message
+        except Exception as e:
+            print(f"⚠️ Quality check exception: {e}")
+            return False, f"Image quality check failed: {str(e)}. Please retake the photo."
+        
+        print("✅ Image validation passed")
+        return True, ""
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+@router.post("", response_model=UploadResponse)
+async def upload_file(
+    http_request: Request,
+    file: UploadFile = File(...),
+    subject: str = Form("general"),  # Subject selection: mathematics, english, science, social_science, general
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Upload PDF or Image file with subject selection"""
+    
+    try:
+        # Read file content
+        file_content = await file.read()
+        file_size = len(file_content)
+    
+        # Determine file type
+        content_type = file.content_type or ""
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        
+        is_pdf = content_type == "application/pdf" or file_ext == ".pdf"
+        is_image = content_type.startswith("image/") or file_ext in [".jpg", ".jpeg", ".png", ".gif", ".bmp"]
+        
+        if not (is_pdf or is_image):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only PDF and image files are allowed"
+            )
+        
+        file_type = FileType.PDF if is_pdf else FileType.IMAGE
+    
+        # Validate size
+        # For PDFs, allow up to MAX_BOOK_PDF_SIZE_MB for book splitting feature
+        # Regular PDFs still limited to MAX_PDF_SIZE_MB, but larger ones can be split
+        if is_pdf:
+            max_size = settings.MAX_BOOK_PDF_SIZE_MB * 1024 * 1024
+            if file_size > max_size:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"PDF size exceeds {settings.MAX_BOOK_PDF_SIZE_MB}MB limit. Maximum size for book splitting is {settings.MAX_BOOK_PDF_SIZE_MB}MB."
+                )
+        else:
+            max_size = settings.MAX_IMAGE_SIZE_MB * 1024 * 1024
+            if file_size > max_size:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"File size exceeds {settings.MAX_IMAGE_SIZE_MB}MB limit"
+                )
+        
+        # Check premium status for limits
+        is_premium = (
+            current_user.premium_status.value == "approved" and
+            current_user.premium_valid_until and
+            current_user.premium_valid_until > datetime.utcnow()
+        )
+        
+        # Initialize pages variable
+        pages = None
+        
+        # PDF validation
+        if is_pdf:
+            pages = count_pdf_pages(file_content)
+            max_pages = settings.MAX_PDF_PAGES if is_premium else settings.MAX_FREE_PDF_PAGES
+            
+            # Determine if PDF is large enough for splitting (>6MB)
+            is_large_pdf_for_splitting = file_size > (6 * 1024 * 1024)
+            
+            # Logic:
+            # - PDFs ≤6MB: still subject to 40-page limit (premium) or 10-page limit (free)
+            # - PDFs >6MB: can have up to 300 pages (will be split into parts)
+            # - PDFs >300 pages: still blocked (too large even for splitting)
+            if is_large_pdf_for_splitting:
+                # Large PDFs (>6MB) can have up to 300 pages for splitting
+                if pages > 300:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="PDF exceeds 300 pages limit. Please split your book into smaller sections (max 300 pages) before uploading."
+                    )
+            else:
+                # Regular PDFs (≤6MB) are subject to normal page limits
+                if pages > max_pages:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"PDF exceeds {max_pages} pages limit. Please upload chapter-wise for large books."
+                    )
+            
+            # Check quota
+            if is_premium:
+                if current_user.upload_quota_remaining <= 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="PDF upload quota exhausted"
+                    )
+            else:
+                # Free users: 1 file per day check (simplified - can enhance)
+                today_uploads = db.query(Upload).filter(
+                    Upload.user_id == current_user.id,
+                    Upload.file_type == FileType.PDF,
+                    Upload.created_at >= datetime.utcnow().date()
+                ).count()
+                
+                if today_uploads >= 1:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Free users can upload 1 PDF per day"
+                    )
+        
+        # Image validation
+        if is_image:
+            try:
+                # Comprehensive content validation
+                is_valid, error_msg = validate_image(file_content, current_user)
+                if not is_valid:
+                    print(f"❌ Image validation failed: {error_msg}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=error_msg or "Image contains blocked content. This app supports only educational text images."
+                    )
+            except HTTPException:
+                # Re-raise HTTP exceptions (validation errors)
+                raise
+            except Exception as e:
+                # Catch any other errors in validation
+                print(f"⚠️ Image validation error: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Image validation failed: {str(e)}. This app supports only educational text images."
+                )
+            
+            # Check quota
+            if is_premium:
+                if current_user.image_quota_remaining <= 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Image upload quota exhausted"
+                    )
+            else:
+                # Free users: check monthly limit (simplified)
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Image uploads require premium access"
+                )
+        
+        # Save file
+        file_path = save_file(file_content, current_user.id, file_type.value, file.filename)
+        
+        # Validate subject
+        valid_subjects = ["mathematics", "english", "tamil", "science", "social_science", "general"]
+        if subject not in valid_subjects:
+            subject = "general"  # Default to general if invalid
+        
+        # Subject validation: Detect actual subject from content and compare with selected subject
+        detected_subject = "general"
+        subject_mismatch_warning = None
+        
+        try:
+            # Extract text to detect actual subject
+            from app.ocr_service import extract_text_from_image, extract_text_from_pdf
+            from app.ai_service import detect_subject
+            
+            if is_pdf:
+                # For PDFs, extract text from first page only for faster subject detection
+                try:
+                    text_sample = extract_text_from_pdf(file_path)
+                    if text_sample and len(text_sample) > 50:  # Need enough text to detect
+                        # Use first 2000 characters for faster detection
+                        text_sample = text_sample[:2000]
+                        detected_subject = detect_subject(text_sample)
+                except Exception as e:
+                    print(f"⚠️ Could not extract text for subject detection: {e}")
+            else:
+                # For images, extract text
+                try:
+                    text_sample = extract_text_from_image(file_path)
+                    if text_sample and len(text_sample) > 50:
+                        detected_subject = detect_subject(text_sample)
+                except Exception as e:
+                    print(f"⚠️ Could not extract text for subject detection: {e}")
+            
+            # Check for mismatch (only if detected subject is not "general" and different from selected)
+            if detected_subject != "general" and detected_subject != subject.lower():
+                subject_mismatch_warning = f"Detected subject '{detected_subject}' differs from selected '{subject}'. Using selected subject '{subject}'."
+                print(f"⚠️ Subject mismatch: Selected '{subject}', Detected '{detected_subject}'")
+        except Exception as e:
+            print(f"⚠️ Subject validation error (non-critical): {e}")
+            # Continue with upload even if subject detection fails
+        
+        # Create upload record
+        upload = Upload(
+            user_id=current_user.id,
+            file_name=file.filename,
+            file_path=file_path,
+            file_type=file_type,
+            file_size=file_size,
+            pages=pages if is_pdf else None,
+            subject=subject  # Store selected subject (user's choice takes precedence)
+        )
+        db.add(upload)
+        
+        # Update quotas
+        if is_premium:
+            if is_pdf:
+                current_user.upload_quota_remaining -= 1
+            else:
+                current_user.image_quota_remaining -= 1
+        
+        # Log usage
+        usage_log = UsageLog(
+            user_id=current_user.id,
+            upload_id=None,  # Will be set after commit
+            action="pdf_upload" if is_pdf else "image_upload",
+            pages=pages if is_pdf else None,
+            file_size=file_size
+        )
+        db.add(usage_log)
+        
+        db.commit()
+        db.refresh(upload)
+        
+        usage_log.upload_id = upload.id
+        db.commit()
+        
+        # Check if PDF is large enough to split (>6MB)
+        if is_pdf and file_size > (6 * 1024 * 1024):
+            # Mark as split-eligible (will be split on demand)
+            # For now, just return the upload - splitting will be done via separate endpoint
+            pass
+        
+        # Prepare response with subject validation info
+        response_data = {
+            "id": upload.id,
+            "file_name": upload.file_name,
+            "file_type": upload.file_type.value,
+            "file_size": upload.file_size,
+            "pages": upload.pages,
+            "is_split": upload.is_split,
+            "subject": upload.subject.value if hasattr(upload.subject, 'value') else str(upload.subject),
+            "detected_subject": detected_subject if detected_subject != "general" else None,
+            "subject_mismatch_warning": subject_mismatch_warning,
+            "created_at": upload.created_at
+        }
+        
+        return response_data
+    
+    except HTTPException:
+        # Re-raise HTTP exceptions (they're already properly formatted)
+        raise
+    except Exception as e:
+        # Log error to database and application logs
+        log_api_error(
+            db,
+            e,
+            current_user.id,
+            http_request,
+            severity="error",
+            additional_data={"filename": file.filename if file else None, "file_type": file_type.value if 'file_type' in locals() else None}
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Upload failed: {str(e)}"
+        )
+
+@router.delete("/{upload_id}")
+async def delete_upload(
+    upload_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Soft delete upload (quota not refunded)"""
+    upload = db.query(Upload).filter(
+        Upload.id == upload_id,
+        Upload.user_id == current_user.id
+    ).first()
+    
+    if not upload:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Upload not found"
+        )
+    
+    upload.is_deleted = True
+    db.commit()
+    
+    return {"message": "Upload deleted"}
+
+@router.get("", response_model=list[UploadResponse])
+async def list_uploads(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List user's uploads"""
+    uploads = db.query(Upload).filter(
+        Upload.user_id == current_user.id,
+        Upload.is_deleted == False
+    ).order_by(Upload.created_at.desc()).all()
+    
+    return uploads
+
+# ==================== PDF SPLITTING ENDPOINTS ====================
+
+@router.post("/{upload_id}/split", response_model=PdfSplitResponse)
+async def split_pdf(
+    upload_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    target_size_mb: float = 6.0
+):
+    """
+    Split a large PDF into smaller parts (~6MB each).
+    Only works for PDFs larger than 6MB.
+    """
+    # Get the upload
+    upload = db.query(Upload).filter(
+        Upload.id == upload_id,
+        Upload.user_id == current_user.id,
+        Upload.file_type == FileType.PDF,
+        Upload.is_deleted == False
+    ).first()
+    
+    if not upload:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="PDF upload not found"
+        )
+    
+    # Check if already split
+    if upload.is_split:
+        # Return existing parts
+        parts = db.query(PdfSplitPart).filter(
+            PdfSplitPart.parent_upload_id == upload_id
+        ).order_by(PdfSplitPart.part_number).all()
+        
+        return PdfSplitResponse(
+            parent_upload_id=upload_id,
+            total_parts=len(parts),
+            parts=[PdfSplitPartResponse.model_validate(p) for p in parts],
+            message=f"PDF already split into {len(parts)} parts"
+        )
+    
+    # Check if PDF is large enough to split
+    if upload.file_size <= (6 * 1024 * 1024):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="PDF is not large enough to split (must be >6MB)"
+        )
+    
+    try:
+        # Split the PDF
+        parts_info = split_pdf_into_parts(
+            upload.file_path,
+            current_user.id,
+            upload.file_name,
+            target_size_mb
+        )
+        
+        # Create database records for each part
+        split_parts = []
+        for part_info in parts_info:
+            split_part = PdfSplitPart(
+                parent_upload_id=upload.id,
+                user_id=current_user.id,
+                part_number=part_info["part_number"],
+                file_name=part_info["file_name"],
+                file_path=part_info["file_path"],
+                file_size=part_info["file_size"],
+                start_page=part_info["start_page"],
+                end_page=part_info["end_page"],
+                total_pages=part_info["total_pages"]
+            )
+            db.add(split_part)
+            split_parts.append(split_part)
+        
+        # Mark upload as split
+        upload.is_split = True
+        db.commit()
+        
+        # Refresh all parts
+        for part in split_parts:
+            db.refresh(part)
+        
+        return PdfSplitResponse(
+            parent_upload_id=upload.id,
+            total_parts=len(split_parts),
+            parts=[PdfSplitPartResponse.model_validate(p) for p in split_parts],
+            message=f"PDF successfully split into {len(split_parts)} parts"
+        )
+        
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error splitting PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to split PDF: {str(e)}"
+        )
+
+@router.get("/{upload_id}/split-parts", response_model=List[PdfSplitPartResponse])
+async def get_split_parts(
+    upload_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all split parts for a PDF upload"""
+    # Verify upload belongs to user
+    upload = db.query(Upload).filter(
+        Upload.id == upload_id,
+        Upload.user_id == current_user.id,
+        Upload.is_deleted == False
+    ).first()
+    
+    if not upload:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Upload not found"
+        )
+    
+    # Get all parts
+    parts = db.query(PdfSplitPart).filter(
+        PdfSplitPart.parent_upload_id == upload_id
+    ).order_by(PdfSplitPart.part_number).all()
+    
+    return [PdfSplitPartResponse.model_validate(p) for p in parts]
+
+@router.put("/split-parts/{part_id}/rename", response_model=PdfSplitPartResponse)
+async def rename_split_part(
+    part_id: int,
+    request: PdfSplitPartRenameRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Rename a split part with custom name"""
+    part = db.query(PdfSplitPart).filter(
+        PdfSplitPart.id == part_id,
+        PdfSplitPart.user_id == current_user.id
+    ).first()
+    
+    if not part:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Split part not found"
+        )
+    
+    # Validate custom name
+    if len(request.custom_name.strip()) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Custom name cannot be empty"
+        )
+    
+    if len(request.custom_name) > 200:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Custom name must be less than 200 characters"
+        )
+    
+    part.custom_name = request.custom_name.strip()
+    db.commit()
+    db.refresh(part)
+    
+    return PdfSplitPartResponse.model_validate(part)
+
+@router.get("/split-parts/{part_id}/preview")
+async def preview_split_part(
+    part_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get preview (first 5 pages) of a split part"""
+    part = db.query(PdfSplitPart).filter(
+        PdfSplitPart.id == part_id,
+        PdfSplitPart.user_id == current_user.id
+    ).first()
+    
+    if not part:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Split part not found"
+        )
+    
+    try:
+        preview_pdf = get_part_preview(part.file_path, max_pages=5)
+        return Response(
+            content=preview_pdf,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="preview_{part.file_name}"'
+            }
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate preview: {str(e)}"
+        )
+
+@router.get("/split-parts/{part_id}/download")
+async def download_split_part(
+    part_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Download a split part as a regular upload (for QnA generation)"""
+    part = db.query(PdfSplitPart).filter(
+        PdfSplitPart.id == part_id,
+        PdfSplitPart.user_id == current_user.id
+    ).first()
+    
+    if not part:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Split part not found"
+        )
+    
+    # Create a temporary Upload record for this part so it can be used with QnA generation
+    # This allows the part to work seamlessly with existing QnA endpoints
+    from app.storage_service import read_file
+    
+    part_content = read_file(part.file_path)
+    
+    # Create upload record for this part
+    part_upload = Upload(
+        user_id=current_user.id,
+        file_name=part.custom_name or part.file_name,
+        file_path=part.file_path,
+        file_type=FileType.PDF,
+        file_size=part.file_size,
+        pages=part.total_pages,
+        is_deleted=False
+    )
+    db.add(part_upload)
+    db.commit()
+    db.refresh(part_upload)
+    
+    return UploadResponse.model_validate(part_upload)
+

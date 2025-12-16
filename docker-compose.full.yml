@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: studyqna_postgres
+    environment:
+      POSTGRES_DB: studyqna
+      POSTGRES_USER: studyqna_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-SecurePass123!}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studyqna_user -d studyqna"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - studyqna_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: studyqna_backend
+    environment:
+      DATABASE_URL: postgresql://studyqna_user:${DB_PASSWORD:-SecurePass123!}@postgres:5432/studyqna
+      SECRET_KEY: ${SECRET_KEY:-change-this-secret-key}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      STORAGE_PATH: /app/storage
+      ENCRYPT_STORAGE: ${ENCRYPT_STORAGE:-true}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-StudyQnA <noreply@studyqna.com>}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - studyqna_network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: studyqna_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - studyqna_network
+
+  # Optional: pgAdmin (Database Management UI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: studyqna_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@studyqna.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - studyqna_network
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_storage:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  studyqna_network:
+    driver: bridge
+
+
