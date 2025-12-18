@@ -1645,93 +1645,20 @@ If difficulty is "hard", you MUST follow these ABSOLUTE PROHIBITIONS:
 
 If you generate ANY simple arithmetic or basic symbol identification question in HARD mode, your output is INVALID and will be rejected.
 
-{f"=== MATHEMATICS FORMATTING RULES (CRITICAL - MANDATORY - ONLY FOR MATHEMATICS) ===" if detected_subject == "mathematics" else "=== FORMATTING RULES (SUBJECT-SPECIFIC) ==="}
-{f"""
-🚨 USE EXAM-FRIENDLY STUDENT-WRITTEN NOTATION. NO LaTeX COMMANDS. 🚨
+{"=== MATHEMATICS FORMATTING RULES (CRITICAL - MANDATORY - ONLY FOR MATHEMATICS) ===" if detected_subject == "mathematics" else "=== FORMATTING RULES (SUBJECT-SPECIFIC) ==="}
 
-STRICT RULES FOR 10-MARK ANSWERS:
-1. Use ONLY exam-friendly mathematical notation (NO LaTeX commands like \\frac, \\sqrt, \\times, \\boxed)
-2. Use simple symbols written normally: +, −, ×, ÷, √
-3. Write exactly as a student would write in an exam for 10 marks
-4. Structure the answer clearly under these headings:
-   - Given
-   - Formula
-   - Calculation / Steps
-   - Nature of roots (if applicable)
-   - Final Answer
-5. Show every intermediate step clearly
-6. Do NOT skip substitution steps
-7. The final answer must be fully numerical and clearly stated
-""" if detected_subject == "mathematics" else f"""
-For {detected_subject.upper()} subjects:
-- Follow the subject-specific answer structure as specified above
-- Use appropriate terminology and formatting for the subject
-- Write in exam-appropriate style for {detected_subject}
-"""}
+{"[CRITICAL] USE EXAM-FRIENDLY STUDENT-WRITTEN NOTATION. NO LaTeX COMMANDS. [CRITICAL]\n\nSTRICT RULES FOR 10-MARK ANSWERS:\n1. Use ONLY exam-friendly mathematical notation (NO LaTeX commands like \\frac, \\sqrt, \\times, \\boxed)\n2. Use simple symbols written normally: +, -, x, /, sqrt\n3. Write exactly as a student would write in an exam for 10 marks\n4. Structure the answer clearly under these headings:\n   - Given\n   - Formula\n   - Calculation / Steps\n   - Nature of roots (if applicable)\n   - Final Answer\n5. Show every intermediate step clearly\n6. Do NOT skip substitution steps\n7. The final answer must be fully numerical and clearly stated" if detected_subject == "mathematics" else "For " + detected_subject.upper() + " subjects:\n- Follow the subject-specific answer structure as specified above\n- Use appropriate terminology and formatting for the subject\n- Write in exam-appropriate style for " + detected_subject}
 
-{f"""
-EXAM-FRIENDLY NOTATION EXAMPLES (MATHEMATICS ONLY):
-   ❌ LaTeX: \\( \\frac{{a}}{{b}} \\) → ✅ Exam: a/b or (a)/(b)
-   ❌ LaTeX: \\( \\sqrt{{x}} \\) → ✅ Exam: √x or sqrt(x)
-   ❌ LaTeX: \\( x^2 \\) → ✅ Exam: x² or x^2
-   ❌ LaTeX: \\( \\times \\) → ✅ Exam: ×
-   ❌ LaTeX: \\( \\boxed{{x = 5}} \\) → ✅ Exam: [x = 5] or Final Answer: x = 5
-   ❌ LaTeX: \\( D = b^2 - 4ac \\) → ✅ Exam: D = b² - 4ac or D = b^2 - 4ac
-
-FOR 1-5 MARK QUESTIONS (MATHEMATICS):
-- Can use simple notation: x = 5, f(x) = 2x² + 3x + 1
-- Fractions: a/b or (a)/(b)
-- Powers: x² or x^2
-- Roots: √x or sqrt(x)
-
-FOR 10-MARK QUESTIONS (MATHEMATICS - STRICT EXAM FORMAT):
-- MUST use student-written notation (NO LaTeX)
-- MUST have clear headings: Given, Formula, Calculation/Steps, Nature of roots, Final Answer
-- MUST show every step with substitution
-- Example format:
-  Given: f(x) = 3x³ - 6x² + 2
-  
-  Formula: 
-  First derivative: f'(x) = 9x² - 12x
-  Second derivative: f''(x) = 18x - 12
-  
-  Calculation / Steps:
-  Step 1: f'(x) = 9x² - 12x
-  Step 2: Set f'(x) = 0
-          9x² - 12x = 0
-          x(9x - 12) = 0
-          x = 0 or x = 12/9 = 4/3
-  Step 3: f''(x) = 18x - 12
-  Step 4: f''(0) = 18(0) - 12 = -12 < 0 (local maximum)
-          f''(4/3) = 18(4/3) - 12 = 24 - 12 = 12 > 0 (local minimum)
-  
-  Function Values:
-  f(0) = 3(0)³ - 6(0)² + 2 = 2
-  f(4/3) = 3(4/3)³ - 6(4/3)² + 2 = -14/9
-  
-  Final Answer:
-  Local maximum at (0, 2)
-  Local minimum at (4/3, -14/9)
-
-2. Answer structure for math questions:
-   - Easy: Direct answer with formula (1-2 lines)
-   - Medium: Show steps with formulas (3-6 lines)
-   - Hard: Complete derivation with step numbering and clear final answer (8-15 lines)
-
-3. For hard math questions (10 marks):
-   - MUST include step numbering: Step 1, Step 2, Step 3, ...
-   - MUST show logical reasoning
-   - MUST have clear final answer (NO \\boxed, use "Final Answer:" heading)
-""" if detected_subject == "mathematics" else ""}
+{"EXAM-FRIENDLY NOTATION EXAMPLES (MATHEMATICS ONLY):\n   [X] LaTeX: \\( \\frac{{a}}{{b}} \\) -> [OK] Exam: a/b or (a)/(b)\n   [X] LaTeX: \\( \\sqrt{{x}} \\) -> [OK] Exam: sqrt(x) or sqrt(x)\n   [X] LaTeX: \\( x^2 \\) -> [OK] Exam: x^2 or x^2\n   [X] LaTeX: \\( \\times \\) -> [OK] Exam: x\n   [X] LaTeX: \\( \\boxed{{x = 5}} \\) -> [OK] Exam: [x = 5] or Final Answer: x = 5\n   [X] LaTeX: \\( D = b^2 - 4ac \\) -> [OK] Exam: D = b^2 - 4ac or D = b^2 - 4ac\n\nFOR 1-5 MARK QUESTIONS (MATHEMATICS):\n- Can use simple notation: x = 5, f(x) = 2x^2 + 3x + 1\n- Fractions: a/b or (a)/(b)\n- Powers: x^2 or x^2\n- Roots: sqrt(x) or sqrt(x)\n\nFOR 10-MARK QUESTIONS (MATHEMATICS - STRICT EXAM FORMAT):\n- MUST use student-written notation (NO LaTeX)\n- MUST have clear headings: Given, Formula, Calculation/Steps, Nature of roots, Final Answer\n- MUST show every step with substitution\n- Example format:\n  Given: f(x) = 3x^3 - 6x^2 + 2\n  \n  Formula: \n  First derivative: f'(x) = 9x^2 - 12x\n  Second derivative: f''(x) = 18x - 12\n  \n  Calculation / Steps:\n  Step 1: f'(x) = 9x^2 - 12x\n  Step 2: Set f'(x) = 0\n          9x^2 - 12x = 0\n          x(9x - 12) = 0\n          x = 0 or x = 12/9 = 4/3\n  Step 3: f''(x) = 18x - 12\n  Step 4: f''(0) = 18(0) - 12 = -12 < 0 (local maximum)\n          f''(4/3) = 18(4/3) - 12 = 24 - 12 = 12 > 0 (local minimum)\n  \n  Function Values:\n  f(0) = 3(0)^3 - 6(0)^2 + 2 = 2\n  f(4/3) = 3(4/3)^3 - 6(4/3)^2 + 2 = -14/9\n  \n  Final Answer:\n  Local maximum at (0, 2)\n  Local minimum at (4/3, -14/9)\n\n2. Answer structure for math questions:\n   - Easy: Direct answer with formula (1-2 lines)\n   - Medium: Show steps with formulas (3-6 lines)\n   - Hard: Complete derivation with step numbering and clear final answer (8-15 lines)\n\n3. For hard math questions (10 marks):\n   - MUST include step numbering: Step 1, Step 2, Step 3, ...\n   - MUST show logical reasoning\n   - MUST have clear final answer (NO boxed, use \"Final Answer:\" heading)" if detected_subject == "mathematics" else ""}
 
 === QUESTION FORMAT VARIATION (ABSOLUTELY MANDATORY - ZERO TOLERANCE) ===
-🚨🚨🚨 STRICTLY FORBIDDEN: NO REPETITION OF QUESTION FORMATS, OPENERS, STRUCTURES, OR FRAMES 🚨🚨🚨
+[CRITICAL] STRICTLY FORBIDDEN: NO REPETITION OF QUESTION FORMATS, OPENERS, STRUCTURES, OR FRAMES [CRITICAL]
 
 ABSOLUTE PROHIBITION RULES:
-- ❌ NEVER use the same opener for ANY two questions (even non-consecutive)
-- ❌ NEVER use the same structure for ANY two questions (even non-consecutive)
-- ❌ NEVER use the same frame/template for ANY two questions
-- ✅ EVERY question MUST be TOTALLY DIFFERENT from ALL others in format, structure, and framing
+- [X] NEVER use the same opener for ANY two questions (even non-consecutive)
+- [X] NEVER use the same structure for ANY two questions (even non-consecutive)
+- [X] NEVER use the same frame/template for ANY two questions
+- [OK] EVERY question MUST be TOTALLY DIFFERENT from ALL others in format, structure, and framing
 
 USE THESE OPENERS (EACH QUESTION MUST USE A DIFFERENT ONE - NO DUPLICATES):
 - Q1: Define..., Explain..., Describe..., State..., Write short note on...
@@ -1754,24 +1681,8 @@ USE THESE STRUCTURES (EACH QUESTION MUST USE A DIFFERENT ONE - NO DUPLICATES):
 - Structure 8: Identification - "Identify the value of X when Y = Z"
 - Structure 9+: Continue with NEW structures, NEVER reuse any structure
 
-{f"MATH-SPECIFIC VARIATION (EACH MUST BE UNIQUE - ONLY FOR MATHEMATICS):" if detected_subject == "mathematics" else "SUBJECT-SPECIFIC VARIATION (EACH MUST BE UNIQUE):"}
-{f"""
-- Variation 1: Direct calculation
-- Variation 2: Word problem
-- Variation 3: Proof/derivation
-- Variation 4: Application
-- Variation 5: Comparison
-- Variation 6: Analysis (e.g., nature of roots)
-- Variation 7+: Continue with NEW variations, NEVER reuse
-""" if detected_subject == "mathematics" else f"""
-- Variation 1: Definition-based questions
-- Variation 2: Explanation-based questions
-- Variation 3: Analysis-based questions
-- Variation 4: Comparison-based questions
-- Variation 5: Application-based questions
-- Variation 6: Context-based questions
-- Variation 7+: Continue with NEW variations, NEVER reuse
-"""}
+{"MATH-SPECIFIC VARIATION (EACH MUST BE UNIQUE - ONLY FOR MATHEMATICS):" if detected_subject == "mathematics" else "SUBJECT-SPECIFIC VARIATION (EACH MUST BE UNIQUE):"}
+{("\n- Variation 1: Direct calculation\n- Variation 2: Word problem\n- Variation 3: Proof/derivation\n- Variation 4: Application\n- Variation 5: Comparison\n- Variation 6: Analysis (e.g., nature of roots)\n- Variation 7+: Continue with NEW variations, NEVER reuse\n" if detected_subject == "mathematics" else "\n- Variation 1: Definition-based questions\n- Variation 2: Explanation-based questions\n- Variation 3: Analysis-based questions\n- Variation 4: Comparison-based questions\n- Variation 5: Application-based questions\n- Variation 6: Context-based questions\n- Variation 7+: Continue with NEW variations, NEVER reuse\n")}
 
 ANSWER PRESENTATION (VARY - NO DUPLICATES):
 - Answer 1: Start with definition, then explanation
@@ -1822,95 +1733,7 @@ CRITICAL ENFORCEMENT:
 8. MCQs must be distinct and meaningful - avoid similar or overlapping options or questions that test the same concept.
 9. Output must ALWAYS follow this exact JSON format (STRUCTURED - NO \\n, NO paragraphs):
 
-{f"""
-{{
-  "questions": [
-    {{
-      "marks": 5,
-      "type": "descriptive",
-      "difficulty": "medium",
-      "question": "Given the function f(x) = 2x² + 3x + 1, find the roots using the quadratic formula.",
-      "correct_answer": {{
-        "given": "f(x) = 2x² + 3x + 1",
-        "formula": "x = (-b ± √(b² - 4ac)) / (2a), where D = b² - 4ac",
-        "coefficients": "a = 2, b = 3, c = 1",
-        "steps": [
-          "D = b² - 4ac = 3² - 4(2)(1) = 9 - 8 = 1",
-          "x = (-3 ± √1) / 4 = (-3 ± 1) / 4",
-          "x = (-3 + 1) / 4 = -1/2 and x = (-3 - 1) / 4 = -1"
-        ],
-        "final": "Final Answer: x = -1/2, -1"
-      }}
-    }},
-    {{
-      "marks": 10,
-      "type": "descriptive",
-      "difficulty": "hard",
-      "question": "Analyze the function f(x) = 3x³ - 6x² + 2. Find the critical points and determine their nature.",
-      "correct_answer": {{
-        "given": "f(x) = 3x³ - 6x² + 2",
-        "definition": "Critical points occur where the first derivative is zero or undefined.",
-        "formula": "First derivative: f'(x) = 9x² - 12x\\nSecond derivative: f''(x) = 18x - 12",
-        "steps": [
-          "Step 1: Calculate first derivative: f'(x) = 9x² - 12x",
-          "Step 2: Set first derivative to zero: f'(x) = 9x² - 12x = 0",
-          "Step 3: Factor the equation: x(9x - 12) = 0",
-          "Step 4: Find critical points: x = 0 or x = 12/9 = 4/3",
-          "Step 5: Calculate second derivative: f''(x) = 18x - 12",
-          "Step 6: Apply second derivative test: f''(0) = -12 < 0 (local maximum), f''(4/3) = 12 > 0 (local minimum)"
-        ],
-        "function_values": [
-          "f(0) = 3(0)³ - 6(0)² + 2 = 2",
-          "f(4/3) = 3(4/3)³ - 6(4/3)² + 2 = -14/9"
-        ],
-        "final": "Final Answer: Local maximum at (0, 2), Local minimum at (4/3, -14/9)"
-      }}
-    }},
-""" if detected_subject == "mathematics" else f"""
-{{
-  "questions": [
-    {{
-      "marks": 3,
-      "type": "descriptive",
-      "difficulty": "medium",
-      "question": "Describe the main character's development in the story.",
-      "correct_answer": "The main character undergoes significant growth throughout the narrative. Initially, they are portrayed as naive and inexperienced. As the story progresses, they face various challenges that test their resolve. These experiences shape their personality and worldview. By the end, they emerge as a more mature and understanding individual."
-    }},
-    {{
-      "marks": 5,
-      "type": "descriptive",
-      "difficulty": "medium",
-      "question": "Explain the theme of the poem and analyze its literary devices.",
-      "correct_answer": {{
-        "introduction": "The poem explores themes of nature and human connection, using vivid imagery to create emotional resonance.",
-        "explanation": "The poet uses vivid imagery to depict natural scenes, creating a sense of harmony between humans and the environment. The language choices emphasize the interconnectedness of all living things.",
-        "analysis": "Literary devices such as metaphor and personification enhance the emotional impact. The metaphor of nature as a teacher allows readers to connect deeply with the poet's message about learning from the natural world.",
-        "conclusion": "The poem effectively conveys the relationship between humans and nature through its masterful use of language and imagery, leaving readers with a profound appreciation for the natural world."
-      }}
-    }},
-    {{
-      "marks": 10,
-      "type": "descriptive",
-      "difficulty": "hard",
-      "question": "Comprehensively analyze the historical significance of the event and its impact.",
-      "correct_answer": {{
-        "background": "The event occurred during a period of significant change in society, marking a transition from traditional to modern approaches.",
-        "key_points": ["First, the event marked a turning point in political structures", "Second, it influenced subsequent economic developments", "Third, it changed social relationships and cultural norms"],
-        "explanation": "The event's significance lies in its transformative nature. It challenged existing power structures and created new opportunities for different social groups. The immediate consequences were felt across multiple sectors of society.",
-        "conclusion": "The event had lasting impact on society, shaping the course of history for generations to come. Its legacy continues to influence contemporary discussions and policies."
-      }}
-    }},
-""" if detected_subject in ["english", "science", "social_science"] else f"""
-{{
-  "questions": [
-    {{
-      "marks": 5,
-      "type": "descriptive",
-      "difficulty": "medium",
-      "question": "Explain the concept and provide examples.",
-      "correct_answer": "Definition: The concept is defined as... Explanation: It involves several key aspects... Example: For instance... Conclusion: In summary..."
-    }},
-"""}
+{('{\n  "questions": [\n    {\n      "marks": 5,\n      "type": "descriptive",\n      "difficulty": "medium",\n      "question": "Given the function f(x) = 2x^2 + 3x + 1, find the roots using the quadratic formula.",\n      "correct_answer": {\n        "given": "f(x) = 2x^2 + 3x + 1",\n        "formula": "x = (-b ± sqrt(b^2 - 4ac)) / (2a), where D = b^2 - 4ac",\n        "coefficients": "a = 2, b = 3, c = 1",\n        "steps": [\n          "D = b^2 - 4ac = 3^2 - 4(2)(1) = 9 - 8 = 1",\n          "x = (-3 ± sqrt(1)) / 4 = (-3 ± 1) / 4",\n          "x = (-3 + 1) / 4 = -1/2 and x = (-3 - 1) / 4 = -1"\n        ],\n        "final": "Final Answer: x = -1/2, -1"\n      }\n    },\n    {\n      "marks": 10,\n      "type": "descriptive",\n      "difficulty": "hard",\n      "question": "Analyze the function f(x) = 3x^3 - 6x^2 + 2. Find the critical points and determine their nature.",\n      "correct_answer": {\n        "given": "f(x) = 3x^3 - 6x^2 + 2",\n        "definition": "Critical points occur where the first derivative is zero or undefined.",\n        "formula": "First derivative: f\'(x) = 9x^2 - 12x\\nSecond derivative: f\'\'(x) = 18x - 12",\n        "steps": [\n          "Step 1: Calculate first derivative: f\'(x) = 9x^2 - 12x",\n          "Step 2: Set first derivative to zero: f\'(x) = 9x^2 - 12x = 0",\n          "Step 3: Factor the equation: x(9x - 12) = 0",\n          "Step 4: Find critical points: x = 0 or x = 12/9 = 4/3",\n          "Step 5: Calculate second derivative: f\'\'(x) = 18x - 12",\n          "Step 6: Apply second derivative test: f\'\'(0) = -12 < 0 (local maximum), f\'\'(4/3) = 12 > 0 (local minimum)"\n        ],\n        "function_values": [\n          "f(0) = 3(0)^3 - 6(0)^2 + 2 = 2",\n          "f(4/3) = 3(4/3)^3 - 6(4/3)^2 + 2 = -14/9"\n        ],\n        "final": "Final Answer: Local maximum at (0, 2), Local minimum at (4/3, -14/9)"\n      }\n    },\n' if detected_subject == "mathematics" else ('{\n  "questions": [\n    {\n      "marks": 3,\n      "type": "descriptive",\n      "difficulty": "medium",\n      "question": "Describe the main character\'s development in the story.",\n      "correct_answer": "The main character undergoes significant growth throughout the narrative. Initially, they are portrayed as naive and inexperienced. As the story progresses, they face various challenges that test their resolve. These experiences shape their personality and worldview. By the end, they emerge as a more mature and understanding individual."\n    },\n    {\n      "marks": 5,\n      "type": "descriptive",\n      "difficulty": "medium",\n      "question": "Explain the theme of the poem and analyze its literary devices.",\n      "correct_answer": {\n        "introduction": "The poem explores themes of nature and human connection, using vivid imagery to create emotional resonance.",\n        "explanation": "The poet uses vivid imagery to depict natural scenes, creating a sense of harmony between humans and the environment. The language choices emphasize the interconnectedness of all living things.",\n        "analysis": "Literary devices such as metaphor and personification enhance the emotional impact. The metaphor of nature as a teacher allows readers to connect deeply with the poet\'s message about learning from the natural world.",\n        "conclusion": "The poem effectively conveys the relationship between humans and nature through its masterful use of language and imagery, leaving readers with a profound appreciation for the natural world."\n      }\n    },\n    {\n      "marks": 10,\n      "type": "descriptive",\n      "difficulty": "hard",\n      "question": "Comprehensively analyze the historical significance of the event and its impact.",\n      "correct_answer": {\n        "background": "The event occurred during a period of significant change in society, marking a transition from traditional to modern approaches.",\n        "key_points": ["First, the event marked a turning point in political structures", "Second, it influenced subsequent economic developments", "Third, it changed social relationships and cultural norms"],\n        "explanation": "The event\'s significance lies in its transformative nature. It challenged existing power structures and created new opportunities for different social groups. The immediate consequences were felt across multiple sectors of society.",\n        "conclusion": "The event had lasting impact on society, shaping the course of history for generations to come. Its legacy continues to influence contemporary discussions and policies."\n      }\n    },\n' if detected_subject in ["english", "science", "social_science"] else '{\n  "questions": [\n    {\n      "marks": 5,\n      "type": "descriptive",\n      "difficulty": "medium",\n      "question": "Explain the concept and provide examples.",\n      "correct_answer": "Definition: The concept is defined as... Explanation: It involves several key aspects... Example: For instance... Conclusion: In summary..."\n    },\n'))}
     {{
       "marks": 1,
       "type": "mcq",
