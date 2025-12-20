@@ -439,8 +439,8 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
-    # File upload size limit
-    client_max_body_size 10M;
+    # File upload size limit (100MB for large PDFs and mobile photos)
+    client_max_body_size 100M;
 }
 ```
 

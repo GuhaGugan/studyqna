@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from app.database import get_db
@@ -6,8 +6,11 @@ from app.routers.dependencies import get_admin_user
 from app.models import User, AIUsageLog
 from app.config import settings
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
+import csv
+import io
 
 router = APIRouter()
 
@@ -40,14 +43,52 @@ class AIUsageStatsResponse(BaseModel):
     daily_usage: List[Dict[str, Any]]
     monthly_usage: List[Dict[str, Any]]
 
+def _get_period_start(period: str) -> Optional[datetime]:
+    now = datetime.utcnow()
+    period = (period or "all").lower()
+    if period == "daily":
+        return datetime(now.year, now.month, now.day)
+    if period == "monthly":
+        return datetime(now.year, now.month, 1)
+    if period == "yearly":
+        return datetime(now.year, 1, 1)
+    return None
+
+def _get_period_end(period: str, start: Optional[datetime]) -> Optional[datetime]:
+    if not start:
+        return None
+    if period == "daily":
+        return start + timedelta(days=1)
+    if period == "monthly":
+        year = start.year + (1 if start.month == 12 else 0)
+        month = 1 if start.month == 12 else start.month + 1
+        return datetime(year, month, 1)
+    if period == "yearly":
+        return datetime(start.year + 1, 1, 1)
+    return None
+
 @router.get("/usage", response_model=List[AIUsageResponse])
 async def get_ai_usage_logs(
-    limit: int = 100,
+    limit: int = 200,
+    period: str = "all",
     admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
 ):
-    """Get AI usage logs (admin only)"""
-    logs = db.query(AIUsageLog).order_by(desc(AIUsageLog.created_at)).limit(limit).all()
+    """Get AI usage logs (admin only) with optional period filter"""
+    allowed = {"all", "daily", "monthly", "yearly"}
+    period = (period or "all").lower()
+    if period not in allowed:
+        period = "all"
+
+    query = db.query(AIUsageLog)
+    start = _get_period_start(period)
+    end = _get_period_end(period, start)
+    if start:
+        query = query.filter(AIUsageLog.created_at >= start)
+    if end:
+        query = query.filter(AIUsageLog.created_at < end)
+
+    logs = query.order_by(desc(AIUsageLog.created_at)).limit(limit).all()
     
     result = []
     for log in logs:
@@ -70,6 +111,69 @@ async def get_ai_usage_logs(
         })
     
     return result
+
+@router.get("/usage/export")
+async def export_ai_usage_logs(
+    period: str = "all",
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Export AI usage logs as CSV (all/daily/monthly/yearly)"""
+    allowed = {"all", "daily", "monthly", "yearly"}
+    period = (period or "all").lower()
+    if period not in allowed:
+        period = "all"
+
+    query = db.query(AIUsageLog)
+    start = _get_period_start(period)
+    end = _get_period_end(period, start)
+    if start:
+        query = query.filter(AIUsageLog.created_at >= start)
+    if end:
+        query = query.filter(AIUsageLog.created_at < end)
+
+    logs = query.order_by(desc(AIUsageLog.created_at)).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "ID", "User Email", "Model", "Prompt Tokens",
+        "Completion Tokens", "Total Tokens", "Estimated Cost", "Created At"
+    ])
+
+    for log in logs:
+        user = db.query(User).filter(User.id == log.user_id).first() if log.user_id else None
+        writer.writerow([
+            log.id,
+            user.email if user else "Unknown",
+            log.model,
+            log.prompt_tokens,
+            log.completion_tokens,
+            log.total_tokens,
+            log.estimated_cost or "",
+            log.created_at.isoformat() if log.created_at else ""
+        ])
+
+    output.seek(0)
+    filename = f"ai_usage_{period}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename=\"{filename}\"'}
+    )
+
+@router.delete("/usage")
+async def delete_ai_usage_logs(
+    ids: List[int] = Body(..., embed=True),
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Bulk delete AI usage logs"""
+    if not ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No log IDs provided")
+    deleted = db.query(AIUsageLog).filter(AIUsageLog.id.in_(ids)).delete(synchronize_session=False)
+    db.commit()
+    return {"deleted": deleted, "ids": ids}
 
 @router.get("/usage/stats", response_model=AIUsageStatsResponse)
 async def get_ai_usage_stats(

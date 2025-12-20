@@ -36,11 +36,11 @@ def get_daily_generation_limit(user: User) -> int:
     if is_premium:
         limit = settings.PREMIUM_DAILY_GENERATION_LIMIT
         # Debug: Log the limit being used
-        logger.info(f"📊 Premium daily generation limit for user {user.id}: {limit}")
+        logger.info(f"Premium daily generation limit for user {user.id}: {limit}")
         return limit
     else:
         limit = settings.FREE_DAILY_GENERATION_LIMIT
-        logger.info(f"📊 Free daily generation limit for user {user.id}: {limit}")
+        logger.info(f"Free daily generation limit for user {user.id}: {limit}")
         return limit
 
 def check_daily_generation_limit(db: Session, user: User) -> tuple[bool, int, int, str]:
@@ -85,7 +85,7 @@ def check_daily_generation_limit(db: Session, user: User) -> tuple[bool, int, in
                 False,
                 used,
                 limit,
-                f"Daily generation limit reached. You have used {used} of {limit} generations today. Your limit resets at midnight UTC."
+                f"Daily quota exceeded! You have used {used} of {limit} generations today. Your daily quota has been reached. Please try again tomorrow after midnight UTC."
             )
         
         # Check if approaching limit (80% warning)
@@ -110,9 +110,14 @@ def check_daily_generation_limit(db: Session, user: User) -> tuple[bool, int, in
         # On error, allow generation (fail open) but log the error
         return (True, 0, get_daily_generation_limit(user), "")
 
-def increment_daily_generation_count(db: Session, user_id: int) -> bool:
+def increment_daily_generation_count(db: Session, user_id: int, questions_count: int = 1) -> bool:
     """
-    Increment daily generation count for a user
+    Increment daily generation count for a user by the actual number of questions generated
+    
+    Args:
+        db: Database session
+        user_id: User ID
+        questions_count: Number of questions generated (default: 1 for backward compatibility)
     
     Returns:
         bool: True if successful, False otherwise
@@ -138,11 +143,12 @@ def increment_daily_generation_count(db: Session, user_id: int) -> bool:
             )
             db.add(usage)
         
-        # Increment count
-        usage.generation_count += 1
+        # Increment count by actual number of questions generated
+        usage.generation_count += questions_count
         usage.updated_at = datetime.utcnow()
         
         db.commit()
+        logger.info(f"Incremented daily generation count for user {user_id} by {questions_count} questions (new total: {usage.generation_count})")
         return True
     
     except Exception as e:

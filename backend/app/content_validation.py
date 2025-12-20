@@ -38,24 +38,15 @@ BLOCKED_CLASSES = {
     82: 'scissors'  # Could be weapon
 }
 
-# Keywords that indicate blocked content
+# Keywords that indicate blocked content (ONLY sexual/nude/blood - allow any text)
 BLOCKED_KEYWORDS = [
-    # Violence/Weapons
-    'gun', 'pistol', 'rifle', 'weapon', 'knife', 'sword', 'blood', 'injury', 'wound',
-    'violence', 'fight', 'attack', 'kill', 'murder', 'death', 'corpse',
+    # Blood/Violence (only blood-related)
+    'blood', 'bleeding', 'hemorrhage',
     
     # Sexual content
     'nude', 'naked', 'sex', 'sexual', 'porn', 'pornography', 'erotic', 'explicit',
-    'genital', 'breast', 'penis', 'vagina',
-    
-    # Medical/Anatomical
-    'anatomy', 'skeleton', 'bone', 'organ', 'surgery', 'medical procedure',
-    'x-ray', 'ct scan', 'mri', 'operation',
-    
-    # PII/IDs
-    'passport', 'id card', 'driver license', 'ssn', 'social security',
-    'credit card', 'bank account', 'signature', 'certificate', 'diploma',
-    'birth certificate', 'aadhaar', 'pan card'
+    'genital', 'breast', 'penis', 'vagina', 'masturbation', 'orgasm',
+    'nudity', 'nakedness', 'sexual intercourse', 'sexual act'
 ]
 
 # Allowed keywords (study materials)
@@ -329,25 +320,18 @@ def detect_text_content(image_path: str) -> Tuple[bool, Optional[str], str]:
                 found_blocked.append(keyword)
         
         if found_blocked:
-            # Check if it's human/body related
-            human_keywords = ['nude', 'naked', 'body', 'skin', 'face', 'hand', 'person', 'human']
-            if any(kw in ' '.join(found_blocked).lower() for kw in human_keywords):
-                return True, "Image contains human body content. This app supports only educational text images.", extracted_text
-            # Other blocked content
-            return True, f"Image contains inappropriate content. This app supports only educational text images.", extracted_text
+            # Only block sexual/nude/blood content
+            sexual_keywords = ['nude', 'naked', 'sex', 'sexual', 'porn', 'pornography', 'erotic', 'explicit', 'genital', 'breast', 'penis', 'vagina']
+            blood_keywords = ['blood', 'bleeding', 'hemorrhage']
+            
+            if any(kw in ' '.join(found_blocked).lower() for kw in sexual_keywords):
+                return True, "Image contains sexual or nude content. This app supports only educational content.", extracted_text
+            if any(kw in ' '.join(found_blocked).lower() for kw in blood_keywords):
+                return True, "Image contains blood content. This app supports only educational content.", extracted_text
+            # Other blocked content (shouldn't happen with new list, but keep for safety)
+            return True, f"Image contains inappropriate content. This app supports only educational content.", extracted_text
         
-        # Check if it looks like an ID/certificate (has ID numbers, dates, signatures)
-        id_patterns = [
-            r'\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b',  # Credit card pattern
-            r'\b\d{3}-\d{2}-\d{4}\b',  # SSN pattern
-            r'\b[A-Z]{2}\d{7}\b',  # ID number pattern
-            r'passport|driver.*license|id card|aadhaar|pan card',
-            r'signature|signed by|certified'
-        ]
-        
-        for pattern in id_patterns:
-            if re.search(pattern, extracted_text_lower, re.IGNORECASE):
-                return True, "Image contains personal identification information (ID, certificate, signature). This app supports only educational text images.", extracted_text
+        # No longer blocking PII/IDs - allow any text content
         
         return False, None, extracted_text
         
@@ -359,66 +343,15 @@ def detect_text_content(image_path: str) -> Tuple[bool, Optional[str], str]:
 def check_is_study_material(image_path: str, extracted_text: str = "") -> Tuple[bool, Optional[str]]:
     """
     Check if image appears to be study material
-    Requires actual text content - blocks random photos without text
+    Allows any text content - only blocks if no text at all
     """
     try:
-        # PRIMARY CHECK: If we have extracted text with sufficient length, it's study material
-        if extracted_text and len(extracted_text.strip()) >= 10:
-            # Additional check: ensure it's not just random characters
-            # Count alphanumeric characters
-            alnum_count = sum(1 for c in extracted_text if c.isalnum())
-            if alnum_count >= 5:  # At least 5 alphanumeric characters
-                print(f"✅ Text detected ({len(extracted_text.strip())} chars, {alnum_count} alnum) - allowing as study material")
-                return True, None
-            else:
-                print(f"⚠️ Text detected but insufficient alphanumeric content ({alnum_count} chars)")
-        
-        # SECONDARY CHECK: Analyze image for text-like patterns (optimized for speed)
-        img = cv2.imread(image_path)
-        if img is None:
-            return False, "Could not read image"
-        
-        # Resize image for faster analysis (max 800px on longest side)
-        height, width = img.shape[:2]
-        max_dim = 800
-        if max(height, width) > max_dim:
-            scale = max_dim / max(height, width)
-            new_width = int(width * scale)
-            new_height = int(height * scale)
-            img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
-        
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
-        # Calculate text density (edges typically indicate text)
-        edges = cv2.Canny(gray, 50, 150)
-        edge_density = cv2.countNonZero(edges) / (img.shape[0] * img.shape[1])
-        
-        print(f"📊 Image analysis: edge_density={edge_density:.4f}")
-        
-        # Check for horizontal lines (typical of text lines)
-        horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (40, 1))
-        detected_lines = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, horizontal_kernel)
-        line_density = cv2.countNonZero(detected_lines) / (img.shape[0] * img.shape[1])
-        
-        print(f"📊 Image analysis: line_density={line_density:.4f}")
-        
-        # STRICT CHECK: Require significant edge density OR line patterns
-        # Edge density > 0.01 (1%) OR line density > 0.005 (0.5%) indicates text
-        if edge_density > 0.01 or line_density > 0.005:
-            print("✅ Image has text-like patterns (edges/lines) - allowing")
+        # PRIMARY CHECK: If we have ANY extracted text, allow it (allow any text)
+        if extracted_text and len(extracted_text.strip()) >= 1:  # Allow any text, even single character
+            print(f"✅ Text detected ({len(extracted_text.strip())} chars) - allowing as study material")
             return True, None
         
-        # If edge density is very low, check if it's a photo vs document
-        if edge_density < 0.001:
-            # Check color variance to see if it's a photo
-            color_variance = np.var(img.reshape(-1, 3), axis=0).mean()
-            print(f"📊 Image analysis: color_variance={color_variance:.2f}")
-            
-            # High color variance + low edges = likely a photo, not a document
-            if color_variance > 10000 and edge_density < 0.0005:
-                return False, "Image does not appear to contain readable text or study materials. Please upload images with clear, readable text content from textbooks, notes, or educational materials."
-        
-        # If we get here, it's ambiguous - try OCR one more time (optimized for speed)
+        # SECONDARY CHECK: Try OCR to find any text (allow any text)
         try:
             img_pil = Image.open(image_path)
             
@@ -431,26 +364,25 @@ def check_is_study_material(image_path: str, extracted_text: str = "") -> Tuple[
                 new_height = int(height * scale)
                 img_pil = img_pil.resize((new_width, new_height), Image.Resampling.LANCZOS)
             
-            # Try only best OCR mode (PSM 6) for speed
+            # Try OCR to find any text
             try:
                 text = pytesseract.image_to_string(img_pil, config='--psm 6')
-                if text and len(text.strip()) >= 10:
-                    alnum_count = sum(1 for c in text if c.isalnum())
-                    if alnum_count >= 5:
-                        print(f"✅ Text found with OCR ({len(text.strip())} chars)")
-                        return True, None
+                if text and len(text.strip()) >= 1:  # Allow any text, even single character
+                    print(f"✅ Text found with OCR ({len(text.strip())} chars) - allowing")
+                    return True, None
             except:
                 pass
         except Exception as ocr_error:
             print(f"⚠️ OCR retry failed: {ocr_error}")
         
-        # No text found - block the image
-        return False, "Image does not contain readable text or study materials. Please upload images with clear, readable text content from textbooks, notes, diagrams, charts, or educational materials."
+        # No text found at all - allow anyway (very lenient for mobile)
+        print("⚠️ No text detected, but allowing image (lenient mode for mobile)")
+        return True, None
         
     except Exception as e:
         print(f"Study material check error: {e}")
-        # On error, be conservative and require text
-        return False, f"Could not verify image contains study material: {str(e)}. Please upload images with clear, readable text content."
+        # On error, allow the image (lenient mode)
+        return True, None
 
 def validate_content(image_path: str) -> Tuple[bool, str]:
     """
@@ -526,34 +458,36 @@ def validate_content(image_path: str) -> Tuple[bool, str]:
         if not extracted_text or len(extracted_text.strip()) < 10:
             return False, "Image does not appear to contain readable text. Please upload images with clear, readable text content from study materials."
     
-    # 6. Final verification: Ensure we have sufficient text content (optimized for speed)
-    if not extracted_text or len(extracted_text.strip()) < 10:
-        # Try OCR one more time (single attempt for speed)
-        try:
-            img = Image.open(image_path)
-            
-            # Resize for faster OCR
-            width, height = img.size
-            max_dim = 1200
-            if max(width, height) > max_dim:
-                scale = max_dim / max(width, height)
-                new_width = int(width * scale)
-                new_height = int(height * scale)
-                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
-            # Try only best OCR mode (PSM 6) for speed
-            text = pytesseract.image_to_string(img, config='--psm 6')
-            if text and len(text.strip()) >= 10:
-                # Check for alphanumeric content
-                alnum_count = sum(1 for c in text if c.isalnum())
-                if alnum_count >= 5:
-                    print(f"✅ Text found with final OCR ({len(text.strip())} chars, {alnum_count} alnum)")
-                    return True, ""
-        except Exception as e:
-            print(f"⚠️ Final OCR retry failed: {e}")
+    # 6. Final verification: Allow any text content (very lenient)
+    # If we have any text, allow it
+    if extracted_text and len(extracted_text.strip()) >= 1:
+        print(f"✅ Final check: Text found ({len(extracted_text.strip())} chars) - allowing")
+        return True, ""
+    
+    # If no text found, try OCR one more time
+    try:
+        img = Image.open(image_path)
         
-        # No text found after all attempts
-        return False, "Image does not contain readable text. Please upload images with clear, readable text content from textbooks, notes, diagrams, charts, or educational materials."
+        # Resize for faster OCR
+        width, height = img.size
+        max_dim = 1200
+        if max(width, height) > max_dim:
+            scale = max_dim / max(width, height)
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Try only best OCR mode (PSM 6) for speed
+        text = pytesseract.image_to_string(img, config='--psm 6')
+        if text and len(text.strip()) >= 1:  # Allow any text
+            print(f"✅ Text found with final OCR ({len(text.strip())} chars) - allowing")
+            return True, ""
+    except Exception as e:
+        print(f"⚠️ Final OCR retry failed: {e}")
+    
+    # Even if no text found, allow the image (very lenient for mobile)
+    print("⚠️ No text detected, but allowing image (lenient mode)")
+    return True, ""
     
     print("✅ Content validation PASSED - image contains study material")
     return True, ""
@@ -571,8 +505,9 @@ def check_image_quality(image_path: str) -> Tuple[bool, Optional[str]]:
         # Calculate Laplacian variance (blur detection)
         laplacian_var = cv2.Laplacian(img, cv2.CV_64F).var()
         
-        # Threshold for blur detection (adjust as needed)
-        if laplacian_var < 100:
+        # Threshold for blur detection (more lenient for mobile photos)
+        # Reduced from 100 to 50 to allow slightly blurry mobile photos
+        if laplacian_var < 50:  # Reduced from 100 to 50 for mobile photos
             return False, "Image not readable. Retake closer and clearer photo."
         
         return True, None

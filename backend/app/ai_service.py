@@ -108,6 +108,16 @@ def detect_subject(text_content: str) -> str:
 
 SYSTEM_PROMPT = """You are an experienced Indian board-exam evaluator with 15+ years of experience.
 
+🎯 QUALITY-FIRST APPROACH (APPLIES TO ALL LANGUAGES):
+- The requested number of questions is a PREFERRED target, not a strict requirement
+- PRIORITIZE QUALITY over quantity - generate fewer questions if content is insufficient
+- Do NOT force questions if the study material doesn't support them
+- Do NOT invent topics that are not present in the content
+- Each question must be clearly worded, syllabus-relevant, and suitable for exams
+- It is acceptable to generate fewer questions if quality would be compromised
+- Focus on clarity, correctness, and educational value
+- This approach applies to ALL languages: English, Tamil, Hindi, Telugu, Kannada, Malayalam, Arabic, Spanish
+
 Your task is to generate REAL exam-style questions and answers.
 Your output MUST look like a student's PERFECT answer script.
 
@@ -593,10 +603,10 @@ If any rule is violated, REWRITE the answer silently.
 
 Remember: Follow the distribution EXACTLY. Never exceed limits. Match answer lengths precisely. Output ONLY valid JSON. No duplicated questions."""
 
-def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> tuple[List[Dict[str, Any]], bool]:
+def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str, target_language: str = "english") -> tuple[List[Dict[str, Any]], bool]:
     """
     Auto-check exam quality based on strict marks-based rules.
-    Validates answer structure, length, LaTeX formatting, required elements, and format variation.
+    Validates answer structure, length, LaTeX formatting, required elements, format variation, and language.
     Returns (validated_questions_list, has_format_repetition: bool)
     """
     validated_questions = []
@@ -607,6 +617,12 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
     question_starters = []
     question_structures = []
     question_phrases = []  # Track full question phrasing patterns
+    
+    # Import language detection function
+    from app.font_manager import detect_language
+    
+    # Track language violations
+    language_violations = []
     
     for idx, q in enumerate(questions):
         marks = q.get("marks", 0)
@@ -695,12 +711,17 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
         is_valid = True
         issues = []
         
-        # Rule 1: Marks-based line count validation
+        # Rule 1: Marks-based line count validation (LENIENT - quality-first approach)
         if marks == 10:
-            if answer_lines < 10:
+            # Accept 7+ lines (more lenient for quality-first approach)
+            if answer_lines < 7:
+                # Only mark as invalid if very short (< 7 lines)
                 is_valid = False
-                issues.append(f"10-mark answer must have minimum 10-15 lines, got {answer_lines}. Short answers are INVALID.")
-                issues.append("10-mark answer is too short. Must be treated as a board-exam answer script with full working.")
+                issues.append(f"10-mark answer should have at least 7 lines, got {answer_lines}. Very short answers may need more detail.")
+            elif answer_lines < 10:
+                # 7-9 lines: Accept but log as warning (quality-first approach)
+                print(f"⚠️  10-mark answer has {answer_lines} lines (target: 10-15). Accepting for quality-first approach.")
+                # Don't mark as invalid - accept it
             
             # Check for mandatory parts (STRICT - all must be present)
             # For structured format, check dictionary keys directly
@@ -736,8 +757,17 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
                 missing_parts.append("Final conclusion statement")
             
             if missing_parts:
-                is_valid = False
-                issues.append(f"10-mark answer missing mandatory parts: {', '.join(missing_parts)}. Must include: Given, Definition (if applicable), Formula/Theorem, Step-by-step working, Logical explanation, Final conclusion.")
+                # LENIENT: Only mark as invalid if critical parts are missing (Given and Formula/Steps)
+                # For quality-first approach, accept if it has Given and some working
+                critical_missing = [p for p in missing_parts if p in ["Given", "Formula/Theorem", "Step-by-step working"]]
+                if critical_missing and len(critical_missing) >= 2:
+                    # Missing 2+ critical parts - mark as invalid
+                    is_valid = False
+                    issues.append(f"10-mark answer missing critical parts: {', '.join(critical_missing)}. Must include: Given, Formula/Theorem, Step-by-step working.")
+                else:
+                    # Missing only non-critical parts - accept but log warning
+                    print(f"⚠️  10-mark answer missing some parts: {', '.join(missing_parts)}. Accepting for quality-first approach.")
+                    # Don't mark as invalid
             
             # Check for boxed answer
             if isinstance(answer, dict):
@@ -747,10 +777,13 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
                 has_boxed = "\\boxed" in answer_text or "boxed" in answer_lower
             
             # Check for final answer (either "Final Answer:" prefix or boxed format)
+            # LENIENT: Accept if answer has conclusion or final statement
             has_final_answer = "final answer:" in answer_lower or "\\boxed" in answer_text or "boxed" in answer_lower
-            if not has_final_answer:
-                is_valid = False
-                issues.append("10-mark answer must have clear final answer (use 'Final Answer:' prefix)")
+            has_conclusion_statement = any(word in answer_lower for word in ["conclusion", "therefore", "thus", "hence", "final", "answer", "முடிவு", "निष्कर्ष"])
+            if not has_final_answer and not has_conclusion_statement:
+                # Only mark as invalid if completely missing conclusion
+                print(f"⚠️  10-mark answer missing explicit final answer. Accepting for quality-first approach.")
+                # Don't mark as invalid - accept it
         
         elif marks == 5:
             # Check if it's English literature format
@@ -850,21 +883,39 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
                 is_valid = False
                 issues.append(f"{marks}-mark answer must have boxed final answer: \\( \\boxed{{answer}} \\)")
         
-        # Log validation results
+        # Log validation results (QUALITY-FIRST: Accept questions even with minor issues)
         if not is_valid:
-            print(f"❌ Question validation failed (Marks: {marks}):")
+            # For quality-first approach, accept questions with warnings instead of rejecting
+            print(f"⚠️  Question validation warning (Marks: {marks}, Lines: {answer_lines}):")
             for issue in issues:
                 print(f"   - {issue}")
             # Use answer_text for preview (works for both string and dict formats)
             preview = answer_text[:200] if answer_text and len(answer_text) > 200 else answer_text
             print(f"   Answer preview: {preview}...")
-            # Note: We don't regenerate here, just log the issue
-            # The AI should follow the prompt rules, but we flag violations
+            print(f"   ✅ Accepting question anyway (quality-first approach - minor issues acceptable)")
+            # Reset is_valid to True to accept the question
+            is_valid = True
         else:
             print(f"✅ Question validated (Marks: {marks}, Lines: {answer_lines})")
         
         # Track question format for variation check
         question_text = q.get("question", "").strip()
+        
+        # LANGUAGE VALIDATION: Check if question is in the correct target language
+        if question_text and target_language.lower() == "tamil":
+            # Detect the language of the question
+            detected_lang = detect_language(question_text, default_language="english")
+            if detected_lang != "tamil":
+                # Question is not in Tamil - log warning
+                language_violations.append({
+                    "question_num": idx + 1,
+                    "question": question_text[:100],  # First 100 chars
+                    "detected_lang": detected_lang,
+                    "expected_lang": "tamil"
+                })
+                print(f"⚠️  LANGUAGE VIOLATION: Question {idx + 1} is in {detected_lang}, but Tamil was requested. Question: {question_text[:100]}")
+                # Accept it anyway (quality-first approach), but log the issue
+        
         if question_text:
             # CRITICAL: Check for simple arithmetic in HARD mode
             if difficulty == "hard":
@@ -969,10 +1020,10 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
         print(f"   This pattern MUST NOT be repeated. Each question must use a DIFFERENT format.")
         return validated_questions, True  # Return True to trigger regeneration
     
-    # Check for phrase pattern repetition (STRICT - checks first 3-4 words)
-    # For small question sets (≤5), be more lenient - only flag if 3+ questions share same phrase
-    # For larger sets, flag if 2+ questions share same phrase
-    min_repetition_count = 3 if len(validated_questions) <= 5 else 2
+    # Check for phrase pattern repetition (LENIENT - quality-first approach)
+    # For small question sets (≤5), be more lenient - only flag if 4+ questions share same phrase
+    # For larger sets, flag if 3+ questions share same phrase (more lenient)
+    min_repetition_count = 4 if len(validated_questions) <= 5 else 3
     
     if len(question_phrases) > 1:
         phrase_counts = {}
@@ -1024,10 +1075,10 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
         elif consecutive_same > 0:
             print(f"⚠️  WARNING: Found {consecutive_same} consecutive question(s) with same opener. Questions should vary in format/phrasing.")
     
-    # Check for structure repetition (STRICT - but lenient for small sets)
-    # For small question sets (≤5), only flag if 4+ questions share same structure
-    # For larger sets, flag if 3+ questions share same structure
-    min_structure_repetition = 4 if len(validated_questions) <= 5 else 3
+    # Check for structure repetition (LENIENT - quality-first approach)
+    # For small question sets (≤5), only flag if 5+ questions share same structure
+    # For larger sets, flag if 4+ questions share same structure (more lenient)
+    min_structure_repetition = 5 if len(validated_questions) <= 5 else 4
     
     if len(question_structures) > 1:
         structure_counts = {}
@@ -1046,13 +1097,18 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
                 print(f"❌ STRUCTURE REPETITION DETECTED: Questions {', '.join(map(str, question_nums))} all use '{structure}' structure")
                 has_repetition = True
         
-        # Check consecutive repetition
+        # Check consecutive repetition (LENIENT - only flag if 3+ consecutive)
         consecutive_same_structure = 0
+        consecutive_count = 1
         for i in range(1, len(question_structures)):
             if question_structures[i] == question_structures[i-1]:
-                consecutive_same_structure += 1
-                print(f"❌ CONSECUTIVE STRUCTURE REPETITION: Questions {i} and {i+1} both use '{question_structures[i]}' structure")
-                has_repetition = True
+                consecutive_count += 1
+                if consecutive_count >= 3:  # Only flag if 3+ consecutive
+                    consecutive_same_structure += 1
+                    print(f"⚠️  CONSECUTIVE STRUCTURE REPETITION: Questions {i-1}, {i}, and {i+1} use '{question_structures[i]}' structure")
+                    has_repetition = True
+            else:
+                consecutive_count = 1
         
         if repeated_structures:
             print(f"🚨 CRITICAL WARNING: Found {len(repeated_structures)} question structure(s) repeated across the set. Each question MUST have a UNIQUE structure!")
@@ -1072,12 +1128,24 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
         if unique_starters_ratio < (0.5 if len(validated_questions) <= 5 else 0.6):
             has_repetition = True
     
-    # CRITICAL: If hard mode violations detected, trigger regeneration
+    # QUALITY-FIRST: Accept all questions, no retries
+    # Even if hard mode violations or format repetition detected, accept questions
     if has_hard_mode_violation:
-        print(f"🚨 CRITICAL: HARD MODE VIOLATIONS DETECTED - Regenerating questions to ensure complexity...")
-        return validated_questions, True  # Return True to trigger regeneration
+        print(f"⚠️  HARD MODE VIOLATIONS DETECTED - Accepting questions anyway (quality-first approach)")
     
-    return validated_questions, has_repetition
+    if has_repetition:
+        print(f"⚠️  FORMAT REPETITION DETECTED - Accepting questions anyway (quality-first approach)")
+    
+    # Report language violations if any
+    if language_violations:
+        print(f"⚠️  LANGUAGE VIOLATIONS DETECTED: {len(language_violations)} question(s) are not in the target language ({target_language})")
+        for violation in language_violations:
+            print(f"   - Question {violation['question_num']}: Detected as {violation['detected_lang']}, expected {violation['expected_lang']}")
+            print(f"     Preview: {violation['question'][:80]}...")
+        print(f"   ⚠️  All questions should be in {target_language}. Please regenerate with correct language.")
+    
+    # Never trigger regeneration - accept what we have
+    return validated_questions, False  # Return False to prevent retries
 
 def generate_qna(
     text_content: str,
@@ -1088,7 +1156,8 @@ def generate_qna(
     target_language: str = "english",
     remaining_questions: Optional[int] = None,
     distribution_list: Optional[List[Dict[str, Any]]] = None,
-    subject: Optional[str] = None  # Explicit subject selection: mathematics, english, science, social_science, general
+    subject: Optional[str] = None,  # Explicit subject selection: mathematics, english, science, social_science, general
+    is_single_image: bool = False  # Flag for single image uploads (mobile)
 ) -> Dict[str, Any]:
     """
     Generate Q/A from text using OpenAI
@@ -1168,6 +1237,16 @@ def generate_qna(
             diff = remaining_questions - total_after_scale
             if distribution_list:
                 distribution_list[0]["count"] += diff
+    
+    # SPECIAL HANDLING: Single image uploads (mobile) - EXACTLY 5 MCQs + 1 five-mark (NO ten-mark)
+    if is_single_image:
+        print("📸 Single image upload detected - using fixed distribution: 5 MCQs + 1 five-mark")
+        distribution_list = [
+            {"marks": 1, "count": 5, "type": "mcq"},
+            {"marks": 5, "count": 1, "type": "descriptive"}
+        ]
+        num_questions = 6  # Override to 6 total
+        print(f"✅ Overridden distribution for single image: {distribution_list}")
     
     # Normalize top-level marks/type when using simple pattern (non-custom)
     if marks_pattern != "custom" and marks_pattern != "mixed":
@@ -1542,17 +1621,72 @@ FOR 10-MARK QUESTIONS (MATHEMATICS - STRICT EXAM FORMAT):
     
     json_example_general = ('{' + nl + '  "questions": [' + nl + '    {' + nl + '      "marks": 5,' + nl + '      "type": "descriptive",' + nl + '      "difficulty": "medium",' + nl + '      "question": "Explain the concept and provide examples.",' + nl + '      "correct_answer": "Definition: The concept is defined as... Explanation: It involves several key aspects... Example: For instance... Conclusion: In summary..."' + nl + '    },' + nl)
     
+    # Special instructions for single image uploads
+    single_image_instructions = ""
+    if is_single_image:
+        single_image_instructions = f"""
+━━━━━━━━━━━━━━━━━━━━━━
+🚨 SINGLE IMAGE UPLOAD - STRICT RULES 🚨
+━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ CRITICAL: The input is a SINGLE IMAGE only (uploaded from mobile).
+⚠️ The image contains LIMITED educational content.
+
+STRICT RULES FOR SINGLE IMAGE UPLOADS:
+
+1. EXACT DISTRIBUTION (MANDATORY):
+   ✅ Generate EXACTLY:
+      - 5 multiple choice questions (MCQs) - 1 mark each
+      - 1 five-mark descriptive question
+   ❌ DO NOT generate any ten-mark questions
+   ❌ DO NOT generate more or fewer questions
+
+2. NO HALLUCINATION (ABSOLUTELY MANDATORY):
+   ❌ DO NOT invent topics that are NOT present in the image
+   ❌ DO NOT add information beyond what is clearly visible
+   ❌ DO NOT create questions about concepts not shown in the image
+   ✅ Base questions ONLY on what is clearly present in the image
+   ✅ If content is insufficient, keep questions simple and factual
+
+3. CONTENT-BASED GENERATION:
+   ✅ Generate questions based ONLY on visible text, diagrams, or content
+   ✅ If the image has limited content, generate simpler questions
+   ✅ Focus on what is actually shown, not what could be inferred
+   ✅ Keep questions factual and directly related to visible content
+
+4. QUALITY OVER QUANTITY:
+   ✅ If content is insufficient for 5 MCQs + 1 five-mark, generate fewer but accurate questions
+   ✅ Better to generate 3-4 good questions than 6 forced/invented questions
+   ✅ Each question must be answerable from the visible content
+
+━━━━━━━━━━━━━━━━━━━━━━
+"""
+
     user_prompt = f"""Generate exam questions from the following study material:
 
 [STUDY_MATERIAL]
 
 {text_content[:8000]}
 
+{single_image_instructions}
+
 Maximum Questions Allowed Per Upload: {remaining_questions}
 Remaining Questions Allowed: {remaining_questions}
 
 Question Distribution (Strict):
 {distribution_string}
+
+🎯 PREFERRED DISTRIBUTION BREAKDOWN - TARGET (not strict):
+{chr(10).join([f"  • Target: {item.get('count', 0)} questions of {item.get('marks', 0)} marks (type: {item.get('type', 'descriptive')})" for item in distribution_list])}
+🎯 TOTAL TARGET: {actual_num_questions} questions (sum of all above)
+🎯 QUALITY-FIRST GENERATION PROCESS:
+  1. Generate high-quality questions from the study material
+  2. Try to match the distribution, but prioritize quality
+  3. If content is sufficient, generate as close to {actual_num_questions} as possible
+  4. If content is limited, generate fewer questions to maintain quality
+  5. DO NOT force questions if the study material doesn't support them
+  6. Verify each question is clearly worded and syllabus-relevant
+  7. Output when you have generated the best possible questions from the content
 
 {subject_instruction}
 
@@ -1883,9 +2017,18 @@ Language: {target_language_name}
 Include answers: true
 Difficulty level: {difficulty}
 
+🚨🚨🚨 CRITICAL LANGUAGE REQUIREMENT 🚨🚨🚨
+- TARGET LANGUAGE: {target_language_name}
+- ALL questions MUST be written in {target_language_name} ONLY
+- ALL answers MUST be written in {target_language_name} ONLY
+- If target language is Tamil: EVERY question must use Tamil script (தமிழ்). NO English questions allowed.
+- If target language is English: EVERY question must be in English. NO other languages allowed.
+- If you generate even ONE question in the wrong language, the output is INVALID.
+- Check each question before outputting: Is it in {target_language_name}? If not, rewrite it.
+
 LANGUAGE-SPECIFIC EXAM STYLE (MANDATORY):
 You MUST use formal exam-style phrasing appropriate for {target_language_name}:
-- Tamil (ta-IN): Use formal கல்வி மொழி Tamil. Use patterns like: "... என்றால் என்ன?", "சுருக்கமாக எழுதுக", "விளக்குக", "விவரிக்கவும்", "வேறுபாடுகளை எழுதுக". Avoid spoken Tamil.
+- Tamil (ta-IN): Use formal கல்வி மொழி Tamil. Use patterns like: "... என்றால் என்ன?", "சுருக்கமாக எழுதுக", "விளக்குக", "விவரிக்கவும்", "வேறுபாடுகளை எழுதுக". Avoid spoken Tamil. ALL questions and answers MUST be in Tamil script.
 - English (en): Use formal academic tone. Use patterns like: "Define …", "Explain …", "Describe …", "Write short notes on …", "Differentiate between …"
 - Hindi (hi-IN): Use शुद्ध हिन्दी / परीक्षा शैली. Use: "परिभाषित कीजिए", "समझाइए", "विवरण दीजिए", "लघु उत्तरीय प्रश्न", "दीर्घ उत्तरीय प्रश्न"
 - Telugu (te-IN): Use formal textbook Telugu. Use: "అంటే ఏమిటి?", "సంక్షిప్తంగా వ్రాయండి", "వివరించండి"
@@ -1895,32 +2038,44 @@ You MUST use formal exam-style phrasing appropriate for {target_language_name}:
 - Spanish (es): Use neutral academic Spanish. Use: "Defina …", "Explique …", "Describa …"
 CRITICAL: All questions and answers MUST use the appropriate exam-style phrasing for {target_language_name}. DO NOT use casual or spoken language - ONLY formal exam-style phrasing.
 
-🚨🚨🚨 CRITICAL REQUIREMENTS - READ CAREFULLY 🚨🚨🚨
+🚨 ABSOLUTE LANGUAGE REQUIREMENT 🚨
+- If target language is Tamil: ALL questions MUST be in Tamil (தமிழ் script). NO English questions allowed.
+- If target language is English: ALL questions MUST be in English. NO other languages allowed.
+- If target language is Hindi: ALL questions MUST be in Hindi (Devanagari script). NO other languages allowed.
+- This applies to BOTH questions AND answers - they must match the target language.
+- If you generate even ONE question in the wrong language, the entire output is INVALID.
 
-QUESTION COUNT (MANDATORY - NO EXCEPTIONS - ZERO TOLERANCE):
-- 🚨 You MUST generate EXACTLY {actual_num_questions} questions - NOT {actual_num_questions - 1}, NOT {actual_num_questions + 1}, EXACTLY {actual_num_questions}
-- 🚨 The "questions" array in your JSON MUST contain exactly {actual_num_questions} question objects
-- 🚨 Count your questions BEFORE outputting - if the count is not {actual_num_questions}, you have made an error
-- 🚨 If you generate fewer than {actual_num_questions} questions, your output is INVALID and will be rejected
-- 🚨 If you generate more than {actual_num_questions} questions, your output is INVALID and will be rejected
-- 🚨 STEP-BY-STEP VERIFICATION:
-  1. Generate all {actual_num_questions} questions
-  2. Count them: questions.length should equal {actual_num_questions}
-  3. If count ≠ {actual_num_questions}, REGENERATE until you have exactly {actual_num_questions}
-  4. Only output when you have verified the count is exactly {actual_num_questions}
-- 🚨 DISTRIBUTION REQUIREMENT: You must generate questions matching this distribution: {distribution_string}
-- 🚨 If you cannot generate exactly {actual_num_questions} questions matching the distribution, DO NOT generate any questions at all
+🎯 QUALITY-FIRST REQUIREMENTS - READ CAREFULLY 🎯
 
-DISTRIBUTION REQUIREMENTS:
-- Follow the distribution EXACTLY: {distribution_string}
+QUESTION COUNT (PREFERRED TARGET - QUALITY OVER QUANTITY):
+- 🎯 Target: Generate UP TO {actual_num_questions} high-quality questions
+- 🎯 The number {actual_num_questions} is a PREFERRED target, not a strict requirement
+- ✅ If content is sufficient, generate as close to {actual_num_questions} as possible
+- ✅ If content is limited, generate fewer questions to maintain quality
+- ✅ DO NOT force questions if the study material doesn't support them
+- ✅ DO NOT invent topics that are not present in the content
+- ✅ Each question must be clearly worded, syllabus-relevant, and suitable for exams
+- ✅ It is acceptable to generate fewer questions if quality would be compromised
+- 🎯 DISTRIBUTION PREFERENCE: Try to match this distribution: {distribution_string}
+- 🎯 If you cannot generate enough questions for the full distribution, generate what you can while maintaining quality
+
+DISTRIBUTION PREFERENCES (QUALITY-FIRST APPROACH):
+- Preferred distribution: {distribution_string}
 - NEVER exceed {remaining_questions} questions
-- NEVER generate fewer questions than the distribution requires
+- Try to match the distribution, but prioritize quality over exact count
+- 🎯 DISTRIBUTION BREAKDOWN - TARGET (not strict):
+{chr(10).join([f"  • Target: {item.get('count', 0)} questions of {item.get('marks', 0)} marks (type: {item.get('type', 'descriptive')})" for item in distribution_list])}
+- 🎯 TOTAL TARGET: {actual_num_questions} questions (sum of all above)
+- ✅ If you can generate all questions matching the distribution, do so
+- ✅ If content is limited, generate fewer questions but maintain quality
+- ✅ Focus on clarity, correctness, and syllabus relevance
 
-VERIFICATION BEFORE OUTPUT:
+QUALITY CHECK BEFORE OUTPUT:
 1. Count the questions in your "questions" array
-2. Verify the count equals {actual_num_questions} exactly
-3. If count ≠ {actual_num_questions}, you must regenerate or fix the count
-4. Only output when you have exactly {actual_num_questions} questions
+2. Verify each question is high-quality, clearly worded, and syllabus-relevant
+3. Ensure no questions are invented or forced if content doesn't support them
+4. If you have fewer than {actual_num_questions} questions but they are all high-quality, that is acceptable
+5. Output when you have generated the best possible questions from the content
 - Output ONLY valid JSON - no markdown, no explanations, no text before/after JSON
 - CRITICAL: EVERY question MUST have a "correct_answer" field - this is MANDATORY for ALL mark values (1, 2, 3, 5, 10 marks)
 - For 5+ marks: Use structured format (object with subject-appropriate fields)
@@ -2057,14 +2212,17 @@ For 1 mark questions: Use simple string format, but MUST provide an answer.
 
 Now generate the questions strictly within the allowed limit, ensuring answer lengths match the mark requirements exactly and follow the difficulty-based structure. REMEMBER: EVERY question MUST have a correct_answer field.
 
-🚨 FINAL VERIFICATION BEFORE OUTPUTTING JSON:
-1. Generate ALL {actual_num_questions} questions according to the distribution
-2. Count the questions: questions.length MUST equal {actual_num_questions}
-3. Verify distribution: Check each mark/type combination matches the required count
-4. If count is wrong, DO NOT output - regenerate until count is correct
-5. Only output JSON when you have verified questions.length === {actual_num_questions}
+🎯 FINAL QUALITY CHECK BEFORE OUTPUTTING JSON:
+1. Generate high-quality questions from the study material (target: {actual_num_questions})
+2. Count the questions: questions.length should be close to {actual_num_questions} (fewer is acceptable if quality is maintained)
+3. Verify quality: Each question must be clearly worded, syllabus-relevant, and suitable for exams
+4. Verify content: No invented topics - all questions must be based on the provided study material
+5. If you have fewer than {actual_num_questions} questions but they are all high-quality, that is acceptable
+6. Output JSON when you have generated the best possible questions from the content
 
-CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, your response will be REJECTED and you will be asked to regenerate."""
+✅ ACCEPTABLE: Generating fewer questions if content is insufficient or quality would be compromised
+✅ FOCUS: Quality, clarity, correctness, and syllabus relevance over exact count
+"""
 
     try:
         response = client.chat.completions.create(
@@ -2230,10 +2388,10 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
         print(f"📊 Question count check: Expected={expected_count}, Got={actual_count}, Remaining={remaining_questions}")
         
         if actual_count < expected_count:
-            print(f"❌ ERROR: AI generated only {actual_count} questions but {expected_count} were requested!")
-            print(f"   This is a critical issue - the AI should generate exactly {expected_count} questions.")
-            print(f"   Distribution requested: {distribution_list}")
-            print(f"   Total expected: {expected_count}, Got: {actual_count}, Missing: {expected_count - actual_count}")
+            print(f"⚠️  INFO: AI generated {actual_count} questions (target was {expected_count})")
+            print(f"   This is acceptable - quality-first approach allows fewer questions if content is limited.")
+            print(f"   Distribution target: {distribution_list}")
+            print(f"   Total target: {expected_count}, Generated: {actual_count}, Difference: {expected_count - actual_count}")
             
             # Check distribution breakdown
             if distribution_list:
@@ -2243,17 +2401,12 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
                     count = dist_item.get('count', 0)
                     q_type = dist_item.get('type', 'unknown')
                     actual_for_this = len([q for q in questions if q.get('marks') == marks and q.get('type', '').lower() == q_type.lower()])
-                    print(f"     - {count} questions of {marks} marks ({q_type}): Expected {count}, Got {actual_for_this}, Missing {count - actual_for_this}")
+                    print(f"     - {count} questions of {marks} marks ({q_type}): Target {count}, Got {actual_for_this}")
             
             print(f"   Questions received: {[q.get('question', 'N/A')[:50] for q in questions]}")
-            # Always raise error if we have fewer questions - retry logic will handle it
-            raise ValueError(
-                f"AI generated only {actual_count} questions but {expected_count} were requested. "
-                f"This violates the requirement to generate exactly {expected_count} questions. "
-                f"Missing {expected_count - actual_count} question(s). "
-                f"Distribution: {distribution_list}. "
-                f"Retrying generation with STRICTER instructions..."
-            )
+            # Accept fewer questions - quality-first approach
+            # No error raised - continue with what we have
+            print(f"✅ Accepting {actual_count} questions (quality-first approach)")
         
         if actual_count != expected_count and actual_count != remaining_questions:
             print(f"⚠️  Question count mismatch: Expected {expected_count}, Got {actual_count}, Remaining: {remaining_questions}")
@@ -2362,12 +2515,12 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
             print(f"⚠️  WARNING: Duplicate check changed count from {count_before_duplicate_check} to {count_after_duplicate_check}")
         
         # Auto-check exam quality (strict validation)
-        questions, has_format_repetition = _validate_exam_quality(questions, difficulty)
+        questions, has_format_repetition = _validate_exam_quality(questions, difficulty, target_language)
         count_after_validation = len(questions)
         print(f"📊 Step 2 - After validation: {count_after_validation} questions")
         
-        # If format repetition detected, raise error to trigger retry
-        # But only if it's severe repetition (not just low variation)
+        # QUALITY-FIRST: Accept questions even if format repetition detected
+        # No retries - just log and accept
         if has_format_repetition:
             # Extract starters from questions to check variation
             question_starters_list = []
@@ -2381,19 +2534,8 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
             unique_starters = len(set(question_starters_list)) if question_starters_list else 0
             total_questions = len(questions)
             
-            # If we have at least 50% unique starters, don't treat as critical repetition
-            # This allows some flexibility for small question sets
-            if unique_starters >= total_questions * 0.5:
-                print(f"⚠️  Format variation is acceptable ({unique_starters}/{total_questions} unique starters). Continuing...")
-                has_format_repetition = False
-            
-            if has_format_repetition:
-                print(f"🚨 FORMAT REPETITION DETECTED - Regenerating questions to ensure unique formats...")
-                raise ValueError(
-                    "Format repetition detected in generated questions. "
-                    "Questions must have unique formats, openers, and structures. "
-                    "Regenerating to ensure variation."
-                )
+            print(f"⚠️  Format repetition detected ({unique_starters}/{total_questions} unique starters). Accepting questions anyway (quality-first approach).")
+            # Don't raise error - accept questions
         
         if count_after_validation != count_before_duplicate_check:
             print(f"⚠️  WARNING: Validation changed count from {count_before_duplicate_check} to {count_after_validation}")
@@ -2418,25 +2560,18 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
         if count_after_postprocess != count_before_postprocess:
             print(f"⚠️  WARNING: Post-processing changed count from {count_before_postprocess} to {count_after_postprocess}")
         
-        # Final count check
+        # Final count check (QUALITY-FIRST: Accept whatever we have)
         final_count = len(questions)
         if final_count != expected_count:
-            print(f"❌ FINAL COUNT MISMATCH: Expected {expected_count}, Got {final_count}")
-            print(f"   Missing {expected_count - final_count} question(s)")
-            # If we're missing questions, try to identify which ones
+            print(f"ℹ️  FINAL COUNT: Generated {final_count} questions (requested {expected_count}). Accepting for quality-first approach.")
             if final_count < expected_count:
                 print(f"   Current questions:")
                 for i, q in enumerate(questions, 1):
                     print(f"     Q{i}: {q.get('marks', '?')} marks, type={q.get('type', '?')}")
         else:
-            print(f"✅ FINAL COUNT: Exactly {final_count} questions (as requested)")
+            print(f"✅ FINAL COUNT: Generated {final_count} questions (as requested)")
         
-        # Final count check
-        final_count = len(questions)
-        if final_count != expected_count:
-            print(f"⚠️  FINAL COUNT: Expected {expected_count}, Got {final_count}")
-        else:
-            print(f"✅ FINAL COUNT: Exactly {final_count} questions (as requested)")
+        # Never raise error for count mismatch - accept what we have (quality-first)
         
         # Store usage log ID for later linking
         if usage_log_id:

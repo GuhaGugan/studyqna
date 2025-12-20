@@ -82,15 +82,19 @@ const FileUpload = ({ onUploadSuccess }) => {
       
       // Check for subject mismatch warning
       if (response.data.subject_mismatch_warning) {
-        toast.warning(
+        toast(
           `⚠️ ${response.data.subject_mismatch_warning}${response.data.detected_subject ? ` Detected: ${response.data.detected_subject}` : ''}`,
           {
             duration: isMobile ? 8000 : 6000, // Longer on mobile for readability
+            icon: '⚠️',
             style: {
               maxWidth: isMobile ? '95%' : '500px',
               wordBreak: 'break-word',
               fontSize: isMobile ? '14px' : '13px',
               padding: isMobile ? '16px' : '12px',
+              backgroundColor: '#fef3c7',
+              color: '#92400e',
+              border: '1px solid #fbbf24',
             },
             position: isMobile ? 'top-center' : 'top-right'
           }

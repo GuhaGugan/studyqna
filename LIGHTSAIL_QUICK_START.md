@@ -313,6 +313,9 @@ server {
     location /health {
         proxy_pass http://localhost:8000/health;
     }
+
+    # File upload size limit (100MB for large PDFs and mobile photos)
+    client_max_body_size 100M;
 }
 ```
 

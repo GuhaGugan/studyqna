@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from app.config import settings
 from app.database import engine, Base
 from app.routers import auth, upload, qna, user, admin, reviews, ai_usage
+from app.routers import payments
 import asyncio
 import sys
 import logging
@@ -30,9 +31,37 @@ if sys.platform == 'win32':
                         return False
             return True
     
+    # Create a custom handler to handle Unicode encoding errors in logging
+    class SafeStreamHandler(logging.StreamHandler):
+        def emit(self, record):
+            try:
+                super().emit(record)
+            except UnicodeEncodeError:
+                # If encoding fails, remove emojis and try again
+                try:
+                    msg = self.format(record)
+                    # Remove common emojis
+                    import re
+                    msg = re.sub(r'[📊📝✅❌⚠️🔄🚨ℹ️🔍🛑🚀]', '', msg)
+                    stream = self.stream
+                    stream.write(msg + self.terminator)
+                    self.flush()
+                except Exception:
+                    # If still fails, skip this log entry
+                    pass
+    
     # Apply filter to asyncio logger
     asyncio_logger = logging.getLogger('asyncio')
     asyncio_logger.addFilter(WindowsNetworkErrorFilter())
+    
+    # Replace default handlers with safe handler for root logger
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers[:]:
+        if isinstance(handler, logging.StreamHandler):
+            root_logger.removeHandler(handler)
+            safe_handler = SafeStreamHandler()
+            safe_handler.setFormatter(handler.formatter)
+            root_logger.addHandler(safe_handler)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -97,6 +126,7 @@ app.include_router(user.router, prefix="/api/user", tags=["User"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(reviews.router, prefix="/api/reviews", tags=["Reviews"])
 app.include_router(ai_usage.router, prefix="/api/admin/ai", tags=["AI Usage"])
+app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
 
 @app.get("/")
 async def root():

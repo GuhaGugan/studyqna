@@ -15,6 +15,11 @@ class PremiumStatus(str, enum.Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
 
+class CreditRequestStatus(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
 class DifficultyLevel(str, enum.Enum):
     EASY = "easy"
     MEDIUM = "medium"
@@ -53,6 +58,7 @@ class User(Base):
     premium_valid_until = Column(DateTime, nullable=True)
     upload_quota_remaining = Column(Integer, default=0)
     image_quota_remaining = Column(Integer, default=0)
+    bonus_questions = Column(Integer, default=0)  # Additional question credits granted by admin
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
@@ -60,6 +66,7 @@ class User(Base):
     uploads = relationship("Upload", back_populates="user")
     qna_sets = relationship("QnASet", back_populates="user")
     premium_requests = relationship("PremiumRequest", back_populates="user", primaryjoin="User.id == PremiumRequest.user_id")
+    credit_requests = relationship("CreditRequest", back_populates="user", primaryjoin="User.id == CreditRequest.user_id")
     usage_logs = relationship("UsageLog", back_populates="user")
     reviews = relationship("Review", back_populates="user")
 
@@ -82,6 +89,29 @@ class Upload(Base):
     user = relationship("User", back_populates="uploads")
     qna_sets = relationship("QnASet", back_populates="upload")
     split_parts = relationship("PdfSplitPart", back_populates="parent_upload", cascade="all, delete-orphan")
+
+class PaymentStatus(str, enum.Enum):
+    CREATED = "created"
+    CAPTURED = "captured"
+    FAILED = "failed"
+    REFUNDED = "refunded"
+
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    order_id = Column(String, unique=True, nullable=False)
+    payment_id = Column(String, unique=True, nullable=True)
+    amount = Column(Integer, nullable=False)  # in paise
+    currency = Column(String, default="INR")
+    status = Column(SQLEnum(PaymentStatus), default=PaymentStatus.CREATED)
+    method = Column(String, nullable=True)
+    notes = Column(JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", backref="payments")
 
 class QnASet(Base):
     __tablename__ = "qna_sets"
@@ -110,6 +140,22 @@ class PremiumRequest(Base):
     
     # Relationships
     user = relationship("User", back_populates="premium_requests", foreign_keys=[user_id])
+
+class CreditRequest(Base):
+    __tablename__ = "credit_requests"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    requested_credits = Column(Integer, nullable=False)  # Number of additional questions requested
+    status = Column(String(20), default=CreditRequestStatus.PENDING.value)  # Store enum value as string
+    requested_at = Column(DateTime, server_default=func.now())
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    notes = Column(Text, nullable=True)  # Admin notes
+    user_notes = Column(Text, nullable=True)  # User's reason for requesting
+    
+    # Relationships
+    user = relationship("User", back_populates="credit_requests", foreign_keys=[user_id])
 
 class UsageLog(Base):
     __tablename__ = "usage_logs"

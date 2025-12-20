@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { api } from '../utils/api'
 import toast from 'react-hot-toast'
 import { InlineMath, BlockMath } from 'react-katex'
@@ -6,7 +6,7 @@ import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import 'katex/dist/katex.min.css'
 
-const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGenerationComplete }) => {
+const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGenerationComplete, onReset, onSwitchToUpload, onSwitchToSaved }) => {
   const { fetchUser } = useAuth()
   const deriveTypeFromMarks = (marks) => {
     if (marks === 'mixed') return 'mixed'
@@ -45,6 +45,18 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
   const [downloadToastId, setDownloadToastId] = useState(null)
   const [generateAbortController, setGenerateAbortController] = useState(null)
   const [generateToastId, setGenerateToastId] = useState(null)
+  const [showSelectPdfModal, setShowSelectPdfModal] = useState(false)
+  const modalRef = useRef(null)
+
+  // Scroll modal into view when it opens
+  useEffect(() => {
+    if (showSelectPdfModal) {
+      // Small delay to ensure modal is rendered, then scroll to top
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }, 100)
+    }
+  }, [showSelectPdfModal])
   
   // Helper function to render LaTeX in text
   const renderLatexInText = (text) => {
@@ -518,6 +530,12 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       return
     }
 
+    // If there's already a generated result, show modal to select PDF
+    if (result) {
+      setShowSelectPdfModal(true)
+      return
+    }
+
     // Check if multi-select mode or single upload mode
     if (!settings.upload_id && !settings.part_ids) {
       toast.error('Please select an upload or parts first')
@@ -664,6 +682,8 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
         if (onGenerationComplete) {
           onGenerationComplete()
         }
+        // Also dispatch event for ProfileTab to refresh
+        window.dispatchEvent(new Event('refreshProfile'))
       } catch (refreshError) {
         console.warn('Failed to refresh user data after generation:', refreshError)
         // Don't fail the generation if refresh fails
@@ -680,6 +700,20 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
           correct_answer_preview: q.correct_answer ? (typeof q.correct_answer === 'string' ? q.correct_answer.substring(0, 50) : 'object') : 'missing'
         })
       })
+      
+      // Check if message is provided (e.g., fewer questions generated)
+      if (response.data.message) {
+        // Show informative message about generation result
+        toast(response.data.message, {
+          duration: 5000,
+          icon: 'ℹ️',
+          style: {
+            backgroundColor: '#dbeafe',
+            color: '#1e40af',
+            border: '1px solid #3b82f6',
+          }
+        })
+      }
       
       // For free users, show only preview
       if (!isPremium) {
@@ -1497,6 +1531,76 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
 
       {/* Results */}
       {renderPreview()}
+
+      {/* Select PDF Modal - shown when trying to generate again with existing result */}
+      {showSelectPdfModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            overflow: 'auto'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowSelectPdfModal(false)
+            }
+          }}
+        >
+          <div 
+            ref={modalRef}
+            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 mx-auto my-auto"
+            style={{
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              position: 'relative',
+              margin: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Select PDF Source</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              You already have a generated Q&A set. To generate a new set, please select a PDF from your saved uploads or upload a new file.
+            </p>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setShowSelectPdfModal(false)
+                  if (onSwitchToSaved) {
+                    onSwitchToSaved()
+                  }
+                }}
+                className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all"
+              >
+                📁 Select from Saved Uploads
+              </button>
+              <button
+                onClick={() => {
+                  setShowSelectPdfModal(false)
+                  if (onSwitchToUpload) {
+                    onSwitchToUpload()
+                  }
+                }}
+                className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all"
+              >
+                📤 Upload New File
+              </button>
+              <button
+                onClick={() => {
+                  setShowSelectPdfModal(false)
+                }}
+                className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -27,10 +27,34 @@ const Dashboard = () => {
   const [showLargePdfModal, setShowLargePdfModal] = useState(false)
   const [largePdfName, setLargePdfName] = useState('')
   const [profileData, setProfileData] = useState(null)
+  const [showCreditRequestModal, setShowCreditRequestModal] = useState(false)
+  const [creditRequestData, setCreditRequestData] = useState({ requested_credits: 100, user_notes: '' })
+  const [submittingCreditRequest, setSubmittingCreditRequest] = useState(false)
 
   useEffect(() => {
     fetchUploads()
     fetchProfileData()
+    
+    // Listen for profile refresh events (e.g., after generation)
+    const handleRefresh = () => {
+      fetchProfileData()
+    }
+    
+    // Listen for custom refresh event
+    window.addEventListener('refreshProfile', handleRefresh)
+    
+    // Also refresh when visibility changes (user switches tabs back)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchProfileData()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      window.removeEventListener('refreshProfile', handleRefresh)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   const fetchProfileData = async () => {
@@ -388,16 +412,24 @@ const Dashboard = () => {
                       style={{
                         width: `${isPremium && profileData?.usage_stats?.questions?.limit
                           ? Math.min(
-                              ((profileData?.usage_stats?.questions?.used || 0) / (profileData?.usage_stats?.questions?.limit || 700)) * 100,
+                              ((profileData?.usage_stats?.questions?.used ?? 0) / (profileData?.usage_stats?.questions?.limit ?? 700)) * 100,
                               100
                             )
                           : 0}%`
                       }}
                     ></div>
                   </div>
-                  <p className="text-xs text-gray-600">
-                    {isPremium ? `${profileData?.usage_stats?.questions?.used || 0} / ${profileData?.usage_stats?.questions?.limit || 700} questions` : 'Premium feature'}
+                  <p className="text-xs text-gray-600 mb-2">
+                    {isPremium ? `${profileData?.usage_stats?.questions?.used ?? 0} / ${profileData?.usage_stats?.questions?.limit ?? 700} questions` : 'Premium feature'}
                   </p>
+                  {isPremium && (profileData?.usage_stats?.questions?.remaining ?? 0) <= 50 && (
+                    <button
+                      onClick={() => setShowCreditRequestModal(true)}
+                      className="w-full mt-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-all shadow-sm hover:shadow"
+                    >
+                      Request More Credits
+                    </button>
+                  )}
                 </div>
 
                 {/* Daily Questions Card */}
@@ -405,7 +437,7 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-gray-800">Daily Questions</h3>
                     <span className="text-sm font-medium text-gray-600">
-                      {profileData?.usage_stats?.generations?.remaining || 0} remaining
+                      {profileData?.usage_stats?.generations?.remaining ?? 0} remaining
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
@@ -420,7 +452,7 @@ const Dashboard = () => {
                       style={{
                         width: `${isPremium && profileData?.usage_stats?.generations?.limit
                           ? Math.min(
-                              ((profileData?.usage_stats?.generations?.used || 0) / (profileData?.usage_stats?.generations?.limit || 50)) * 100,
+                              ((profileData?.usage_stats?.generations?.used ?? 0) / (profileData?.usage_stats?.generations?.limit ?? 60)) * 100,
                               100
                             )
                           : 0}%`
@@ -428,7 +460,7 @@ const Dashboard = () => {
                     ></div>
                   </div>
                   <p className="text-xs text-gray-600">
-                    {isPremium ? `${profileData?.usage_stats?.generations?.used || 0} / ${profileData?.usage_stats?.generations?.limit || 50} per day` : 'Premium feature'}
+                    {isPremium ? `${profileData?.usage_stats?.generations?.used ?? 0} / ${profileData?.usage_stats?.generations?.limit ?? 60} per day` : 'Premium feature'}
                   </p>
                   {profileData?.usage_stats?.generations?.reset_time && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -559,6 +591,12 @@ const Dashboard = () => {
               onSelectUpload={setSelectedUpload}
               isPremium={isPremium}
               onGenerationComplete={fetchProfileData}
+              onSwitchToUpload={() => {
+                setActiveTab('upload')
+              }}
+              onSwitchToSaved={() => {
+                setActiveTab('upload') // Switch to upload tab where saved uploads are shown
+              }}
             />
           )}
 
@@ -657,6 +695,89 @@ const Dashboard = () => {
 
       {/* Onboarding Tour */}
       <OnboardingTour activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* Credit Request Modal */}
+      {showCreditRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Request Additional Credits</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              You have {profileData?.usage_stats?.questions?.remaining || 0} questions remaining. 
+              Request additional credits to continue generating questions.
+            </p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Number of Credits to Request
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={creditRequestData.requested_credits}
+                onChange={(e) => setCreditRequestData({
+                  ...creditRequestData,
+                  requested_credits: parseInt(e.target.value) || 0
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 100"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason (Optional)
+              </label>
+              <textarea
+                value={creditRequestData.user_notes}
+                onChange={(e) => setCreditRequestData({
+                  ...creditRequestData,
+                  user_notes: e.target.value
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows="3"
+                placeholder="Please explain why you need additional credits..."
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  if (!creditRequestData.requested_credits || creditRequestData.requested_credits < 1) {
+                    toast.error('Please enter a valid number of credits')
+                    return
+                  }
+                  setSubmittingCreditRequest(true)
+                  try {
+                    await api.requestCredits(creditRequestData)
+                    toast.success('Credit request submitted successfully! An admin will review it soon.')
+                    setShowCreditRequestModal(false)
+                    setCreditRequestData({ requested_credits: 100, user_notes: '' })
+                    fetchProfileData()
+                  } catch (error) {
+                    toast.error(error.response?.data?.detail || 'Failed to submit credit request')
+                  } finally {
+                    setSubmittingCreditRequest(false)
+                  }
+                }}
+                disabled={submittingCreditRequest}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingCreditRequest ? 'Submitting...' : 'Submit Request'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreditRequestModal(false)
+                  setCreditRequestData({ requested_credits: 100, user_notes: '' })
+                }}
+                disabled={submittingCreditRequest}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

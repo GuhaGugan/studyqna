@@ -7,6 +7,7 @@ const AdminDashboard = () => {
   const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState('requests')
   const [premiumRequests, setPremiumRequests] = useState([])
+  const [creditRequests, setCreditRequests] = useState([])
   const [users, setUsers] = useState([])
   const [uploads, setUploads] = useState([])
   const [reviews, setReviews] = useState([])
@@ -15,17 +16,28 @@ const AdminDashboard = () => {
   const [aiUsageLogs, setAiUsageLogs] = useState([])
   const [aiUsageStats, setAiUsageStats] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [usageExportPeriod, setUsageExportPeriod] = useState('all')
-  const [loginExportPeriod, setLoginExportPeriod] = useState('all')
+  const [usageFilterPeriod, setUsageFilterPeriod] = useState('all')
+  const [loginFilterPeriod, setLoginFilterPeriod] = useState('all')
+  const [usersFilterPeriod, setUsersFilterPeriod] = useState('all')
+  const [uploadsFilterPeriod, setUploadsFilterPeriod] = useState('all')
+  const [reviewsFilterPeriod, setReviewsFilterPeriod] = useState('all')
+  const [aiUsageFilterPeriod, setAiUsageFilterPeriod] = useState('all')
+  const [selectedLoginLogIds, setSelectedLoginLogIds] = useState([])
+  const [selectedUsageLogIds, setSelectedUsageLogIds] = useState([])
+  const [selectedUserIds, setSelectedUserIds] = useState([])
+  const [selectedUploadIds, setSelectedUploadIds] = useState([])
+  const [selectedReviewIds, setSelectedReviewIds] = useState([])
+  const [selectedAIUsageIds, setSelectedAIUsageIds] = useState([])
   const tabNavRef = useRef(null)
 
   useEffect(() => {
     if (activeTab === 'requests') fetchPremiumRequests()
+    if (activeTab === 'credit-requests') fetchCreditRequests()
     if (activeTab === 'users') fetchUsers()
-    if (activeTab === 'uploads') fetchUploads()
-    if (activeTab === 'reviews') fetchReviews()
+    if (activeTab === 'uploads') fetchUploads(uploadsFilterPeriod)
+    if (activeTab === 'reviews') fetchReviews(reviewsFilterPeriod)
     if (activeTab === 'ai-usage') {
-      fetchAIUsageLogs()
+      fetchAIUsageLogs(aiUsageFilterPeriod)
       fetchAIUsageStats()
     }
     if (activeTab === 'logs') fetchUsageLogs()
@@ -44,11 +56,27 @@ const AdminDashboard = () => {
     }
   }
 
-  const fetchUsers = async () => {
+  const fetchCreditRequests = async () => {
     setLoading(true)
     try {
-      const response = await api.listUsers()
+      const response = await api.listCreditRequests()
+      console.log('Credit requests response:', response.data)
+      setCreditRequests(response.data || [])
+    } catch (error) {
+      console.error('Error fetching credit requests:', error)
+      toast.error('Failed to load credit requests')
+      setCreditRequests([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchUsers = async (period = usersFilterPeriod) => {
+    setLoading(true)
+    try {
+      const response = await api.listUsers(period)
       setUsers(response.data)
+      setSelectedUserIds([])
     } catch (error) {
       toast.error('Failed to load users')
     } finally {
@@ -56,11 +84,12 @@ const AdminDashboard = () => {
     }
   }
 
-  const fetchUploads = async () => {
+  const fetchUploads = async (period = uploadsFilterPeriod) => {
     setLoading(true)
     try {
-      const response = await api.listAllUploads()
+      const response = await api.listAllUploads(period)
       setUploads(response.data)
+      setSelectedUploadIds([])
     } catch (error) {
       toast.error('Failed to load uploads')
     } finally {
@@ -68,11 +97,12 @@ const AdminDashboard = () => {
     }
   }
 
-  const fetchReviews = async () => {
+  const fetchReviews = async (period = reviewsFilterPeriod) => {
     setLoading(true)
     try {
-      const response = await api.getReviews()
+      const response = await api.getReviews(period)
       setReviews(response.data)
+      setSelectedReviewIds([])
     } catch (error) {
       toast.error('Failed to load reviews')
     } finally {
@@ -80,11 +110,12 @@ const AdminDashboard = () => {
     }
   }
 
-  const fetchAIUsageLogs = async () => {
+  const fetchAIUsageLogs = async (period = aiUsageFilterPeriod) => {
     setLoading(true)
     try {
-      const response = await api.getAIUsageLogs()
+      const response = await api.getAIUsageLogs(period)
       setAiUsageLogs(response.data)
+      setSelectedAIUsageIds([])
     } catch (error) {
       toast.error('Failed to load AI usage logs')
     } finally {
@@ -114,11 +145,12 @@ const AdminDashboard = () => {
     }
   }
 
-  const fetchUsageLogs = async () => {
+  const fetchUsageLogs = async (period = usageFilterPeriod) => {
     setLoading(true)
     try {
-      const response = await api.getUsageLogs()
+      const response = await api.getUsageLogs(null, period)
       setUsageLogs(response.data)
+      setSelectedUsageLogIds([])
     } catch (error) {
       toast.error('Failed to load usage logs')
     } finally {
@@ -126,11 +158,12 @@ const AdminDashboard = () => {
     }
   }
 
-  const fetchLoginLogs = async () => {
+  const fetchLoginLogs = async (period = loginFilterPeriod) => {
     setLoading(true)
     try {
-      const response = await api.getLoginLogs()
+      const response = await api.getLoginLogs(null, period)
       setLoginLogs(response.data)
+      setSelectedLoginLogIds([])
     } catch (error) {
       toast.error('Failed to load login logs')
     } finally {
@@ -144,6 +177,7 @@ const AdminDashboard = () => {
       // Refresh all sections based on current tab
       await Promise.all([
         fetchPremiumRequests(),
+        fetchCreditRequests(),
         fetchUsers(),
         fetchUploads(),
         fetchReviews(),
@@ -160,32 +194,154 @@ const AdminDashboard = () => {
     }
   }
 
-  const handleExportUsageLogs = async () => {
+  const handleExportUsers = async () => {
     try {
-      const response = await api.exportUsageLogs(usageExportPeriod)
+      const response = await api.exportUsers(usersFilterPeriod)
       const blob = new Blob([response.data], { type: 'text/csv' })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `usage_logs_${usageExportPeriod}.csv`
+      a.download = `users_${usersFilterPeriod}.csv`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
-      toast.success('Usage logs exported')
+      toast.success('Users exported')
     } catch (error) {
-      toast.error('Failed to export usage logs')
+      toast.error('Failed to export users')
+    }
+  }
+
+  const handleDeleteUsers = async () => {
+    if (selectedUserIds.length === 0) {
+      toast.error('Select at least one user to delete')
+      return
+    }
+    const warnExport = 'Please export CSV first if you need a backup. Proceed to delete the selected user(s)? This cannot be undone.'
+    if (!window.confirm(warnExport)) return
+    if (!window.confirm(`Confirm delete ${selectedUserIds.length} selected user(s)?`)) return
+    try {
+      await api.deleteUsers(selectedUserIds)
+      toast.success('Selected users deleted')
+      fetchUsers(usersFilterPeriod)
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete users')
+    }
+  }
+
+  const handleDeleteUploads = async () => {
+    if (selectedUploadIds.length === 0) {
+      toast.error('Select at least one upload to delete')
+      return
+    }
+    const warnExport = 'Please export CSV first if you need a backup. Proceed to delete the selected upload(s)? This cannot be undone.'
+    if (!window.confirm(warnExport)) return
+    if (!window.confirm(`Confirm delete ${selectedUploadIds.length} selected upload(s)?`)) return
+    try {
+      await api.deleteUploads(selectedUploadIds)
+      toast.success('Selected uploads deleted')
+      fetchUploads(uploadsFilterPeriod)
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete uploads')
+    }
+  }
+
+  const handleDeleteReviews = async () => {
+    if (selectedReviewIds.length === 0) {
+      toast.error('Select at least one review to delete')
+      return
+    }
+    const warnExport = 'Please export CSV first if you need a backup. Proceed to delete the selected review(s)? This cannot be undone.'
+    if (!window.confirm(warnExport)) return
+    if (!window.confirm(`Confirm delete ${selectedReviewIds.length} selected review(s)?`)) return
+    try {
+      await api.deleteReviewsBulk(selectedReviewIds)
+      toast.success('Selected reviews deleted')
+      fetchReviews(reviewsFilterPeriod)
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete reviews')
+    }
+  }
+
+  const handleDeleteAIUsage = async () => {
+    if (selectedAIUsageIds.length === 0) {
+      toast.error('Select at least one log to delete')
+      return
+    }
+    const warnExport = 'Please export CSV first if you need a backup. Proceed to delete the selected log(s)? This cannot be undone.'
+    if (!window.confirm(warnExport)) return
+    if (!window.confirm(`Confirm delete ${selectedAIUsageIds.length} selected log(s)?`)) return
+    try {
+      await api.deleteAIUsageLogs(selectedAIUsageIds)
+      toast.success('Selected AI usage logs deleted')
+      fetchAIUsageLogs(aiUsageFilterPeriod)
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete logs')
+    }
+  }
+
+  const handleExportUploads = async () => {
+    try {
+      const response = await api.exportUploads(uploadsFilterPeriod)
+      const blob = new Blob([response.data], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `uploads_${uploadsFilterPeriod}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast.success('Uploads exported')
+    } catch (error) {
+      toast.error('Failed to export uploads')
+    }
+  }
+
+  const handleExportReviews = async () => {
+    try {
+      const response = await api.exportReviews(reviewsFilterPeriod)
+      const blob = new Blob([response.data], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `reviews_${reviewsFilterPeriod}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast.success('Reviews exported')
+    } catch (error) {
+      toast.error('Failed to export reviews')
+    }
+  }
+
+  const handleExportAIUsage = async () => {
+    try {
+      const response = await api.exportAIUsageLogs(aiUsageFilterPeriod)
+      const blob = new Blob([response.data], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `ai_usage_${aiUsageFilterPeriod}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast.success('AI usage exported')
+    } catch (error) {
+      toast.error('Failed to export AI usage logs')
     }
   }
 
   const handleExportLoginLogs = async () => {
     try {
-      const response = await api.exportLoginLogs(loginExportPeriod)
+      const response = await api.exportLoginLogs(loginFilterPeriod)
       const blob = new Blob([response.data], { type: 'text/csv' })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `login_logs_${loginExportPeriod}.csv`
+      a.download = `login_logs_${loginFilterPeriod}.csv`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -193,6 +349,39 @@ const AdminDashboard = () => {
       toast.success('Login logs exported')
     } catch (error) {
       toast.error('Failed to export login logs')
+    }
+  }
+
+  // Derived totals for AI usage based on current filter
+  const filteredAIUsageTotals = (() => {
+    let totalTokens = 0
+    let promptTokens = 0
+    let completionTokens = 0
+    let count = 0
+    aiUsageLogs.forEach((log) => {
+      totalTokens += log.total_tokens || 0
+      promptTokens += log.prompt_tokens || 0
+      completionTokens += log.completion_tokens || 0
+      count += 1
+    })
+    return { totalTokens, promptTokens, completionTokens, count }
+  })()
+
+  const handleExportUsageLogs = async () => {
+    try {
+      const response = await api.exportUsageLogs(usageFilterPeriod)
+      const blob = new Blob([response.data], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `usage_logs_${usageFilterPeriod}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast.success('Usage logs exported')
+    } catch (error) {
+      toast.error('Failed to export usage logs')
     }
   }
 
@@ -384,7 +573,7 @@ const AdminDashboard = () => {
         image_limit: imageLimit
       })
       toast.success('Quota adjusted successfully')
-      fetchUsers()
+      fetchUsers(usersFilterPeriod)
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to adjust quota')
     }
@@ -407,6 +596,28 @@ const AdminDashboard = () => {
       fetchPremiumRequests()
     } catch (error) {
       toast.error('Failed to reject')
+    }
+  }
+
+  const handleApproveCreditRequest = async (requestId, notes = '') => {
+    try {
+      await api.approveCreditRequest(requestId, { notes })
+      toast.success('Credit request approved successfully')
+      fetchCreditRequests()
+    } catch (error) {
+      console.error('Approve credit request error:', error)
+      toast.error(error.response?.data?.detail || 'Failed to approve credit request')
+    }
+  }
+
+  const handleRejectCreditRequest = async (requestId, notes = '') => {
+    try {
+      await api.rejectCreditRequest(requestId, notes)
+      toast.success('Credit request rejected')
+      fetchCreditRequests()
+    } catch (error) {
+      console.error('Reject credit request error:', error)
+      toast.error(error.response?.data?.detail || 'Failed to reject credit request')
     }
   }
 
@@ -446,7 +657,7 @@ const AdminDashboard = () => {
         {/* Tabs */}
         {/* Mobile: grid buttons */}
         <div className="md:hidden grid grid-cols-2 gap-2 mb-4">
-            {['requests', 'users', 'uploads', 'reviews', 'ai-usage', 'logs', 'login-logs'].map((tab) => (
+            {['requests', 'credit-requests', 'users', 'uploads', 'reviews', 'ai-usage', 'logs', 'login-logs'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -457,6 +668,7 @@ const AdminDashboard = () => {
               }`}
             >
               {tab === 'requests' ? 'Premium Requests' : 
+               tab === 'credit-requests' ? 'Credit Requests' :
                tab === 'ai-usage' ? 'AI Usage' : 
                tab === 'login-logs' ? 'Login Logs' : tab}
             </button>
@@ -484,7 +696,7 @@ const AdminDashboard = () => {
         {/* Desktop: pill tabs */}
         <div className="hidden md:flex w-full mb-6 justify-start px-2 items-center gap-2">
           <div className="pill-tabs shadow-sm min-w-max">
-            {['requests', 'users', 'uploads', 'reviews', 'ai-usage', 'logs', 'login-logs'].map((tab) => (
+            {['requests', 'credit-requests', 'users', 'uploads', 'reviews', 'ai-usage', 'logs', 'login-logs'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -561,10 +773,125 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {activeTab === 'credit-requests' && (
+            <div>
+              <div className="mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Credit Requests</h2>
+              </div>
+              {loading ? (
+                <div className="text-center py-8">Loading...</div>
+              ) : creditRequests.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No credit requests</div>
+              ) : (
+                <div className="space-y-4">
+                  {creditRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      className="border rounded-lg p-4"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="font-semibold text-lg text-gray-900">{request.user_email}</p>
+                          <p className="text-base text-gray-500 mt-1">
+                            Requested: {new Date(request.requested_at).toLocaleString()}
+                          </p>
+                          <p className="text-base text-gray-700 mt-2">
+                            <span className="font-medium">Credits Requested:</span> {request.requested_credits}
+                          </p>
+                          {request.user_notes && (
+                            <p className="text-sm text-gray-600 mt-2">
+                              <span className="font-medium">Reason:</span> {request.user_notes}
+                            </p>
+                          )}
+                          <p className="text-sm mt-2">
+                            <span className={`px-2 py-1 rounded ${
+                              request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                            </span>
+                          </p>
+                          {request.reviewed_at && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Reviewed: {new Date(request.reviewed_at).toLocaleString()}
+                            </p>
+                          )}
+                          {request.notes && (
+                            <p className="text-sm text-gray-600 mt-2">
+                              <span className="font-medium">Admin Notes:</span> {request.notes}
+                            </p>
+                          )}
+                        </div>
+                        {request.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={async () => {
+                                const notes = prompt('Enter approval notes (optional):')
+                                // If user clicks Cancel, notes will be null, but we still want to approve
+                                // If user clicks OK with empty string, we want to approve with no notes
+                                // Only if user explicitly cancels should we not proceed
+                                if (notes !== null) {
+                                  await handleApproveCreditRequest(request.id, notes || '')
+                                }
+                              }}
+                              className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-base font-semibold shadow-sm hover:shadow transition-all"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                const notes = prompt('Enter rejection reason (optional):')
+                                if (notes !== null) {
+                                  handleRejectCreditRequest(request.id, notes)
+                                }
+                              }}
+                              className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-base font-semibold shadow-sm hover:shadow transition-all"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'users' && (
             <div>
-              <div className="mb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Users</h2>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={usersFilterPeriod}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setUsersFilterPeriod(val)
+                      fetchUsers(val)
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="all">All</option>
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                  <button
+                    onClick={handleExportUsers}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    onClick={handleDeleteUsers}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
               {loading ? (
                 <div className="text-center py-8">Loading...</div>
@@ -573,6 +900,19 @@ const AdminDashboard = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                          <input
+                            type="checkbox"
+                            checked={selectedUserIds.length > 0 && selectedUserIds.length === users.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUserIds(users.map((u) => u.id))
+                              } else {
+                                setSelectedUserIds([])
+                              }
+                            }}
+                          />
+                        </th>
                         <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Email</th>
                         <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Status</th>
                         <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">PDF Quota</th>
@@ -583,6 +923,19 @@ const AdminDashboard = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {users.map((u) => (
                         <tr key={u.id}>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <input
+                              type="checkbox"
+                              checked={selectedUserIds.includes(u.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedUserIds((prev) => [...prev, u.id])
+                                } else {
+                                  setSelectedUserIds((prev) => prev.filter((id) => id !== u.id))
+                                }
+                              }}
+                            />
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{u.email}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
@@ -740,8 +1093,36 @@ const AdminDashboard = () => {
 
           {activeTab === 'uploads' && (
             <div>
-              <div className="mb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">All Uploads</h2>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={uploadsFilterPeriod}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setUploadsFilterPeriod(val)
+                      fetchUploads(val)
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="all">All</option>
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                  <button
+                    onClick={handleExportUploads}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    onClick={handleDeleteUploads}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
               {loading ? (
                 <div className="text-center py-8">Loading...</div>
@@ -750,6 +1131,19 @@ const AdminDashboard = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                          <input
+                            type="checkbox"
+                            checked={selectedUploadIds.length > 0 && selectedUploadIds.length === uploads.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUploadIds(uploads.map((u) => u.id))
+                              } else {
+                                setSelectedUploadIds([])
+                              }
+                            }}
+                          />
+                        </th>
                         <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">User Email</th>
                         <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">File Name</th>
                         <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Type</th>
@@ -760,28 +1154,47 @@ const AdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {uploads.map((upload) => (
-                        <tr key={upload.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.user_email}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.file_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.file_type}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">
-                            {(upload.file_size / 1024).toFixed(2)} KB
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.pages || '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">
-                            {new Date(upload.created_at).toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <button
-                              onClick={() => handleViewUpload(upload.id)}
-                              className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
-                            >
-                              Preview
-                            </button>
-                          </td>
+                      {uploads.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="px-6 py-4 text-center text-gray-500">No uploads found</td>
                         </tr>
-                      ))}
+                      ) : (
+                        uploads.map((upload) => (
+                          <tr key={upload.id}>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <input
+                                type="checkbox"
+                                checked={selectedUploadIds.includes(upload.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedUploadIds((prev) => [...prev, upload.id])
+                                  } else {
+                                    setSelectedUploadIds((prev) => prev.filter((id) => id !== upload.id))
+                                  }
+                                }}
+                              />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.user_email}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.file_name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.file_type}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">
+                              {(upload.file_size / 1024).toFixed(2)} KB
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.pages || '-'}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">
+                              {new Date(upload.created_at).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <button
+                                onClick={() => handleViewUpload(upload.id)}
+                                className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                              >
+                                Preview
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -791,8 +1204,36 @@ const AdminDashboard = () => {
 
           {activeTab === 'reviews' && (
             <div>
-              <div className="mb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">User Reviews</h2>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={reviewsFilterPeriod}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setReviewsFilterPeriod(val)
+                      fetchReviews(val)
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="all">All</option>
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                  <button
+                    onClick={handleExportReviews}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    onClick={handleDeleteReviews}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
               {loading ? (
                 <div className="text-center py-8">Loading...</div>
@@ -800,49 +1241,78 @@ const AdminDashboard = () => {
                 <div className="text-center py-8 text-gray-500">No reviews yet</div>
               ) : (
                 <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedReviewIds.length > 0 && selectedReviewIds.length === reviews.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedReviewIds(reviews.map((r) => r.id))
+                        } else {
+                          setSelectedReviewIds([])
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-gray-600">Select all</span>
+                  </div>
                   {reviews.map((review) => (
                     <div
                       key={review.id}
-                      className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
+                      className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow flex gap-3"
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="font-semibold text-lg text-gray-900">{review.user_email}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <span key={star} className="text-xl">
-                                {star <= review.rating ? '⭐' : '☆'}
-                              </span>
-                            ))}
-                            <span className="ml-2 text-base font-medium text-gray-600">({review.rating}/5)</span>
+                      <div className="pt-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedReviewIds.includes(review.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedReviewIds((prev) => [...prev, review.id])
+                            } else {
+                              setSelectedReviewIds((prev) => prev.filter((id) => id !== review.id))
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="font-semibold text-lg text-gray-900">{review.user_email}</p>
+                            <div className="flex items-center gap-1 mt-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <span key={star} className="text-xl">
+                                  {star <= review.rating ? '⭐' : '☆'}
+                                </span>
+                              ))}
+                              <span className="ml-2 text-base font-medium text-gray-600">({review.rating}/5)</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-base text-gray-500">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
+                            <button
+                              onClick={async () => {
+                                if (window.confirm('Are you sure you want to delete this review?')) {
+                                  try {
+                                    await api.deleteReview(review.id)
+                                    toast.success('Review deleted successfully')
+                                    fetchReviews(reviewsFilterPeriod)
+                                  } catch (error) {
+                                    toast.error(error.response?.data?.detail || 'Failed to delete review')
+                                  }
+                                }
+                              }}
+                              className="px-4 py-2 text-base font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors shadow-sm"
+                              title="Delete review"
+                            >
+                              Delete
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-base text-gray-500">
-                            {new Date(review.created_at).toLocaleDateString()}
-                          </span>
-                          <button
-                            onClick={async () => {
-                              if (window.confirm('Are you sure you want to delete this review?')) {
-                                try {
-                                  await api.deleteReview(review.id)
-                                  toast.success('Review deleted successfully')
-                                  fetchReviews()
-                                } catch (error) {
-                                  toast.error(error.response?.data?.detail || 'Failed to delete review')
-                                }
-                              }
-                            }}
-                            className="px-4 py-2 text-base font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors shadow-sm"
-                            title="Delete review"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                        {review.message && (
+                          <p className="text-base text-gray-700 mt-2">{review.message}</p>
+                        )}
                       </div>
-                      {review.message && (
-                        <p className="text-base text-gray-700 mt-2">{review.message}</p>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -852,8 +1322,36 @@ const AdminDashboard = () => {
 
           {activeTab === 'ai-usage' && (
             <div>
-              <div className="mb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">AI Usage Tracker</h2>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={aiUsageFilterPeriod}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setAiUsageFilterPeriod(val)
+                      fetchAIUsageLogs(val)
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="all">All</option>
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                  <button
+                    onClick={handleExportAIUsage}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    onClick={handleDeleteAIUsage}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
               
               {/* Usage Statistics */}
@@ -895,13 +1393,20 @@ const AdminDashboard = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Current Month Usage */}
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                      <h3 className="text-sm font-medium text-gray-600 mb-1">Current Month</h3>
+                      <h3 className="text-sm font-medium text-gray-600 mb-1">
+                        {aiUsageFilterPeriod === 'all' ? 'Current Month' : `Period (${aiUsageFilterPeriod})`}
+                      </h3>
                       <p className="text-2xl font-bold text-gray-900">
-                        {aiUsageStats.current_month_tokens.toLocaleString()}
+                        {(aiUsageFilterPeriod === 'all'
+                          ? aiUsageStats.current_month_tokens
+                          : filteredAIUsageTotals.totalTokens
+                        ).toLocaleString()}
                       </p>
                       <p className="text-xs text-gray-600 mt-1">tokens</p>
                       <p className="text-xs text-gray-700 mt-1">
-                        Cost: ${aiUsageStats.current_month_cost.toFixed(4)}
+                        {aiUsageFilterPeriod === 'all'
+                          ? `Cost: $${aiUsageStats.current_month_cost.toFixed(4)}`
+                          : 'Cost: N/A (filtered)'}
                       </p>
                     </div>
 
@@ -909,11 +1414,16 @@ const AdminDashboard = () => {
                     <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
                       <h3 className="text-sm font-medium text-gray-600 mb-1">All Time</h3>
                       <p className="text-2xl font-bold text-gray-900">
-                        {aiUsageStats.total_tokens.toLocaleString()}
+                        {(aiUsageFilterPeriod === 'all'
+                          ? aiUsageStats.total_tokens
+                          : filteredAIUsageTotals.totalTokens
+                        ).toLocaleString()}
                       </p>
                       <p className="text-xs text-gray-600 mt-1">tokens</p>
                       <p className="text-xs text-gray-700 mt-1">
-                        Cost: ${aiUsageStats.total_cost.toFixed(4)}
+                        {aiUsageFilterPeriod === 'all'
+                          ? `Cost: $${aiUsageStats.total_cost.toFixed(4)}`
+                          : 'Cost: N/A (filtered)'}
                       </p>
                     </div>
 
@@ -946,7 +1456,10 @@ const AdminDashboard = () => {
                     <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4 border border-indigo-200">
                       <h3 className="text-sm font-medium text-gray-600 mb-1">Total Requests</h3>
                       <p className="text-2xl font-bold text-gray-900">
-                        {aiUsageStats.usage_count.toLocaleString()}
+                        {(aiUsageFilterPeriod === 'all'
+                          ? aiUsageStats.usage_count
+                          : filteredAIUsageTotals.count
+                        ).toLocaleString()}
                       </p>
                       <p className="text-xs text-gray-600 mt-1">API calls</p>
                     </div>
@@ -954,18 +1467,26 @@ const AdminDashboard = () => {
 
                   {/* Token Breakdown */}
                   <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <h3 className="font-semibold text-gray-800 mb-3">Token Breakdown (Current Month)</h3>
+                    <h3 className="font-semibold text-gray-800 mb-3">
+                      Token Breakdown ({aiUsageFilterPeriod === 'all' ? 'Current Month' : aiUsageFilterPeriod})
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-600">Prompt Tokens</p>
                         <p className="text-lg font-semibold text-gray-900">
-                          {aiUsageStats.prompt_tokens.toLocaleString()}
+                          {(aiUsageFilterPeriod === 'all'
+                            ? aiUsageStats.prompt_tokens
+                            : filteredAIUsageTotals.promptTokens
+                          ).toLocaleString()}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">Completion Tokens</p>
                         <p className="text-lg font-semibold text-gray-900">
-                          {aiUsageStats.completion_tokens.toLocaleString()}
+                          {(aiUsageFilterPeriod === 'all'
+                            ? aiUsageStats.completion_tokens
+                            : filteredAIUsageTotals.completionTokens
+                          ).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -985,6 +1506,19 @@ const AdminDashboard = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            <input
+                              type="checkbox"
+                              checked={selectedAIUsageIds.length > 0 && selectedAIUsageIds.length === aiUsageLogs.length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedAIUsageIds(aiUsageLogs.map((l) => l.id))
+                                } else {
+                                  setSelectedAIUsageIds([])
+                                }
+                              }}
+                            />
+                          </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
@@ -997,13 +1531,26 @@ const AdminDashboard = () => {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {aiUsageLogs.length === 0 ? (
                           <tr>
-                            <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                            <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
                               No AI usage logs yet
                             </td>
                           </tr>
                         ) : (
                           aiUsageLogs.map((log) => (
                             <tr key={log.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedAIUsageIds.includes(log.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedAIUsageIds((prev) => [...prev, log.id])
+                                    } else {
+                                      setSelectedAIUsageIds((prev) => prev.filter((id) => id !== log.id))
+                                    }
+                                  }}
+                                />
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {new Date(log.created_at).toLocaleString()}
                               </td>
@@ -1042,8 +1589,12 @@ const AdminDashboard = () => {
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Usage Logs</h2>
                 <div className="flex items-center gap-2">
                   <select
-                    value={usageExportPeriod}
-                    onChange={(e) => setUsageExportPeriod(e.target.value)}
+                    value={usageFilterPeriod}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setUsageFilterPeriod(value)
+                      fetchUsageLogs(value)
+                    }}
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   >
                     <option value="all">All</option>
@@ -1057,6 +1608,27 @@ const AdminDashboard = () => {
                   >
                     Export CSV
                   </button>
+                  <button
+                    onClick={async () => {
+                      if (selectedUsageLogIds.length === 0) {
+                        toast.error('Select at least one log to delete')
+                        return
+                      }
+                      const warnExport = 'Please export CSV first if you need a backup. Proceed to delete the selected log(s)? This cannot be undone.'
+                      if (!window.confirm(warnExport)) return
+                      if (!window.confirm(`Confirm delete ${selectedUsageLogIds.length} selected log(s)?`)) return
+                      try {
+                        await api.deleteUsageLogs(selectedUsageLogIds)
+                        toast.success('Selected usage logs deleted')
+                        fetchUsageLogs(usageFilterPeriod)
+                      } catch (error) {
+                        toast.error(error.response?.data?.detail || 'Failed to delete logs')
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
               {loading ? (
@@ -1066,6 +1638,19 @@ const AdminDashboard = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsageLogIds.length > 0 && selectedUsageLogIds.length === usageLogs.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUsageLogIds(usageLogs.map((log) => log.id))
+                              } else {
+                                setSelectedUsageLogIds([])
+                              }
+                            }}
+                          />
+                        </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Email</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pages</th>
@@ -1076,13 +1661,26 @@ const AdminDashboard = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {usageLogs.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                          <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
                             No usage logs yet
                           </td>
                         </tr>
                       ) : (
                         usageLogs.map((log) => (
                           <tr key={log.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <input
+                                type="checkbox"
+                                checked={selectedUsageLogIds.includes(log.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedUsageLogIds((prev) => [...prev, log.id])
+                                  } else {
+                                    setSelectedUsageLogIds((prev) => prev.filter((id) => id !== log.id))
+                                  }
+                                }}
+                              />
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {log.user_email || `User ID: ${log.user_id}`}
                             </td>
@@ -1113,26 +1711,51 @@ const AdminDashboard = () => {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-2">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Login Logs</h2>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={loginExportPeriod}
-                    onChange={(e) => setLoginExportPeriod(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  >
-                    <option value="all">All</option>
-                    <option value="daily">Daily</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
+          <select
+            value={loginFilterPeriod}
+            onChange={(e) => {
+              const value = e.target.value
+              setLoginFilterPeriod(value)
+              fetchLoginLogs(value)
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="all">All</option>
+            <option value="daily">Daily</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
                   <button
-                    onClick={handleExportLoginLogs}
+            onClick={handleExportLoginLogs}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
                   >
                     Export CSV
                   </button>
+          <button
+            onClick={async () => {
+              if (selectedLoginLogIds.length === 0) {
+                toast.error('Select at least one log to delete')
+                return
+              }
+              const warnExport = 'Please export CSV first if you need a backup. Proceed to delete the selected log(s)? This cannot be undone.'
+              if (!window.confirm(warnExport)) return
+              if (!window.confirm(`Confirm delete ${selectedLoginLogIds.length} selected log(s)?`)) return
+              try {
+                await api.deleteLoginLogs(selectedLoginLogIds)
+                toast.success('Selected login logs deleted')
+                fetchLoginLogs(loginFilterPeriod)
+              } catch (error) {
+                toast.error(error.response?.data?.detail || 'Failed to delete logs')
+              }
+            }}
+            className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
+          >
+            Delete
+          </button>
                 </div>
               </div>
               <p className="text-sm text-gray-600 mb-4">
-                Track user login activity including IP addresses and device types
+                Track user login activity with device types and session times
               </p>
               {loading ? (
                 <div className="text-center py-8">Loading...</div>
@@ -1141,8 +1764,20 @@ const AdminDashboard = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <input
+                            type="checkbox"
+                            checked={selectedLoginLogIds.length > 0 && selectedLoginLogIds.length === loginLogs.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedLoginLogIds(loginLogs.map((log) => log.id))
+                              } else {
+                                setSelectedLoginLogIds([])
+                              }
+                            }}
+                          />
+                        </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Email</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Device Type</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Agent</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Login Time</th>
@@ -1159,11 +1794,21 @@ const AdminDashboard = () => {
                       ) : (
                         loginLogs.map((log) => (
                           <tr key={log.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <input
+                                type="checkbox"
+                                checked={selectedLoginLogIds.includes(log.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedLoginLogIds((prev) => [...prev, log.id])
+                                  } else {
+                                    setSelectedLoginLogIds((prev) => prev.filter((id) => id !== log.id))
+                                  }
+                                }}
+                              />
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {log.user_email}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">
-                              {log.ip_address || 'N/A'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

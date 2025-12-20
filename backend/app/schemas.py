@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 import enum
-from app.models import DifficultyLevel, QnAType, OutputFormat, PremiumStatus, FileType
+from app.models import DifficultyLevel, QnAType, OutputFormat, PremiumStatus, FileType, CreditRequestStatus
 from typing import Literal
 
 # Subject type for validation
@@ -120,6 +120,7 @@ class QnASetResponse(BaseModel):
     settings_json: Dict[str, Any]
     qna_json: Dict[str, Any]
     created_at: datetime
+    message: Optional[str] = None  # Optional message explaining generation result (e.g., "Generated 10 questions based on the uploaded content for best accuracy.")
     
     class Config:
         from_attributes = True
@@ -140,6 +141,28 @@ class PremiumRequestResponse(BaseModel):
         from_attributes = True
 
 class PremiumRequestApprove(BaseModel):
+    notes: Optional[str] = None
+
+# Credit Request Schemas
+class CreditRequestCreate(BaseModel):
+    requested_credits: int  # Number of additional questions requested
+    user_notes: Optional[str] = None  # User's reason for requesting
+
+class CreditRequestResponse(BaseModel):
+    id: int
+    user_id: int
+    user_email: str
+    requested_credits: int
+    status: str
+    requested_at: datetime
+    reviewed_at: Optional[datetime]
+    user_notes: Optional[str]
+    notes: Optional[str]  # Admin notes
+    
+    class Config:
+        from_attributes = True
+
+class CreditRequestApprove(BaseModel):
     notes: Optional[str] = None
 
 # Admin Schemas

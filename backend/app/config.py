@@ -55,14 +55,14 @@ class Settings(BaseSettings):
     MAX_IMAGE_SIZE_MB: int = 10  # Increased for mobile camera photos (typically 3-8MB)
     MAX_PDF_PAGES: int = 40
     MAX_FREE_PDF_PAGES: int = 10
-    MAX_QUESTIONS_PER_GENERATE: int = 20
+    MAX_QUESTIONS_PER_GENERATE: int = 15  # Updated from 20 to 15
     PREMIUM_PDF_QUOTA: int = 15
     PREMIUM_IMAGE_QUOTA: int = 20
     PREMIUM_VALIDITY_DAYS: int = 30
     
     # Daily Generation Limits
     FREE_DAILY_GENERATION_LIMIT: int = int(os.getenv("FREE_DAILY_GENERATION_LIMIT", "10"))  # Free users: 10 generations/day
-    PREMIUM_DAILY_GENERATION_LIMIT: int = int(os.getenv("PREMIUM_DAILY_GENERATION_LIMIT", "50"))  # Premium users: 50 generations/day
+    PREMIUM_DAILY_GENERATION_LIMIT: int = int(os.getenv("PREMIUM_DAILY_GENERATION_LIMIT", "60"))  # Premium users: 60 generations/day
     
     # Total Questions Limit (Premium)
     PREMIUM_TOTAL_QUESTIONS_LIMIT: int = int(os.getenv("PREMIUM_TOTAL_QUESTIONS_LIMIT", "700"))  # Premium users: 700 questions total
@@ -72,6 +72,13 @@ class Settings(BaseSettings):
     # AI Usage Tracking
     AI_USAGE_THRESHOLD_TOKENS: int = int(os.getenv("AI_USAGE_THRESHOLD_TOKENS", "1000000"))  # Default: 1M tokens
     AI_USAGE_ALERT_EMAIL: str = os.getenv("AI_USAGE_ALERT_EMAIL", "")  # Email to send alerts to
+
+    # Payments - Razorpay (optional; feature is dormant until keys are provided)
+    RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "")
+    RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET", "")
+    RAZORPAY_WEBHOOK_SECRET: str = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
+    PREMIUM_PRICE_INR: int = int(os.getenv("PREMIUM_PRICE_INR", "599"))  # ₹599 default
+    PREMIUM_VALID_DAYS: int = int(os.getenv("PREMIUM_VALID_DAYS", "30"))  # 30 days validity
     
     class Config:
         env_file = ".env"

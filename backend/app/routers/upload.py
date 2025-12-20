@@ -223,11 +223,19 @@ async def upload_file(
                         detail="Image upload quota exhausted"
                     )
             else:
-                # Free users: check monthly limit (simplified)
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Image uploads require premium access"
-                )
+                # Free users: Allow image uploads with daily limit
+                today_image_uploads = db.query(Upload).filter(
+                    Upload.user_id == current_user.id,
+                    Upload.file_type == FileType.IMAGE,
+                    Upload.created_at >= datetime.utcnow().date()
+                ).count()
+                
+                # Allow 5 images per day for free users
+                if today_image_uploads >= 5:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Free users can upload 5 images per day. Upgrade to premium for unlimited uploads."
+                    )
         
         # Save file
         file_path = save_file(file_content, current_user.id, file_type.value, file.filename)

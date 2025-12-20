@@ -2,8 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.routers.dependencies import get_current_user
-from app.models import User, PremiumRequest, PremiumStatus, Upload, UsageLog, FileType, LoginLog
-from app.schemas import UserResponse, PremiumRequestCreate, PremiumRequestResponse, UserProfileResponse
+from app.models import User, PremiumRequest, PremiumStatus, Upload, UsageLog, FileType, LoginLog, QnASet, CreditRequest, CreditRequestStatus
+from app.schemas import (
+    UserResponse, PremiumRequestCreate, PremiumRequestResponse, UserProfileResponse,
+    CreditRequestCreate, CreditRequestResponse
+)
 from app.config import settings
 from app.generation_tracker import get_daily_generation_stats
 from datetime import datetime, timedelta
@@ -143,20 +146,24 @@ async def get_user_profile(
     # Get daily generation stats
     generation_stats = get_daily_generation_stats(db, current_user.id)
     
-    # Calculate total questions based on upload quotas
-    # Formula: (PDF uploads remaining × QUESTIONS_PER_PDF_UPLOAD) + (Image uploads remaining × QUESTIONS_PER_IMAGE_UPLOAD) = Total questions available
-    # Premium: 15 PDF × 20 = 300, 20 Image × 20 = 400, Total = 700 questions
+    # Calculate total questions based on ACTUAL questions generated (not upload quotas)
+    # Count actual questions from all QnASet records for this user
     if is_premium:
-        # Use config values to ensure consistency
-        pdf_questions_per_upload = settings.QUESTIONS_PER_PDF_UPLOAD  # Default: 20
-        image_questions_per_upload = settings.QUESTIONS_PER_IMAGE_UPLOAD  # Default: 20
+        # Base limit + bonus credits granted by admin
+        base_limit = settings.PREMIUM_TOTAL_QUESTIONS_LIMIT  # 700 questions base
+        bonus_questions = current_user.bonus_questions or 0  # Additional credits
+        questions_limit = base_limit + bonus_questions  # Effective limit
         
-        pdf_questions_available = pdf_remaining * pdf_questions_per_upload  # PDF uploads × 20
-        image_questions_available = image_remaining * image_questions_per_upload  # Image uploads × 20
-        questions_remaining = pdf_questions_available + image_questions_available
+        # Count actual questions generated from all QnASet records
+        qna_sets = db.query(QnASet).filter(QnASet.user_id == current_user.id).all()
+        questions_used = 0
+        for qna_set in qna_sets:
+            if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+                questions = qna_set.qna_json.get("questions", [])
+                if isinstance(questions, list):
+                    questions_used += len(questions)
         
-        questions_limit = settings.PREMIUM_TOTAL_QUESTIONS_LIMIT  # 700 questions total
-        questions_used = questions_limit - questions_remaining
+        questions_remaining = max(0, questions_limit - questions_used)
     else:
         questions_limit = 0
         questions_used = 0
@@ -249,6 +256,62 @@ async def request_premium(
         "status": premium_request.status.value,
         "requested_at": premium_request.requested_at,
         "reviewed_at": premium_request.reviewed_at
+    }
+
+@router.post("/request-credits", response_model=CreditRequestResponse)
+async def request_credits(
+    request: CreditRequestCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Request additional question credits"""
+    
+    # Validate requested credits
+    if request.requested_credits <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Requested credits must be greater than 0"
+        )
+    
+    if request.requested_credits > 1000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Maximum 1000 credits can be requested at once"
+        )
+    
+    # Check if pending request exists
+    pending_request = db.query(CreditRequest).filter(
+        CreditRequest.user_id == current_user.id,
+        CreditRequest.status == CreditRequestStatus.PENDING.value
+    ).first()
+    
+    if pending_request:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Credit request already pending. Please wait for admin review."
+        )
+    
+    # Create request
+    credit_request = CreditRequest(
+        user_id=current_user.id,
+        requested_credits=request.requested_credits,
+        status=CreditRequestStatus.PENDING.value,  # Use .value to ensure lowercase string is stored
+        user_notes=request.user_notes
+    )
+    db.add(credit_request)
+    db.commit()
+    db.refresh(credit_request)
+    
+    return {
+        "id": credit_request.id,
+        "user_id": credit_request.user_id,
+        "user_email": current_user.email,
+        "requested_credits": credit_request.requested_credits,
+        "status": credit_request.status,  # Already a string value (not an enum)
+        "requested_at": credit_request.requested_at,
+        "reviewed_at": credit_request.reviewed_at,
+        "user_notes": credit_request.user_notes,
+        "notes": credit_request.notes
     }
 
 @router.get("/generation-stats")
