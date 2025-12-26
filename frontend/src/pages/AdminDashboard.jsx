@@ -8,7 +8,11 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('requests')
   const [premiumRequests, setPremiumRequests] = useState([])
   const [creditRequests, setCreditRequests] = useState([])
+
+  const [activeTab, setActiveTab] = useState('users')
+
   const [users, setUsers] = useState([])
+  const [premiumRequests, setPremiumRequests] = useState([])
   const [uploads, setUploads] = useState([])
   const [reviews, setReviews] = useState([])
   const [usageLogs, setUsageLogs] = useState([])
@@ -31,8 +35,11 @@ const AdminDashboard = () => {
   const tabNavRef = useRef(null)
 
   useEffect(() => {
+
     if (activeTab === 'requests') fetchPremiumRequests()
     if (activeTab === 'credit-requests') fetchCreditRequests()
+
+
     if (activeTab === 'users') fetchUsers()
     if (activeTab === 'uploads') fetchUploads(uploadsFilterPeriod)
     if (activeTab === 'reviews') fetchReviews(reviewsFilterPeriod)
@@ -43,6 +50,7 @@ const AdminDashboard = () => {
     if (activeTab === 'logs') fetchUsageLogs()
     if (activeTab === 'login-logs') fetchLoginLogs()
   }, [activeTab])
+
 
   const fetchPremiumRequests = async () => {
     setLoading(true)
@@ -55,6 +63,7 @@ const AdminDashboard = () => {
       setLoading(false)
     }
   }
+
 
   const fetchCreditRequests = async () => {
     setLoading(true)
@@ -74,6 +83,11 @@ const AdminDashboard = () => {
   const fetchUsers = async (period = usersFilterPeriod) => {
     setLoading(true)
     try {
+
+  const fetchUsers = async (period = usersFilterPeriod) => {
+    setLoading(true)
+    try {
+
       const response = await api.listUsers(period)
       setUsers(response.data)
       setSelectedUserIds([])
@@ -365,6 +379,11 @@ const AdminDashboard = () => {
       count += 1
     })
     return { totalTokens, promptTokens, completionTokens, count }
+
+    // Calculate cost (GPT-4o-mini pricing: $0.00015/1K input, $0.0006/1K output)
+    const cost = (promptTokens / 1000 * 0.00015) + (completionTokens / 1000 * 0.0006)
+    return { totalTokens, promptTokens, completionTokens, count, cost }
+
   })()
 
   const handleExportUsageLogs = async () => {
@@ -565,12 +584,12 @@ const AdminDashboard = () => {
     }
   }
 
-  const handleQuotaAdjust = async (userId, pdfLimit, imageLimit) => {
+  const handleQuotaAdjust = async (userId, questionsLimit, questionsUsed) => {
     try {
       await api.adjustQuota({
         user_id: userId,
-        pdf_limit: pdfLimit,
-        image_limit: imageLimit
+        questions_limit: questionsLimit,
+        questions_used: questionsUsed
       })
       toast.success('Quota adjusted successfully')
       fetchUsers(usersFilterPeriod)
@@ -579,25 +598,6 @@ const AdminDashboard = () => {
     }
   }
 
-  const handleApprove = async (requestId) => {
-    try {
-      await api.approvePremiumRequest(requestId, 'Approved by admin')
-      toast.success('Premium access approved')
-      fetchPremiumRequests()
-    } catch (error) {
-      toast.error('Failed to approve')
-    }
-  }
-
-  const handleReject = async (requestId) => {
-    try {
-      await api.rejectPremiumRequest(requestId)
-      toast.success('Premium request rejected')
-      fetchPremiumRequests()
-    } catch (error) {
-      toast.error('Failed to reject')
-    }
-  }
 
   const handleApproveCreditRequest = async (requestId, notes = '') => {
     try {
@@ -657,7 +657,11 @@ const AdminDashboard = () => {
         {/* Tabs */}
         {/* Mobile: grid buttons */}
         <div className="md:hidden grid grid-cols-2 gap-2 mb-4">
+
             {['requests', 'credit-requests', 'users', 'uploads', 'reviews', 'ai-usage', 'logs', 'login-logs'].map((tab) => (
+
+            {['users', 'requests', 'uploads', 'reviews', 'ai-usage', 'logs', 'login-logs'].map((tab) => (
+
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -667,9 +671,13 @@ const AdminDashboard = () => {
                   : 'bg-white text-slate-700 border-slate-200'
               }`}
             >
+
               {tab === 'requests' ? 'Premium Requests' : 
                tab === 'credit-requests' ? 'Credit Requests' :
                tab === 'ai-usage' ? 'AI Usage' : 
+
+              {tab === 'ai-usage' ? 'AI Usage' : 
+
                tab === 'login-logs' ? 'Login Logs' : tab}
             </button>
           ))}
@@ -696,14 +704,17 @@ const AdminDashboard = () => {
         {/* Desktop: pill tabs */}
         <div className="hidden md:flex w-full mb-6 justify-start px-2 items-center gap-2">
           <div className="pill-tabs shadow-sm min-w-max">
+
             {['requests', 'credit-requests', 'users', 'uploads', 'reviews', 'ai-usage', 'logs', 'login-logs'].map((tab) => (
+
+            {['users', 'requests', 'uploads', 'reviews', 'ai-usage', 'logs', 'login-logs'].map((tab) => (
+
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`pill-tab capitalize text-base font-semibold ${activeTab === tab ? 'active' : ''}`}
               >
-                {tab === 'requests' ? 'Premium Requests' : 
-                 tab === 'ai-usage' ? 'AI Usage' : 
+                {tab === 'ai-usage' ? 'AI Usage' : 
                  tab === 'login-logs' ? 'Login Logs' : tab}
               </button>
             ))}
@@ -730,6 +741,7 @@ const AdminDashboard = () => {
 
         {/* Tab Content */}
         <div className="glass-card hover-lift p-4 md:p-6 mt-4 w-full">
+
           {activeTab === 'requests' && (
             <div>
               <div className="mb-4">
@@ -915,8 +927,10 @@ const AdminDashboard = () => {
                         </th>
                         <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Email</th>
                         <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Status</th>
-                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">PDF Quota</th>
-                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Image Quota</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Total Questions</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Questions Limit</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Remaining</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Daily Questions</th>
                         <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Actions</th>
                       </tr>
                     </thead>
@@ -939,30 +953,37 @@ const AdminDashboard = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{u.email}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
-                              u.premium_status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              u.premium_status === 'approved' ? 'bg-green-100 text-green-800' : 
+                              u.premium_status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                              'bg-gray-100 text-gray-800'
                             }`}>
                               {u.premium_status}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-lg font-semibold text-gray-900">
+                              {u.questions_used || 0}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               <span className="text-lg font-semibold text-gray-900 min-w-[3rem] text-center">
-                                {u.upload_quota_remaining || 0}
+                                {u.questions_limit || 700}
                               </span>
                               <div className="flex flex-col gap-1">
                                 <button
-                                  onClick={() => handleQuotaAdjust(u.id, (u.upload_quota_remaining || 0) + 1, null)}
+                                  onClick={() => handleQuotaAdjust(u.id, (u.questions_limit || 700) + 10, null)}
                                   className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
-                                  title="Increase PDF limit"
+                                  title="Increase questions limit by 10"
                                 >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                   </svg>
                                 </button>
                                 <button
-                                  onClick={() => handleQuotaAdjust(u.id, Math.max(0, (u.upload_quota_remaining || 0) - 1), null)}
+                                  onClick={() => handleQuotaAdjust(u.id, Math.max(0, (u.questions_limit || 700) - 10), null)}
                                   className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
-                                  title="Decrease PDF limit"
+                                  title="Decrease questions limit by 10"
                                 >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
@@ -972,28 +993,37 @@ const AdminDashboard = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <span className="text-lg font-semibold text-gray-900 min-w-[3rem] text-center">
-                                {u.image_quota_remaining || 0}
-                              </span>
-                              <div className="flex flex-col gap-1">
+                            <span className="text-lg font-semibold text-gray-900">
+                              {Math.max(0, (u.questions_limit || 700) - (u.questions_used || 0))}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-base font-semibold text-gray-900">
+                                  {u.daily_questions_used || 0} / {u.daily_questions_limit || 50}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600">
+                                  Remaining: {u.daily_questions_remaining || 0}
+                                </span>
                                 <button
-                                  onClick={() => handleQuotaAdjust(u.id, null, (u.image_quota_remaining || 0) + 1)}
-                                  className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
-                                  title="Increase Image limit"
+                                  onClick={async () => {
+                                    if (window.confirm(`Reset daily question count for ${u.email}?`)) {
+                                      try {
+                                        await api.resetDailyQuestions(u.id)
+                                        toast.success('Daily question count reset')
+                                        fetchUsers()
+                                      } catch (error) {
+                                        toast.error(error.response?.data?.detail || 'Failed to reset daily questions')
+                                      }
+                                    }
+                                  }}
+                                  className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                  title="Reset daily question limit"
                                 >
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => handleQuotaAdjust(u.id, null, Math.max(0, (u.image_quota_remaining || 0) - 1))}
-                                  className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
-                                  title="Decrease Image limit"
-                                >
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
-                                  </svg>
+                                  Reset
                                 </button>
                               </div>
                             </div>
@@ -1008,7 +1038,6 @@ const AdminDashboard = () => {
                                         await api.switchUserToFree(u.id)
                                         toast.success('User switched back to free account')
                                         fetchUsers()
-                                        fetchPremiumRequests()
                                       } catch (error) {
                                         toast.error(error.response?.data?.detail || 'Failed to switch user to free account')
                                       }
@@ -1028,7 +1057,6 @@ const AdminDashboard = () => {
                                         await api.switchUserToPremium(u.id)
                                         toast.success('User upgraded to premium account')
                                         fetchUsers()
-                                        fetchPremiumRequests()
                                       } catch (error) {
                                         toast.error(error.response?.data?.detail || 'Failed to upgrade user to premium account')
                                       }
@@ -1084,6 +1112,190 @@ const AdminDashboard = () => {
                           </td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'requests' && (
+            <div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">All Uploads</h2>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={uploadsFilterPeriod}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setUploadsFilterPeriod(val)
+                      fetchUploads(val)
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="all">All</option>
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                  <button
+                    onClick={handleExportUploads}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    onClick={handleDeleteUploads}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Premium Requests</h2>
+
+              </div>
+              {loading ? (
+                <div className="text-center py-8">Loading...</div>
+              ) : premiumRequests.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No pending premium requests
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+
+                        <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                          <input
+                            type="checkbox"
+                            checked={selectedUploadIds.length > 0 && selectedUploadIds.length === uploads.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUploadIds(uploads.map((u) => u.id))
+                              } else {
+                                setSelectedUploadIds([])
+                              }
+                            }}
+                          />
+                        </th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">User Email</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">File Name</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Type</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Size</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Pages</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Uploaded</th>
+
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Email</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Requested At</th>
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Status</th>
+
+                        <th className="px-6 py-4 text-left text-base font-semibold text-gray-700 uppercase tracking-wide">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+
+                      {uploads.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="px-6 py-4 text-center text-gray-500">No uploads found</td>
+
+                      {premiumRequests.map((req) => (
+                        <tr key={req.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{req.user_email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {new Date(req.requested_at).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
+                              req.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              req.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {req.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  const notes = window.prompt('Add notes (optional):')
+                                  if (notes !== null) {
+                                    try {
+                                      await api.approvePremiumRequest(req.id, notes || '')
+                                      toast.success('Premium request approved')
+                                      fetchPremiumRequests()
+                                      fetchUsers()
+                                    } catch (error) {
+                                      toast.error(error.response?.data?.detail || 'Failed to approve request')
+                                    }
+                                  }
+                                }}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold bg-green-100 text-green-800 hover:bg-green-200 transition-colors shadow-sm hover:shadow"
+                                title="Approve premium request (700 questions will be allocated)"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(`Reject premium request from ${req.user_email}?`)) {
+                                    try {
+                                      await api.rejectPremiumRequest(req.id)
+                                      toast.success('Premium request rejected')
+                                      fetchPremiumRequests()
+                                      fetchUsers()
+                                    } catch (error) {
+                                      toast.error(error.response?.data?.detail || 'Failed to reject request')
+                                    }
+                                  }
+                                }}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-100 text-red-800 hover:bg-red-200 transition-colors shadow-sm hover:shadow"
+                                title="Reject premium request"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </td>
+
+                        </tr>
+                      ) : (
+                        uploads.map((upload) => (
+                          <tr key={upload.id}>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <input
+                                type="checkbox"
+                                checked={selectedUploadIds.includes(upload.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedUploadIds((prev) => [...prev, upload.id])
+                                  } else {
+                                    setSelectedUploadIds((prev) => prev.filter((id) => id !== upload.id))
+                                  }
+                                }}
+                              />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.user_email}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.file_name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.file_type}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">
+                              {(upload.file_size / 1024).toFixed(2)} KB
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{upload.pages || '-'}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">
+                              {new Date(upload.created_at).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <button
+                                onClick={() => handleViewUpload(upload.id)}
+                                className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                              >
+                                Preview
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1406,7 +1618,11 @@ const AdminDashboard = () => {
                       <p className="text-xs text-gray-700 mt-1">
                         {aiUsageFilterPeriod === 'all'
                           ? `Cost: $${aiUsageStats.current_month_cost.toFixed(4)}`
+
                           : 'Cost: N/A (filtered)'}
+
+                          : `Cost: $${filteredAIUsageTotals.cost.toFixed(4)}`}
+
                       </p>
                     </div>
 
@@ -1423,7 +1639,11 @@ const AdminDashboard = () => {
                       <p className="text-xs text-gray-700 mt-1">
                         {aiUsageFilterPeriod === 'all'
                           ? `Cost: $${aiUsageStats.total_cost.toFixed(4)}`
+
                           : 'Cost: N/A (filtered)'}
+
+                          : `Cost: $${filteredAIUsageTotals.cost.toFixed(4)}`}
+
                       </p>
                     </div>
 
@@ -1491,6 +1711,51 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Daily/Monthly/Yearly Cost Breakdown */}
+                  {aiUsageStats && (aiUsageStats.daily_usage || aiUsageStats.monthly_usage) && (
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Daily Cost (Last 7 days) */}
+                      {aiUsageStats.daily_usage && aiUsageStats.daily_usage.length > 0 && (
+                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                          <h3 className="font-semibold text-gray-800 mb-3">Daily Cost (Last 7 Days)</h3>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {aiUsageStats.daily_usage.slice(-7).reverse().map((day, idx) => (
+                              <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <span className="text-sm text-gray-700">
+                                  {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-sm text-gray-600">{day.tokens?.toLocaleString() || 0} tokens</span>
+                                  <span className="text-sm font-semibold text-gray-900">${(day.cost || 0).toFixed(4)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Monthly Cost (Last 6 months) */}
+                      {aiUsageStats.monthly_usage && aiUsageStats.monthly_usage.length > 0 && (
+                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                          <h3 className="font-semibold text-gray-800 mb-3">Monthly Cost (Last 6 Months)</h3>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {aiUsageStats.monthly_usage.slice(-6).reverse().map((month, idx) => (
+                              <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <span className="text-sm text-gray-700">
+                                  {new Date(month.month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                </span>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-sm text-gray-600">{month.tokens?.toLocaleString() || 0} tokens</span>
+                                  <span className="text-sm font-semibold text-gray-900">${(month.cost || 0).toFixed(4)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

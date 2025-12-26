@@ -8,7 +8,7 @@ from app.schemas import (
     CreditRequestCreate, CreditRequestResponse
 )
 from app.config import settings
-from app.generation_tracker import get_daily_generation_stats
+from app.generation_tracker import get_daily_question_stats
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
@@ -63,44 +63,31 @@ async def get_user_profile(
     now = datetime.utcnow()
     month_start = datetime(now.year, now.month, 1)
     
-    # Calculate remaining quotas (use database fields as source of truth)
+    # Check premium status
     is_premium = (
         current_user.premium_status == PremiumStatus.APPROVED and
         current_user.premium_valid_until and
         current_user.premium_valid_until > datetime.utcnow()
     )
     
-    if is_premium:
-        pdf_limit = settings.PREMIUM_PDF_QUOTA
-        image_limit = settings.PREMIUM_IMAGE_QUOTA
-        # Use quota fields as source of truth to ensure consistency with Dashboard
-        pdf_remaining = current_user.upload_quota_remaining
-        image_remaining = current_user.image_quota_remaining
-    else:
-        pdf_limit = 1  # Free users: 1 per day
-        image_limit = 0  # Free users: no images
-        pdf_remaining = 0
-        image_remaining = 0
+    # Question-based quotas (no PDF/image quotas)
+    # PDF and image uploads are unlimited, but generation is limited by questions
+    pdf_limit = 0  # No limit
+    image_limit = 0  # No limit
+    pdf_remaining = 0
+    image_remaining = 0
+    pdf_uploads_used = 0
+    image_uploads_used = 0
     
-    # Calculate used count from limit and remaining (ensures consistency)
-    # This ensures profile tab and upload tab show matching counts
-    pdf_uploads_used = max(0, pdf_limit - pdf_remaining)
-    image_uploads_used = max(0, image_limit - image_remaining)
-    
-    # Calculate monthly reset date based on premium activation date (purchase date)
+    # Calculate monthly reset date based on validity expiry date
     if is_premium:
-        # Get the approved premium request to find activation date
-        approved_request = db.query(PremiumRequest).filter(
-            PremiumRequest.user_id == current_user.id,
-            PremiumRequest.status == PremiumStatus.APPROVED
-        ).order_by(PremiumRequest.reviewed_at.desc()).first()
-        
-        if approved_request and approved_request.reviewed_at:
-            # Use the day of month from when premium was activated (purchased)
-            activation_date = approved_request.reviewed_at
-            reset_day = activation_date.day
+        # Use premium_valid_until (validity expiry date) as the base for monthly reset
+        if current_user.premium_valid_until:
+            # Use the day of month from validity expiry date
+            validity_date = current_user.premium_valid_until
+            reset_day = validity_date.day
             
-            # Calculate next reset date (same day of month as activation)
+            # Calculate next reset date (same day of month as validity expiry)
             if now.day >= reset_day:
                 # This month's reset day has passed, next reset is next month
                 if now.month == 12:
@@ -114,26 +101,13 @@ async def get_user_profile(
             monthly_reset_date = next_reset.isoformat()
             monthly_reset_day = reset_day
         else:
-            # Fallback: use premium_valid_until day if no activation date found
-            if current_user.premium_valid_until:
-                reset_day = current_user.premium_valid_until.day
-                if now.day >= reset_day:
-                    if now.month == 12:
-                        next_reset = datetime(now.year + 1, 1, reset_day)
-                    else:
-                        next_reset = datetime(now.year, now.month + 1, reset_day)
-                else:
-                    next_reset = datetime(now.year, now.month, reset_day)
-                monthly_reset_date = next_reset.isoformat()
-                monthly_reset_day = reset_day
+            # Fallback to 1st of month if no validity date
+            if now.month == 12:
+                next_reset = datetime(now.year + 1, 1, 1)
             else:
-                # Fallback to 1st of month
-                if now.month == 12:
-                    next_reset = datetime(now.year + 1, 1, 1)
-                else:
-                    next_reset = datetime(now.year, now.month + 1, 1)
-                monthly_reset_date = next_reset.isoformat()
-                monthly_reset_day = 1
+                next_reset = datetime(now.year, now.month + 1, 1)
+            monthly_reset_date = next_reset.isoformat()
+            monthly_reset_day = 1
     else:
         # Free users: reset on 1st of each month
         if now.month == 12:
@@ -143,9 +117,11 @@ async def get_user_profile(
         monthly_reset_date = next_reset.isoformat()
         monthly_reset_day = 1
     
-    # Get daily generation stats
-    generation_stats = get_daily_generation_stats(db, current_user.id)
+    # Get daily question stats (not generation stats)
+    from app.generation_tracker import get_daily_question_stats
+    daily_question_stats = get_daily_question_stats(db, current_user.id)
     
+<<<<<<< HEAD
     # Calculate total questions based on ACTUAL questions generated (not upload quotas)
     # Count actual questions from all QnASet records for this user
     if is_premium:
@@ -163,6 +139,12 @@ async def get_user_profile(
                 if isinstance(questions, list):
                     questions_used += len(questions)
         
+=======
+    # Calculate total questions (700 questions per purchase for premium)
+    if is_premium:
+        questions_limit = current_user.questions_limit if current_user.questions_limit > 0 else 700
+        questions_used = current_user.questions_used if current_user.questions_used else 0
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
         questions_remaining = max(0, questions_limit - questions_used)
     else:
         questions_limit = 0
@@ -180,12 +162,12 @@ async def get_user_profile(
             "remaining": image_remaining,
             "limit": image_limit
         },
-        "generations": {
-            "used": generation_stats.get("used", 0),
-            "remaining": generation_stats.get("remaining", 0),
-            "limit": generation_stats.get("limit", 0),
-            "reset_time": generation_stats.get("reset_time"),
-            "percentage": generation_stats.get("percentage", 0)
+        "daily_questions": {
+            "used": daily_question_stats.get("used", 0),
+            "remaining": daily_question_stats.get("remaining", 0),
+            "limit": daily_question_stats.get("limit", 0),
+            "reset_time": daily_question_stats.get("reset_time"),
+            "percentage": daily_question_stats.get("percentage", 0)
         },
         "questions": {
             "used": questions_used,
@@ -319,7 +301,7 @@ async def get_generation_stats(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get daily generation statistics for current user"""
-    stats = get_daily_generation_stats(db, current_user.id)
+    """Get daily question statistics for current user"""
+    stats = get_daily_question_stats(db, current_user.id)
     return stats
 

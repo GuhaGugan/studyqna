@@ -48,11 +48,13 @@ export const api = {
     axios.post(`${API_BASE}/admin/premium-requests/${id}/approve`, { notes }),
   rejectPremiumRequest: (id) => 
     axios.post(`${API_BASE}/admin/premium-requests/${id}/reject`),
+
   listCreditRequests: () => axios.get(`${API_BASE}/admin/credit-requests`),
   approveCreditRequest: (id, data) => 
     axios.post(`${API_BASE}/admin/credit-requests/${id}/approve`, data),
   rejectCreditRequest: (id, notes) => 
     axios.post(`${API_BASE}/admin/credit-requests/${id}/reject`, notes || null),
+
   listUsers: (period = 'all') => axios.get(`${API_BASE}/admin/users`, { params: { period } }),
   exportUsers: (period = 'all') => axios.get(`${API_BASE}/admin/users/export`, { params: { period }, responseType: 'blob' }),
   deleteUsers: (ids) => axios.delete(`${API_BASE}/admin/users`, { data: { ids } }),
@@ -61,6 +63,7 @@ export const api = {
   enableUser: (id) => axios.post(`${API_BASE}/admin/users/${id}/enable`),
   switchUserToFree: (id) => axios.post(`${API_BASE}/admin/users/${id}/switch-to-free`),
   switchUserToPremium: (id) => axios.post(`${API_BASE}/admin/users/${id}/switch-to-premium`),
+  resetDailyQuestions: (id) => axios.post(`${API_BASE}/admin/users/${id}/reset-daily-questions`),
   deleteUser: (id) => axios.delete(`${API_BASE}/admin/users/${id}`),
   getUsageLogs: (userId, period = 'all') => axios.get(`${API_BASE}/admin/usage-logs`, { params: { user_id: userId, period } }),
   exportUsageLogs: (period = 'all') => axios.get(`${API_BASE}/admin/usage-logs/export`, { params: { period }, responseType: 'blob' }),

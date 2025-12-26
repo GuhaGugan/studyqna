@@ -194,8 +194,8 @@ async def get_ai_usage_stats(
     completion_tokens = all_time.completion_tokens or 0
     usage_count = all_time.count or 0
     
-    # Calculate total cost
-    total_cost = (prompt_tokens / 1000 * 0.01) + (completion_tokens / 1000 * 0.03)
+    # Calculate total cost (GPT-4o-mini pricing: $0.00015/1K input, $0.0006/1K output)
+    total_cost = (prompt_tokens / 1000 * 0.00015) + (completion_tokens / 1000 * 0.0006)
     
     # Get current month stats
     now = datetime.utcnow()
@@ -212,7 +212,8 @@ async def get_ai_usage_stats(
     current_month_tokens = current_month.total_tokens or 0
     current_month_prompt = current_month.prompt_tokens or 0
     current_month_completion = current_month.completion_tokens or 0
-    current_month_cost = (current_month_prompt / 1000 * 0.01) + (current_month_completion / 1000 * 0.03)
+    # Calculate current month cost (GPT-4o-mini pricing)
+    current_month_cost = (current_month_prompt / 1000 * 0.00015) + (current_month_completion / 1000 * 0.0006)
     
     # Check threshold
     threshold = settings.AI_USAGE_THRESHOLD_TOKENS
@@ -227,6 +228,8 @@ async def get_ai_usage_stats(
         day_end = day_start + timedelta(days=1)
         
         day_stats = db.query(
+            func.sum(AIUsageLog.prompt_tokens).label('prompt_tokens'),
+            func.sum(AIUsageLog.completion_tokens).label('completion_tokens'),
             func.sum(AIUsageLog.total_tokens).label('tokens'),
             func.count(AIUsageLog.id).label('count')
         ).filter(
@@ -234,9 +237,16 @@ async def get_ai_usage_stats(
             AIUsageLog.created_at < day_end
         ).first()
         
+        day_prompt = day_stats.prompt_tokens or 0
+        day_completion = day_stats.completion_tokens or 0
+        day_cost = (day_prompt / 1000 * 0.00015) + (day_completion / 1000 * 0.0006)
+        
         daily_usage.append({
             "date": day_start.isoformat(),
             "tokens": day_stats.tokens or 0,
+            "prompt_tokens": int(day_prompt),
+            "completion_tokens": int(day_completion),
+            "cost": round(day_cost, 4),
             "count": day_stats.count or 0
         })
     
@@ -253,6 +263,8 @@ async def get_ai_usage_stats(
             month_end_date = datetime(month_date.year, month_date.month + 1, 1)
         
         month_stats = db.query(
+            func.sum(AIUsageLog.prompt_tokens).label('prompt_tokens'),
+            func.sum(AIUsageLog.completion_tokens).label('completion_tokens'),
             func.sum(AIUsageLog.total_tokens).label('tokens'),
             func.count(AIUsageLog.id).label('count')
         ).filter(
@@ -260,9 +272,16 @@ async def get_ai_usage_stats(
             AIUsageLog.created_at < month_end_date
         ).first()
         
+        month_prompt = month_stats.prompt_tokens or 0
+        month_completion = month_stats.completion_tokens or 0
+        month_cost = (month_prompt / 1000 * 0.00015) + (month_completion / 1000 * 0.0006)
+        
         monthly_usage.append({
             "month": month_start_date.strftime("%Y-%m"),
             "tokens": month_stats.tokens or 0,
+            "prompt_tokens": int(month_prompt),
+            "completion_tokens": int(month_completion),
+            "cost": round(month_cost, 4),
             "count": month_stats.count or 0
         })
     

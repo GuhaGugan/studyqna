@@ -56,9 +56,16 @@ class User(Base):
     role = Column(SQLEnum(UserRole), default=UserRole.USER)
     premium_status = Column(SQLEnum(PremiumStatus), default=PremiumStatus.FREE)
     premium_valid_until = Column(DateTime, nullable=True)
+
     upload_quota_remaining = Column(Integer, default=0)
     image_quota_remaining = Column(Integer, default=0)
     bonus_questions = Column(Integer, default=0)  # Additional question credits granted by admin
+
+    upload_quota_remaining = Column(Integer, default=0)  # Deprecated - kept for backward compatibility
+    image_quota_remaining = Column(Integer, default=0)  # Deprecated - kept for backward compatibility
+    questions_used = Column(Integer, default=0)  # Total questions generated (counts actual questions, not requested)
+    questions_limit = Column(Integer, default=700)  # Total questions allowed per purchase (700 for premium)
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
@@ -246,13 +253,14 @@ class PdfSplitPart(Base):
     user = relationship("User", backref="pdf_split_parts")
 
 class DailyGenerationUsage(Base):
-    """Tracks daily generation usage per user"""
+    """Tracks daily question generation usage per user"""
     __tablename__ = "daily_generation_usage"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     usage_date = Column(DateTime, nullable=False, index=True)  # Date (UTC, date only)
-    generation_count = Column(Integer, default=0, nullable=False)  # Number of generations today
+    generation_count = Column(Integer, default=0, nullable=False)  # Deprecated - kept for backward compatibility
+    questions_count = Column(Integer, default=0, nullable=False)  # Number of questions generated today
     last_reset_at = Column(DateTime, nullable=True)  # When quota was last reset
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

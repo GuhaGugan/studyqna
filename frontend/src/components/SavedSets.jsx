@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { api } from '../utils/api'
 import toast from 'react-hot-toast'
 import axios from 'axios'
+import { startRotatingToast, messageSets } from '../hooks/useRotatingToast'
 
 const SavedSets = ({ isPremium }) => {
   const [sets, setSets] = useState([])
@@ -97,20 +98,7 @@ const SavedSets = ({ isPremium }) => {
 
     // Show preparing message with cancel button
     const preparingToast = toast.loading(
-      (t) => (
-        <div className="flex items-center gap-3">
-          <span>📄 Preparing download... Please wait</span>
-          <button
-            onClick={() => {
-              toast.dismiss(t.id)
-              cancelDownload()
-            }}
-            className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      ),
+      messageSets.preparingDownload[0](null, cancelDownload),
       {
         duration: Infinity,
         id: 'download-toast'
@@ -118,30 +106,27 @@ const SavedSets = ({ isPremium }) => {
     )
     setDownloadToastId(preparingToast)
     
+    // Start rotating messages for preparing phase every 30 seconds
+    let cleanupPreparingRotation = startRotatingToast('download-toast', messageSets.preparingDownload, cancelDownload)
+    
     try {
       // Update to generating message with cancel button
+      // Cleanup preparing rotation first
+      if (cleanupPreparingRotation) cleanupPreparingRotation()
+      
       toast.dismiss(preparingToast)
       const generatingToast = toast.loading(
-        (t) => (
-          <div className="flex items-center gap-3">
-            <span>⚙️ Generating PDF... This may take a moment</span>
-            <button
-              onClick={() => {
-                toast.dismiss(t.id)
-                cancelDownload()
-              }}
-              className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        ),
+        messageSets.generatingPdf[0](null, cancelDownload),
         {
           duration: Infinity,
           id: 'download-toast'
         }
       )
       setDownloadToastId(generatingToast)
+      
+      // Start rotating messages for generating phase every 30 seconds
+      const cleanupGeneratingRotation = startRotatingToast('download-toast', messageSets.generatingPdf, cancelDownload)
+      window._savedDownloadToastCleanup = cleanupGeneratingRotation
       
       const response = await axios.get(`/api/qna/sets/${setId}/download`, {
         params: { format, output_format: outputFormat },
@@ -185,6 +170,14 @@ const SavedSets = ({ isPremium }) => {
       setDownloading(false)
       setDownloadAbortController(null)
       setDownloadToastId(null)
+      // Cleanup rotating toasts
+      if (cleanupPreparingRotation) {
+        cleanupPreparingRotation()
+      }
+      if (window._savedDownloadToastCleanup) {
+        window._savedDownloadToastCleanup()
+        window._savedDownloadToastCleanup = null
+      }
     }
   }
 

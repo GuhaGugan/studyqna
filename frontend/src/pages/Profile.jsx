@@ -186,16 +186,16 @@ const Profile = () => {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-medium text-gray-700">Daily Questions</h3>
                 <span className="text-sm text-gray-600">
-                  {profile.usage_stats.generations?.used || 0} / {profile.usage_stats.generations?.limit || 50}
+                  {profile.usage_stats.daily_questions?.used || 0} / {profile.usage_stats.daily_questions?.limit || 50}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-green-600 h-2 rounded-full transition-all"
                   style={{
-                    width: `${profile.usage_stats.generations?.limit > 0
+                    width: `${profile.usage_stats.daily_questions?.limit > 0
                       ? Math.min(
-                          ((profile.usage_stats.generations?.used || 0) / (profile.usage_stats.generations?.limit || 50)) * 100,
+                          ((profile.usage_stats.daily_questions?.used || 0) / (profile.usage_stats.daily_questions?.limit || 50)) * 100,
                           100
                         )
                       : 0}%`
@@ -203,7 +203,7 @@ const Profile = () => {
                 ></div>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Remaining: {profile.usage_stats.generations?.remaining || 0}
+                Remaining: {profile.usage_stats.daily_questions?.remaining || 0}
               </p>
             </div>
 

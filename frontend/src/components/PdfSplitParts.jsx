@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../utils/api'
 import toast from 'react-hot-toast'
+import { startRotatingToast, messageSets } from '../hooks/useRotatingToast'
 
 const PdfSplitParts = ({ uploadId, onPartSelected, onMultiSelect }) => {
   const [parts, setParts] = useState([])
@@ -34,12 +35,19 @@ const PdfSplitParts = ({ uploadId, onPartSelected, onMultiSelect }) => {
 
   const handleSplit = async () => {
     setSplitting(true)
-    const splitToast = toast.loading('📚 Splitting PDF into parts... This may take a moment', {
-      duration: Infinity
+    const splitToast = toast.loading(messageSets.splitting[0], {
+      duration: Infinity,
+      id: 'split-toast'
     })
+    
+    // Start rotating messages every 30 seconds
+    const cleanupRotation = startRotatingToast('split-toast', messageSets.splitting, null)
 
     try {
       const response = await api.splitPdf(uploadId, 6.0)
+      
+      // Cleanup rotation
+      if (cleanupRotation) cleanupRotation()
       toast.dismiss(splitToast)
       
       if (response.data && response.data.parts) {
@@ -97,7 +105,7 @@ const PdfSplitParts = ({ uploadId, onPartSelected, onMultiSelect }) => {
 
   const handleSelect = async (part) => {
     // Single select mode (existing functionality)
-    const selectToast = toast.loading('📥 Preparing part for question generation...', {
+    const selectToast = toast.loading(messageSets.preparing[0], {
       duration: Infinity
     })
 

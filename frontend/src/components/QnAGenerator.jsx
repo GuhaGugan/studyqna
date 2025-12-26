@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { InlineMath, BlockMath } from 'react-katex'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
+import { startRotatingToast, messageSets } from '../hooks/useRotatingToast'
 import 'katex/dist/katex.min.css'
 
 const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGenerationComplete, onReset, onSwitchToUpload, onSwitchToSaved }) => {
@@ -15,27 +16,63 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
     if (m === 2) return 'short'
     return 'descriptive' // 3, 5, 10, defaults
   }
-
-  const [useCustomDistribution, setUseCustomDistribution] = useState(false)
-  const [customDistribution, setCustomDistribution] = useState([
-    { marks: 2, count: 5, type: 'short' },
-    { marks: 1, count: 10, type: 'mcq' }
-  ])
   
   // Check if multi-select mode (selectedPartIds from PdfSplitParts)
   const selectedPartIds = selectedUpload?.selectedPartIds || null
+  
+  // Calculate default questions based on parts selected and marks pattern
+  // Pattern per part based on marks:
+  // - 1 mark: 12 questions per part
+  // - 2 marks: 6 questions per part
+  // - 3 marks: 4 questions per part
+  // - 5 marks: 3 questions per part
+  // - 10 marks: 2 questions per part
+  // - mixed: 16 questions per part (1 mark: 6 + 2 marks: 4 + 3 marks: 3 + 5 marks: 2 + 10 marks: 1)
+  const calculateDefaultQuestions = (partCount, marksPattern) => {
+    if (!partCount || partCount === 0) return isPremium ? 10 : 3
+    
+    let questionsPerPart = 16 // Default for mixed
+    
+    if (marksPattern && marksPattern !== 'mixed') {
+      const marks = parseInt(marksPattern, 10)
+      switch (marks) {
+        case 1:
+          questionsPerPart = 12
+          break
+        case 2:
+          questionsPerPart = 6
+          break
+        case 3:
+          questionsPerPart = 4
+          break
+        case 5:
+          questionsPerPart = 3
+          break
+        case 10:
+          questionsPerPart = 2
+          break
+        default:
+          questionsPerPart = 16
+      }
+    }
+    
+    return partCount * questionsPerPart
+  }
   
   const [settings, setSettings] = useState({
     upload_id: selectedPartIds ? null : (selectedUpload?.id || ''),  // null if multi-select
     part_ids: selectedPartIds || null,  // Array of part IDs for multi-select
     difficulty: 'medium',
     qna_type: 'mixed',
-    num_questions: isPremium ? 10 : 3,
+    num_questions: selectedPartIds && selectedPartIds.length > 0 
+      ? calculateDefaultQuestions(selectedPartIds.length, 'mixed')
+      : (isPremium ? 10 : 3),
     output_format: isPremium ? 'questions_answers' : 'questions_only',  // Free users get questions_only by default
     include_answers: isPremium,  // Free users can't include answers
     marks: 'mixed',
     target_language: 'english'
   })
+  const [isNumQuestionsManuallySet, setIsNumQuestionsManuallySet] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState(null)
   const [showDownloadMenu, setShowDownloadMenu] = useState(false)
@@ -482,12 +519,34 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
   // Update settings when selectedUpload changes
   useEffect(() => {
     const partIds = selectedUpload?.selectedPartIds || null
+    const partCount = partIds ? partIds.length : 0
+    // Reset manual flag when parts selection changes (new selection = new default)
+    if (partCount > 0) {
+      setIsNumQuestionsManuallySet(false)
+    }
     setSettings(prev => ({
       ...prev,
       upload_id: partIds ? null : (selectedUpload?.id || ''),
-      part_ids: partIds || null
+      part_ids: partIds || null,
+      // Auto-update num_questions when parts selection changes (reset to default)
+      num_questions: partCount > 0 
+        ? calculateDefaultQuestions(partCount, prev.marks)
+        : (partCount === 0
+          ? (isPremium ? 10 : 3)
+          : prev.num_questions)
     }))
-  }, [selectedUpload])
+  }, [selectedUpload, isPremium])
+  
+  // Update num_questions when marks pattern changes (if parts are selected) - only if not manually set
+  useEffect(() => {
+    if (selectedPartIds && selectedPartIds.length > 0 && !isNumQuestionsManuallySet) {
+      const calculated = calculateDefaultQuestions(selectedPartIds.length, settings.marks)
+      setSettings(prev => ({
+        ...prev,
+        num_questions: calculated
+      }))
+    }
+  }, [settings.marks, selectedPartIds, isNumQuestionsManuallySet])
 
   // Update output_format when premium status changes (only reset if premium is lost)
   useEffect(() => {
@@ -500,14 +559,13 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
     }
   }, [isPremium])
 
-  // Auto-enforce question type based on marks when in simple mode
+  // Auto-enforce question type based on marks
   useEffect(() => {
-    if (useCustomDistribution) return
     const derived = deriveTypeFromMarks(settings.marks)
     if (settings.qna_type !== derived) {
       setSettings(prev => ({ ...prev, qna_type: derived }))
     }
-  }, [settings.marks, useCustomDistribution])
+  }, [settings.marks])
 
   // Cancel generation handler
   const cancelGeneration = () => {
@@ -524,6 +582,23 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
   }
 
   const handleGenerate = async () => {
+    // Show warning if target language might not match content language
+    // This is a helpful reminder for users
+    if (settings.target_language && settings.target_language !== 'english') {
+      const shouldProceed = window.confirm(
+        '⚠️ Language Selection Reminder\n\n' +
+        'Select the content language as target language to get the accurate quality of Q/A.\n\n' +
+        'For example:\n' +
+        '• If your content is in Tamil, select Tamil as target language\n' +
+        '• If your content is in English, select English as target language\n\n' +
+        'Mismatched languages may result in less accurate question generation.\n\n' +
+        'Do you want to continue?'
+      )
+      
+      if (!shouldProceed) {
+        return // User cancelled
+      }
+    }
     // Prevent multiple simultaneous generations
     if (generating) {
       toast.error('⏳ Generation is already in progress. Please wait...', { duration: 2000 })
@@ -547,34 +622,6 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       return
     }
 
-    // Validate custom distribution if enabled
-    if (useCustomDistribution) {
-      const totalQuestions = customDistribution.reduce((sum, item) => sum + (item.count || 0), 0)
-      const maxQuestions = isPremium ? 15 : 3
-      
-      if (totalQuestions === 0) {
-        toast.error('Please add at least one distribution item')
-        return
-      }
-      
-      if (totalQuestions > maxQuestions) {
-        toast.error(`Total questions (${totalQuestions}) exceeds your limit (${maxQuestions})`)
-        return
-      }
-      
-      // Validate each item
-      for (const item of customDistribution) {
-        if (!item.count || item.count < 1) {
-          toast.error('Each distribution item must have at least 1 question')
-          return
-        }
-        if (!item.marks || ![1, 2, 3, 5, 10].includes(item.marks)) {
-          toast.error('Marks must be 1, 2, 3, 5, or 10')
-          return
-        }
-      }
-    }
-
     // Create AbortController for cancellation
     const abortController = new AbortController()
     setGenerateAbortController(abortController)
@@ -583,20 +630,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
     
     // Show generating animation with cancel button
     const generatingToast = toast.loading(
-      (t) => (
-        <div className="flex items-center gap-3">
-          <span>⚡ Generating questions... This may take a moment</span>
-          <button
-            onClick={() => {
-              toast.dismiss(t.id)
-              cancelGeneration()
-            }}
-            className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      ),
+      messageSets.generating[0](null, cancelGeneration),
       {
         duration: Infinity,
         id: 'generate-toast'
@@ -604,20 +638,75 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
     )
     setGenerateToastId(generatingToast)
     
+    // Start rotating messages every 30 seconds
+    const cleanupRotation = startRotatingToast('generate-toast', messageSets.generating, cancelGeneration)
+    
+    // Store cleanup function to call when generation completes
+    window._generateToastCleanup = cleanupRotation
+    
     try {
-      // Normalize marks → type for simple mode
+      // Normalize marks → type
       const normalizedType = deriveTypeFromMarks(settings.marks)
-
-      // Normalize custom distribution types if enabled
-      const normalizedDistribution = useCustomDistribution
-        ? customDistribution.map(item => ({
-            ...item,
-            type: deriveTypeFromMarks(item.marks)
-          }))
-        : null
 
       // Get subject from selected upload or use default
       const uploadSubject = selectedUpload?.subject || 'general'
+      
+      // Create default distribution pattern if parts are selected
+      let customDistribution = null
+      if (settings.part_ids && settings.part_ids.length > 0) {
+        const partCount = settings.part_ids.length
+        
+        if (settings.marks === 'mixed') {
+          // For mixed pattern: use user's manual input if set, otherwise calculate default
+          const defaultTotal = 16 * partCount  // Default: 16 questions per part
+          const totalQuestions = isNumQuestionsManuallySet 
+            ? settings.num_questions  // Use user's manual input
+            : defaultTotal  // Use calculated default
+          
+          // Distribute the total questions proportionally across marks
+          // Pattern: 1 mark (6) + 2 marks (4) + 3 marks (3) + 5 marks (2) + 10 marks (1) = 16 per part
+          const totalPerPart = 16
+          const scaleFactor = totalQuestions / (totalPerPart * partCount)
+          
+          customDistribution = [
+            { marks: 1, count: Math.round(6 * partCount * scaleFactor), type: 'mcq' },
+            { marks: 2, count: Math.round(4 * partCount * scaleFactor), type: 'short' },
+            { marks: 3, count: Math.round(3 * partCount * scaleFactor), type: 'descriptive' },
+            { marks: 5, count: Math.round(2 * partCount * scaleFactor), type: 'descriptive' },
+            { marks: 10, count: Math.round(1 * partCount * scaleFactor), type: 'descriptive' }
+          ]
+          
+          // Ensure total matches user input (adjust the last item if needed)
+          const currentTotal = customDistribution.reduce((sum, item) => sum + item.count, 0)
+          if (currentTotal !== totalQuestions && customDistribution.length > 0) {
+            const diff = totalQuestions - currentTotal
+            customDistribution[customDistribution.length - 1].count += diff
+            // Ensure count doesn't go negative
+            if (customDistribution[customDistribution.length - 1].count < 0) {
+              customDistribution[customDistribution.length - 1].count = 0
+            }
+          }
+        } else {
+          // Single marks pattern: use user's manual input if set, otherwise calculate
+          const marks = parseInt(settings.marks, 10)
+          
+          // Use manual input if user has set it, otherwise calculate default
+          const totalQuestions = isNumQuestionsManuallySet 
+            ? settings.num_questions  // Use user's manual input
+            : calculateDefaultQuestions(partCount, settings.marks)  // Use calculated default
+          
+          let questionType = 'descriptive'
+          if (marks === 1) {
+            questionType = 'mcq'
+          } else if (marks === 2) {
+            questionType = 'short'
+          }
+          
+          customDistribution = [
+            { marks: marks, count: totalQuestions, type: questionType }
+          ]
+        }
+      }
       
       const requestData = {
         ...settings,
@@ -625,39 +714,9 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
         subject: uploadSubject,  // Pass subject from upload
         // Remove upload_id if using part_ids (multi-select mode)
         ...(settings.part_ids ? { upload_id: null } : { part_ids: null }),
-        ...(useCustomDistribution && { 
-          custom_distribution: normalizedDistribution,
-          num_questions: normalizedDistribution.reduce((sum, item) => sum + (item.count || 0), 0)
-        })
+        // Add custom distribution if parts are selected
+        ...(customDistribution ? { custom_distribution: customDistribution } : {})
       }
-      
-      // Update toast to show processing with cancel button
-      toast.dismiss(generatingToast)
-      const processingToast = toast.loading(
-        (t) => (
-          <div className="flex items-center gap-3">
-            <span>
-              {settings.part_ids 
-                ? `🤖 AI is creating questions from ${settings.part_ids.length} selected parts... Please wait`
-                : '🤖 AI is creating your questions... Please wait'}
-            </span>
-            <button
-              onClick={() => {
-                toast.dismiss(t.id)
-                cancelGeneration()
-              }}
-              className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        ),
-        {
-          duration: Infinity,
-          id: 'generate-toast'
-        }
-      )
-      setGenerateToastId(processingToast)
       
       const response = await axios.post('/api/qna/generate', requestData, {
         signal: abortController.signal
@@ -668,10 +727,16 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
         return
       }
       
-      toast.dismiss(processingToast)
+      // Dismiss loading toast
+      toast.dismiss('generate-toast')
       toast.dismiss() // clear any prior error/success toasts
       setResult(response.data)
       setEditedQuestions(response.data?.qna_json?.questions || [])
+      
+      // Check if fewer questions were generated than requested
+      const questions = response.data?.qna_json?.questions || []
+      const actualCount = response.data?.qna_json?.actual_question_count ?? questions.length
+      const requestedCount = response.data?.qna_json?.requested_question_count ?? settings.num_questions
       
       // Refresh user data to update quota counts after generation
       try {
@@ -690,8 +755,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       }
       
       // Debug: Log questions and answers
-      const questions = response.data?.qna_json?.questions || []
-      console.log('📋 Generated questions:', questions.length)
+      console.log('📋 Generated questions:', actualCount)
       questions.forEach((q, idx) => {
         console.log(`Q${idx + 1} (${q.marks} marks):`, {
           has_correct_answer: !!q.correct_answer,
@@ -701,6 +765,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
         })
       })
       
+
       // Check if message is provided (e.g., fewer questions generated)
       if (response.data.message) {
         // Show informative message about generation result
@@ -713,6 +778,27 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
             border: '1px solid #3b82f6',
           }
         })
+
+      // Show popup if fewer questions were generated than requested
+      if (actualCount < requestedCount) {
+        toast(
+          `For better accuracy, the system generated ${actualCount} question${actualCount !== 1 ? 's' : ''} instead of the requested ${requestedCount}, based on the depth of the selected content.`,
+          {
+            duration: 6000,
+            icon: 'ℹ️',
+            style: {
+              maxWidth: '500px',
+              wordBreak: 'break-word',
+              fontSize: '14px',
+              padding: '16px',
+              backgroundColor: '#dbeafe',
+              color: '#1e40af',
+              border: '2px solid #3b82f6',
+            },
+            position: 'top-center'
+          }
+        )
+
       }
       
       // For free users, show only preview
@@ -726,51 +812,61 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
         // Generation was cancelled - already handled in cancelGeneration
         return
       }
+      
+      // Dismiss any loading toasts
       toast.dismiss()
-      const detail = error?.response?.data?.detail || error?.response?.data || error?.message || 'Generation failed'
+      if (generateToastId) {
+        toast.dismiss(generateToastId)
+      }
+      
+      // Extract error message
+      let errorMessage = 'Generation failed'
+      
+      if (error?.response) {
+        // Server responded with error
+        const responseData = error.response.data
+        if (typeof responseData === 'string') {
+          errorMessage = responseData
+        } else if (responseData?.detail) {
+          errorMessage = typeof responseData.detail === 'string' ? responseData.detail : JSON.stringify(responseData.detail)
+        } else if (responseData?.message) {
+          errorMessage = responseData.message
+        } else {
+          errorMessage = `Server error (${error.response.status}): ${JSON.stringify(responseData)}`
+        }
+      } else if (error?.message) {
+        // Network or other error
+        errorMessage = error.message
+      } else if (error) {
+        // Fallback: try to stringify the error
+        errorMessage = typeof error === 'string' ? error : JSON.stringify(error)
+      }
+      
+      // Log detailed error for debugging
       console.error('Generation failed:', {
-        detail,
+        message: errorMessage,
         status: error?.response?.status,
-        data: error?.response?.data
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        error: error?.message || error,
+        stack: error?.stack
       })
-      toast.error(typeof detail === 'string' ? detail : 'Generation failed')
+      
+      // Show user-friendly error message
+      toast.error(errorMessage, {
+        duration: 5000
+      })
     } finally {
       // Always reset generating state and cleanup
       setGenerating(false)
       setGenerateAbortController(null)
       setGenerateToastId(null)
+      // Cleanup rotating toast
+      if (window._generateToastCleanup) {
+        window._generateToastCleanup()
+        window._generateToastCleanup = null
+      }
     }
-  }
-
-  const addDistributionItem = () => {
-    const maxQuestions = isPremium ? 15 : 3
-    const currentTotal = customDistribution.reduce((sum, item) => sum + (item.count || 0), 0)
-    if (currentTotal >= maxQuestions) {
-      toast.error(`Maximum ${maxQuestions} questions allowed`)
-      return
-    }
-    setCustomDistribution([...customDistribution, { marks: 1, count: 1, type: 'mcq' }])
-  }
-
-  const removeDistributionItem = (index) => {
-    if (customDistribution.length <= 1) {
-      toast.error('At least one distribution item is required')
-      return
-    }
-    setCustomDistribution(customDistribution.filter((_, i) => i !== index))
-  }
-
-  const updateDistributionItem = (index, field, value) => {
-    const updated = [...customDistribution]
-    updated[index] = { ...updated[index], [field]: value }
-    
-    // Auto-determine type based on marks
-    if (field === 'marks') {
-      const marks = parseInt(value)
-      updated[index].type = deriveTypeFromMarks(marks)
-    }
-    
-    setCustomDistribution(updated)
   }
 
   const renderPreview = () => {
@@ -803,8 +899,40 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
                       {q.marks} mark{q.marks !== 1 ? 's' : ''}
                     </span>
                     <span className="text-[11px] text-gray-500">Auto-set type: {deriveTypeFromMarks(q.marks)}</span>
+                    {q.source && (
+                      <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded mt-1">
+                        {q.source.part_number ? (
+                          <>📄 Part {q.source.part_number} {q.source.exact_page ? `(Page ${q.source.exact_page})` : (q.source.page_range || `Pages ${q.source.start_page}-${q.source.end_page}`)}</>
+                        ) : q.source.file_name ? (
+                          <>📄 {q.source.file_name}</>
+                        ) : null}
+                      </span>
+                    )}
                   </div>
                 </div>
+                
+                {/* Topic and Source Information */}
+                {(q.topic || q.source_hint) && (
+                  <div className="mb-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-600 text-sm font-semibold mt-0.5">📚</span>
+                      <div className="flex-1">
+                        {q.topic && (
+                          <div className="mb-1">
+                            <span className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Topic:</span>
+                            <span className="ml-2 text-sm font-medium text-blue-900">{q.topic}</span>
+                          </div>
+                        )}
+                        {q.source_hint && (
+                          <div>
+                            <span className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Source:</span>
+                            <span className="ml-2 text-sm text-blue-700 italic">{q.source_hint}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {q.type === 'mcq' && q.options && (
                   <div className="mt-3 space-y-2">
@@ -1033,6 +1161,10 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       )
       setDownloadToastId(generatingToast)
       
+      // Start rotating messages every 30 seconds
+      const cleanupRotation = startRotatingToast('download-toast', messageSets.generatingPdf, cancelDownload)
+      window._downloadToastCleanup = cleanupRotation
+      
       let blobData = null
 
       // Try edited payload first (POST), then fallback to stored set (existing API)
@@ -1102,6 +1234,11 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       setDownloading(false)
       setDownloadAbortController(null)
       setDownloadToastId(null)
+      // Cleanup rotating toast
+      if (window._downloadToastCleanup) {
+        window._downloadToastCleanup()
+        window._downloadToastCleanup = null
+      }
     }
   }
 
@@ -1115,10 +1252,36 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
           <div className="flex items-center gap-2 mb-2">
             <span className="text-green-600 font-semibold">✅ Multi-Select Mode</span>
           </div>
+          <div className="space-y-2">
           <p className="text-sm text-gray-700">
-            Generating questions from <strong>{selectedPartIds.length} selected part{selectedPartIds.length > 1 ? 's' : ''}</strong>.
-            Questions will be generated from the combined content of all selected parts (max 15 questions total).
-          </p>
+              Generating quality questions from <strong>{selectedPartIds.length} selected part{selectedPartIds.length > 1 ? 's' : ''}</strong>.
+            </p>
+            <div className="bg-white p-3 rounded border border-green-200">
+              <p className="text-xs font-semibold text-gray-700 mb-1">📋 Recommended Distribution Pattern:</p>
+              {settings.marks === 'mixed' ? (
+                <>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Per part (40 pages): 1 mark (6 MCQ) + 2 marks (4) + 3 marks (3) + 5 marks (2) + 10 marks (1) = <strong>16 questions</strong>
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Total for {selectedPartIds.length} part{selectedPartIds.length > 1 ? 's' : ''}: <strong className="text-green-700">{calculateDefaultQuestions(selectedPartIds.length, settings.marks)} questions</strong>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Per part (40 pages): <strong>{settings.marks} mark{settings.marks !== '1' ? 's' : ''} → {calculateDefaultQuestions(1, settings.marks)} questions</strong>
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Total for {selectedPartIds.length} part{selectedPartIds.length > 1 ? 's' : ''}: <strong className="text-green-700">{calculateDefaultQuestions(selectedPartIds.length, settings.marks)} questions</strong>
+                  </p>
+                </>
+              )}
+            </div>
+            <p className="text-xs text-gray-600 italic">
+              Each generated question will show its source part and page range for easy reference.
+            </p>
+          </div>
           <button
             onClick={() => {
               // Clear multi-select mode
@@ -1129,171 +1292,20 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
             Clear selection
           </button>
         </div>
+      ) : selectedUpload ? (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-gray-700">
+            <span className="font-medium">Selected:</span> {selectedUpload.file_name} ({selectedUpload.file_type})
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            To select a different upload, go to the Upload tab and click "Use" on the desired file.
+          </p>
+        </div>
       ) : (
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Upload
-          </label>
-          <select
-            value={settings.upload_id || ''}
-            onChange={(e) => {
-              const uploadId = e.target.value ? parseInt(e.target.value) : null
-              setSettings({ ...settings, upload_id: uploadId, part_ids: null })
-              onSelectUpload(uploads.find(u => u.id === uploadId))
-            }}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">-- Select an upload --</option>
-            {uploads.map((upload) => (
-              <option key={upload.id} value={upload.id}>
-                {upload.file_name} ({upload.file_type})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Distribution Mode Toggle */}
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg" data-tour="distribution-mode">
-        <div className="flex items-center justify-between">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Distribution Mode
-            </label>
-            <p className="text-xs text-gray-600">
-              {useCustomDistribution 
-                ? 'Custom: Set exact distribution for each mark pattern'
-                : 'Simple: Use a single marks pattern for all questions'}
-            </p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={useCustomDistribution}
-              onChange={(e) => setUseCustomDistribution(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            <span className="ml-3 text-sm font-medium text-gray-700">
-              {useCustomDistribution ? 'Custom' : 'Simple'}
-            </span>
-          </label>
-        </div>
-      </div>
-
-      {/* Custom Distribution Selector */}
-      {useCustomDistribution && (
-        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-700">Custom Distribution</h3>
-            <button
-              onClick={addDistributionItem}
-              className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              + Add Pattern
-            </button>
-          </div>
-          
-          <div className="space-y-3 mb-4">
-            {customDistribution.map((item, index) => {
-              const totalQuestions = customDistribution.reduce((sum, i) => sum + (i.count || 0), 0)
-              const maxQuestions = isPremium ? 15 : 3
-              
-              return (
-                <div key={index} className="flex flex-wrap gap-3 items-end p-3 bg-white border border-gray-300 rounded-lg">
-                  <div className="flex-1 min-w-[120px]">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Marks
-                    </label>
-                    <select
-                      value={item.marks}
-                      onChange={(e) => updateDistributionItem(index, 'marks', parseInt(e.target.value))}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                    >
-                      <option value="1">1 mark</option>
-                      <option value="2">2 marks</option>
-                      <option value="3">3 marks</option>
-                      <option value="5">5 marks</option>
-                      <option value="10">10 marks</option>
-                    </select>
-                  </div>
-                  
-                  <div className="flex-1 min-w-[120px]">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Count
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max={maxQuestions - totalQuestions + (item.count || 0)}
-                      value={item.count}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value) || 1
-                        const max = maxQuestions - totalQuestions + (item.count || 0)
-                        if (val > max) {
-                          toast.error(`Cannot exceed total limit of ${maxQuestions} questions`)
-                          updateDistributionItem(index, 'count', max)
-                        } else if (val < 1) {
-                          updateDistributionItem(index, 'count', 1)
-                        } else {
-                          updateDistributionItem(index, 'count', val)
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const val = parseInt(e.target.value) || 1
-                        const totalQuestions = customDistribution.reduce((sum, i) => sum + (i.count || 0), 0)
-                        const currentItemCount = item.count || 0
-                        const max = maxQuestions - totalQuestions + currentItemCount
-                        if (val > max) {
-                          toast.error(`Cannot exceed total limit of ${maxQuestions} questions`)
-                          updateDistributionItem(index, 'count', max)
-                        } else if (val < 1) {
-                          updateDistributionItem(index, 'count', 1)
-                        }
-                      }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                    />
-                  </div>
-                  
-                  <div className="flex-1 min-w-[120px]">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Type
-                    </label>
-                    <input
-                      value={deriveTypeFromMarks(item.marks)}
-                      readOnly
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                    />
-                    <p className="text-[10px] text-gray-500 mt-1">Auto-set from marks</p>
-                  </div>
-                  
-                  <button
-                    onClick={() => removeDistributionItem(index)}
-                    className="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                    disabled={customDistribution.length <= 1}
-                  >
-                    Remove
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-          
-          <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <span className="text-sm font-medium text-gray-700">
-              Total Questions: <span className="text-blue-600 font-bold">
-                {customDistribution.reduce((sum, item) => sum + (item.count || 0), 0)}
-              </span> / {isPremium ? 15 : 3}
-            </span>
-            <span className="text-xs text-gray-600">
-              {customDistribution.map((item, idx) => (
-                <span key={idx}>
-                  {idx > 0 && ' + '}
-                  {item.count} × {item.marks} mark{item.marks !== 1 ? 's' : ''} ({item.type})
-                </span>
-              ))}
-            </span>
-          </div>
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-gray-700">
+            <span className="font-medium">No upload selected.</span> Please go to the Upload tab and click "Use" on a file to generate questions.
+          </p>
         </div>
       )}
 
@@ -1314,7 +1326,6 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
           </select>
         </div>
 
-        {!useCustomDistribution && (
           <div>
             <label className="block text-sm md:text-sm font-medium text-gray-700 mb-2">
               Question Type
@@ -1328,9 +1339,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
               <span className="text-xs text-gray-500">Auto-set from marks</span>
             </div>
           </div>
-        )}
 
-        {!useCustomDistribution && (
           <div>
             <label className="block text-sm md:text-sm font-medium text-gray-700 mb-2">
               Number of Questions
@@ -1339,54 +1348,104 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
               <input
                 type="number"
                 min="1"
-                max={isPremium ? 15 : 3}
+              max={selectedPartIds && selectedPartIds.length > 0 
+                ? calculateDefaultQuestions(selectedPartIds.length, settings.marks) 
+                : (isPremium ? 15 : 3)}
                 value={settings.num_questions}
                 onChange={(e) => {
-                  const val = e.target.value === '' ? '' : parseInt(e.target.value)
-                  if (val === '') {
+                const inputValue = e.target.value
+                // Allow user to type freely - store as string/number
+                // Mark as manually set immediately when user starts typing
+                setIsNumQuestionsManuallySet(true)
+                
+                // Allow empty string while typing
+                if (inputValue === '') {
                     setSettings({ ...settings, num_questions: '' })
                     return
                   }
-                  const max = isPremium ? 15 : 3
-                  if (val > max) {
-                    toast.error(`Maximum ${max} questions allowed for ${isPremium ? 'premium' : 'free'} users`)
-                    setSettings({ ...settings, num_questions: max })
-                  } else if (val < 1) {
-                    setSettings({ ...settings, num_questions: 1 })
+                
+                // Parse the value
+                const numValue = parseInt(inputValue, 10)
+                
+                // If it's a valid number, use it
+                if (!isNaN(numValue)) {
+                  const max = selectedPartIds && selectedPartIds.length > 0 
+                    ? calculateDefaultQuestions(selectedPartIds.length, settings.marks) 
+                    : (isPremium ? 15 : 3)
+                  
+                  // Allow typing even if temporarily exceeds max (validate on blur)
+                  if (numValue > max) {
+                    // Still allow typing, but will validate on blur
+                    setSettings({ ...settings, num_questions: numValue })
+                  } else if (numValue < 1) {
+                    // Still allow typing, but will validate on blur
+                    setSettings({ ...settings, num_questions: numValue })
                   } else {
-                    setSettings({ ...settings, num_questions: val })
+                    setSettings({ ...settings, num_questions: numValue })
+                  }
+                } else {
+                  // If not a valid number, still allow typing (user might be in middle of typing)
+                  setSettings({ ...settings, num_questions: inputValue })
                   }
                 }}
                 onBlur={(e) => {
-                  const val = parseInt(e.target.value) || 1
-                  const max = isPremium ? 15 : 3
+                // Validate and normalize on blur
+                const inputValue = e.target.value
+                if (inputValue === '' || isNaN(parseInt(inputValue, 10))) {
+                  // If empty or invalid, set to minimum
+                  const min = 1
+                  setSettings({ ...settings, num_questions: min })
+                  setIsNumQuestionsManuallySet(true)
+                  return
+                }
+                
+                const val = parseInt(inputValue, 10)
+                const max = selectedPartIds && selectedPartIds.length > 0 
+                  ? calculateDefaultQuestions(selectedPartIds.length, settings.marks) 
+                  : (isPremium ? 15 : 3)
+                
                   if (val < 1) {
                     setSettings({ ...settings, num_questions: 1 })
+                  setIsNumQuestionsManuallySet(true)
                   } else if (val > max) {
                     setSettings({ ...settings, num_questions: max })
-                    toast.error(`Maximum ${max} questions allowed`)
+                  setIsNumQuestionsManuallySet(true)
+                  toast.error(`Maximum ${max} questions allowed${selectedPartIds && selectedPartIds.length > 0 ? ` for ${selectedPartIds.length} part${selectedPartIds.length > 1 ? 's' : ''}` : ` for ${isPremium ? 'premium' : 'free'} users`}`)
                   } else {
                     setSettings({ ...settings, num_questions: val })
+                  setIsNumQuestionsManuallySet(true)
                   }
                 }}
                 className="w-full px-4 py-2 pr-20 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={`1-${isPremium ? 15 : 3}`}
+              placeholder={selectedPartIds && selectedPartIds.length > 0 
+                ? `1-${calculateDefaultQuestions(selectedPartIds.length, settings.marks)}` 
+                : `1-${isPremium ? 15 : 3}`}
               />
               {/* Hover tooltip showing max limit */}
               <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-[100]">
                 <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap relative">
-                  Max: {isPremium ? 15 : 3} questions
+                Max: {selectedPartIds && selectedPartIds.length > 0 
+                  ? calculateDefaultQuestions(selectedPartIds.length, settings.marks) 
+                  : (isPremium ? 15 : 3)} questions
                   <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-gray-900 transform rotate-45"></div>
                 </div>
               </div>
             </div>
             <p className="text-xs md:text-sm text-gray-500 mt-1">
-              Type any number from 1 to {isPremium ? 15 : 3} (hover input to see limit)
+            {selectedPartIds && selectedPartIds.length > 0 ? (
+              <>
+                {settings.marks === 'mixed' ? (
+                  <>Recommended: <strong>{calculateDefaultQuestions(selectedPartIds.length, settings.marks)} questions</strong> for {selectedPartIds.length} part{selectedPartIds.length > 1 ? 's' : ''} (16 per part)</>
+                ) : (
+                  <>Recommended: <strong>{calculateDefaultQuestions(selectedPartIds.length, settings.marks)} questions</strong> for {selectedPartIds.length} part{selectedPartIds.length > 1 ? 's' : ''} ({calculateDefaultQuestions(1, settings.marks)} per part)</>
+                )}
+              </>
+            ) : (
+              <>Type any number from 1 to {isPremium ? 15 : 3} (hover input to see limit)</>
+            )}
             </p>
           </div>
-        )}
 
-        {!useCustomDistribution && (
           <div>
             <label className="block text-sm md:text-sm font-medium text-gray-700 mb-2">
               Marks Pattern
@@ -1395,10 +1454,15 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
               value={settings.marks}
               onChange={(e) => {
                 const val = e.target.value
+              const partCount = selectedPartIds ? selectedPartIds.length : 0
                 setSettings(prev => ({
                   ...prev,
                   marks: val,
-                  qna_type: deriveTypeFromMarks(val)
+                qna_type: deriveTypeFromMarks(val),
+                // Auto-update num_questions when marks pattern changes (if parts are selected)
+                num_questions: partCount > 0 
+                  ? calculateDefaultQuestions(partCount, val)
+                  : prev.num_questions
                 }))
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
@@ -1411,7 +1475,6 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
               <option value="mixed">Mixed</option>
             </select>
           </div>
-        )}
 
         <div>
           <label className="block text-sm md:text-sm font-medium text-gray-700 mb-2">

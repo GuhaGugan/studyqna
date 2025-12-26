@@ -30,8 +30,10 @@ class UserResponse(UserBase):
     role: str
     premium_status: str
     premium_valid_until: Optional[datetime]
-    upload_quota_remaining: int
-    image_quota_remaining: int
+    upload_quota_remaining: int  # Deprecated - kept for backward compatibility
+    image_quota_remaining: int  # Deprecated - kept for backward compatibility
+    questions_used: int  # Total questions generated
+    questions_limit: int  # Total questions allowed (700 for premium)
     is_active: bool
     created_at: Optional[datetime] = None
     
@@ -168,10 +170,12 @@ class CreditRequestApprove(BaseModel):
 # Admin Schemas
 class UserQuotaAdjust(BaseModel):
     user_id: int
-    pdf_limit: Optional[int] = None  # New field
-    image_limit: Optional[int] = None  # New field
-    upload_quota: Optional[int] = None  # Keep for backward compatibility
-    image_quota: Optional[int] = None  # Keep for backward compatibility
+    questions_limit: Optional[int] = None  # Total questions allowed (700 for premium)
+    questions_used: Optional[int] = None  # Questions already used
+    pdf_limit: Optional[int] = None  # Deprecated - kept for backward compatibility
+    image_limit: Optional[int] = None  # Deprecated - kept for backward compatibility
+    upload_quota: Optional[int] = None  # Deprecated - kept for backward compatibility
+    image_quota: Optional[int] = None  # Deprecated - kept for backward compatibility
     extend_validity_days: Optional[int] = None
 
 class UsageLogResponse(BaseModel):

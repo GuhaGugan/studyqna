@@ -172,26 +172,8 @@ async def upload_file(
                         detail=f"PDF exceeds {max_pages} pages limit. Please upload chapter-wise for large books."
                     )
             
-            # Check quota
-            if is_premium:
-                if current_user.upload_quota_remaining <= 0:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="PDF upload quota exhausted"
-                    )
-            else:
-                # Free users: 1 file per day check (simplified - can enhance)
-                today_uploads = db.query(Upload).filter(
-                    Upload.user_id == current_user.id,
-                    Upload.file_type == FileType.PDF,
-                    Upload.created_at >= datetime.utcnow().date()
-                ).count()
-                
-                if today_uploads >= 1:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Free users can upload 1 PDF per day"
-                    )
+            # No quota check for PDF uploads - quota is now question-based only
+            # Users can upload unlimited PDFs, but generation is limited by questions
         
         # Image validation
         if is_image:
@@ -215,6 +197,7 @@ async def upload_file(
                     detail=f"Image validation failed: {str(e)}. This app supports only educational text images."
                 )
             
+
             # Check quota
             if is_premium:
                 if current_user.image_quota_remaining <= 0:
@@ -236,6 +219,9 @@ async def upload_file(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Free users can upload 5 images per day. Upgrade to premium for unlimited uploads."
                     )
+
+            # No quota check for image uploads - quota is now question-based only
+            # Users can upload unlimited images, but generation is limited by questions
         
         # Save file
         file_path = save_file(file_content, current_user.id, file_type.value, file.filename)
@@ -293,12 +279,7 @@ async def upload_file(
         )
         db.add(upload)
         
-        # Update quotas
-        if is_premium:
-            if is_pdf:
-                current_user.upload_quota_remaining -= 1
-            else:
-                current_user.image_quota_remaining -= 1
+        # No quota decrement - quotas are now question-based only
         
         # Log usage
         usage_log = UsageLog(

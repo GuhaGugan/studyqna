@@ -1,6 +1,8 @@
+
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Body
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.database import get_db
 from app.routers.dependencies import get_admin_user
 from app.models import (
@@ -118,8 +120,12 @@ async def approve_premium_request(
     
     user.premium_status = PremiumStatus.APPROVED
     user.premium_valid_until = datetime.utcnow() + timedelta(days=settings.PREMIUM_VALIDITY_DAYS)
-    user.upload_quota_remaining = settings.PREMIUM_PDF_QUOTA
-    user.image_quota_remaining = settings.PREMIUM_IMAGE_QUOTA
+    # Set question-based quotas (700 questions per purchase)
+    user.questions_limit = 700
+    user.questions_used = 0
+    # Keep old fields for backward compatibility (but not used)
+    user.upload_quota_remaining = 0
+    user.image_quota_remaining = 0
     
     # Log audit
     audit_log = AuditLog(
@@ -342,8 +348,11 @@ async def switch_user_to_free(
     # Switch to free
     user.premium_status = PremiumStatus.REJECTED
     user.premium_valid_until = None
-    user.upload_quota_remaining = 1  # Free tier: 1 PDF per day
-    user.image_quota_remaining = 0  # Free tier: no images
+    user.questions_limit = 0
+    user.questions_used = 0
+    # Keep old fields for backward compatibility (but not used)
+    user.upload_quota_remaining = 0
+    user.image_quota_remaining = 0
     
     # Log audit
     audit_log = AuditLog(
@@ -376,8 +385,12 @@ async def switch_user_to_premium(
     # Switch to premium
     user.premium_status = PremiumStatus.APPROVED
     user.premium_valid_until = datetime.utcnow() + timedelta(days=settings.PREMIUM_VALIDITY_DAYS)
-    user.upload_quota_remaining = settings.PREMIUM_PDF_QUOTA
-    user.image_quota_remaining = settings.PREMIUM_IMAGE_QUOTA
+    # Set question-based quotas (700 questions per purchase)
+    user.questions_limit = 700
+    user.questions_used = 0
+    # Keep old fields for backward compatibility (but not used)
+    user.upload_quota_remaining = 0
+    user.image_quota_remaining = 0
     
     # Log audit
     audit_log = AuditLog(
@@ -486,17 +499,27 @@ async def list_users(
     if end:
         query = query.filter(User.created_at < end)
 
-    users = query.all()
+    users = query.all()    
+    # Import here to avoid circular imports
+    from app.generation_tracker import get_daily_question_stats
+ (Update StudyQnA backend and frontend changes)
     
     result = []
     for user in users:
+        # Get daily question stats
+        daily_stats = get_daily_question_stats(db, user.id)
+        
         result.append({
             "id": user.id,
             "email": user.email,
             "premium_status": user.premium_status.value,
             "premium_valid_until": user.premium_valid_until,
-            "upload_quota_remaining": user.upload_quota_remaining,
-            "image_quota_remaining": user.image_quota_remaining,
+            "questions_used": user.questions_used if user.questions_used else 0,
+            "questions_limit": user.questions_limit if user.questions_limit > 0 else 700,
+            "questions_remaining": max(0, (user.questions_limit if user.questions_limit > 0 else 700) - (user.questions_used if user.questions_used else 0)),
+            "daily_questions_used": daily_stats.get("used", 0),
+            "daily_questions_limit": daily_stats.get("limit", 0),
+            "daily_questions_remaining": daily_stats.get("remaining", 0),
             "is_active": user.is_active,
             "created_at": user.created_at
         })
@@ -527,15 +550,29 @@ async def export_users(
 
     output = io.StringIO()
     writer = csv.writer(output)
+
     writer.writerow(["ID", "Email", "Premium Status", "Premium Valid Until", "Upload Quota", "Image Quota", "Is Active", "Created At"])
     for user in users:
+
+    writer.writerow(["ID", "Email", "Premium Status", "Premium Valid Until", "Questions Used", "Questions Limit", "Questions Remaining", "Is Active", "Created At"])
+    for user in users:
+        questions_limit = user.questions_limit if user.questions_limit > 0 else 700
+        questions_used = user.questions_used if user.questions_used else 0
+        questions_remaining = max(0, questions_limit - questions_used)
+ 
         writer.writerow([
             user.id,
             user.email,
             user.premium_status.value if user.premium_status else "",
             user.premium_valid_until.isoformat() if user.premium_valid_until else "",
+
             user.upload_quota_remaining,
             user.image_quota_remaining,
+
+            questions_used,
+            questions_limit,
+            questions_remaining,
+
             user.is_active,
             user.created_at.isoformat() if user.created_at else ""
         ])
@@ -722,15 +759,12 @@ async def adjust_user_quota(
             detail="User not found"
         )
     
-    # Adjust quotas (support both new and old field names)
-    pdf_limit = adjustment.pdf_limit if adjustment.pdf_limit is not None else adjustment.upload_quota
-    image_limit = adjustment.image_limit if adjustment.image_limit is not None else adjustment.image_quota
+    # Adjust question-based quotas (PDF/image quotas are deprecated)
+    if adjustment.questions_limit is not None:
+        user.questions_limit = adjustment.questions_limit
     
-    if pdf_limit is not None:
-        user.upload_quota_remaining = pdf_limit
-    
-    if image_limit is not None:
-        user.image_quota_remaining = image_limit
+    if adjustment.questions_used is not None:
+        user.questions_used = max(0, adjustment.questions_used)
     
     if adjustment.extend_validity_days:
         if user.premium_valid_until:
@@ -744,23 +778,70 @@ async def adjust_user_quota(
         action="adjust_quota",
         target_user_id=user.id,
         details={
-            "pdf_limit": pdf_limit,
-            "image_limit": image_limit,
-            "upload_quota": adjustment.upload_quota,
-            "image_quota": adjustment.image_quota,
+            "questions_limit": adjustment.questions_limit,
+            "questions_used": adjustment.questions_used,
             "extend_validity_days": adjustment.extend_validity_days
         }
     )
     db.add(audit_log)
     
     db.commit()
+    db.refresh(user)
+    
+    questions_limit = user.questions_limit if user.questions_limit > 0 else 700
+    questions_used = user.questions_used if user.questions_used else 0
+    questions_remaining = max(0, questions_limit - questions_used)
     
     return {
         "message": "Quota adjusted",
         "user_id": user.id,
-        "pdf_limit": user.upload_quota_remaining,
-        "image_limit": user.image_quota_remaining
+        "questions_limit": questions_limit,
+        "questions_used": questions_used,
+        "questions_remaining": questions_remaining
     }
+
+@router.post("/users/{user_id}/reset-daily-questions")
+async def reset_daily_questions(
+    user_id: int,
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Reset daily question count for a user (admin only)"""
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Reset today's daily question count
+    from app.models import DailyGenerationUsage
+    from datetime import datetime
+    today = datetime.utcnow().date()
+    today_start = datetime.combine(today, datetime.min.time())
+    
+    usage = db.query(DailyGenerationUsage).filter(
+        DailyGenerationUsage.user_id == user_id,
+        func.date(DailyGenerationUsage.usage_date) == today
+    ).first()
+    
+    if usage:
+        usage.questions_count = 0
+        usage.updated_at = datetime.utcnow()
+        db.commit()
+    
+    # Log audit
+    audit_log = AuditLog(
+        admin_id=admin_user.id,
+        action="reset_daily_questions",
+        target_user_id=user.id,
+        details={"reset_by": admin_user.email}
+    )
+    db.add(audit_log)
+    db.commit()
+    
+    return {"message": "Daily question count reset successfully", "user_id": user.id}
 
 @router.post("/users/{user_id}/disable")
 async def disable_user(

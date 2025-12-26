@@ -5,6 +5,7 @@ import json
 import re
 from sqlalchemy import func
 
+
 # Initialize OpenAI client only if API key is provided
 # This prevents errors during import if API key is not set
 _client = None
@@ -36,13 +37,26 @@ def detect_subject(text_content: str) -> str:
         'coefficient', 'discriminant', 'quadratic formula', 'pythagoras'
     ]
     
-    # English/Literature keywords
+    # English/Literature keywords (enhanced for grammar detection)
     english_keywords = [
         'poem', 'poetry', 'prose', 'novel', 'story', 'character', 'plot', 'theme',
         'metaphor', 'simile', 'irony', 'humor', 'tone', 'mood', 'setting',
         'literature', 'author', 'writer', 'narrator', 'dialogue', 'monologue',
         'grammar', 'syntax', 'vocabulary', 'essay', 'paragraph', 'sentence',
-        'literary device', 'figure of speech', 'alliteration', 'personification'
+        'literary device', 'figure of speech', 'alliteration', 'personification',
+        # Grammar-specific keywords
+        'noun', 'verb', 'adjective', 'adverb', 'pronoun', 'preposition', 'conjunction',
+        'tense', 'present tense', 'past tense', 'future tense', 'continuous', 'perfect',
+        'subject', 'predicate', 'object', 'clause', 'phrase', 'sentence structure',
+        'active voice', 'passive voice', 'direct speech', 'indirect speech', 'reported speech',
+        'articles', 'a', 'an', 'the', 'definite article', 'indefinite article',
+        'singular', 'plural', 'possessive', 'apostrophe', 'punctuation',
+        'comma', 'semicolon', 'colon', 'quotation marks', 'question mark', 'exclamation',
+        'subject-verb agreement', 'verb agreement', 'grammatical rule', 'grammar rule',
+        'parts of speech', 'word class', 'sentence pattern', 'sentence type',
+        'declarative', 'interrogative', 'imperative', 'exclamatory',
+        'conditional', 'subjunctive', 'modal verb', 'auxiliary verb',
+        'gerund', 'infinitive', 'participle', 'transitive', 'intransitive'
     ]
     
     # Tamil keywords (Tamil script and transliterated)
@@ -469,6 +483,288 @@ If any rule is violated, REWRITE the answer silently.
    - MCQs must be distinct and meaningful - avoid similar options or questions that test the same concept
    - All questions must be educational and appropriate
    - Never include questions about humans, body parts, or inappropriate content
+
+━━━━━━━━━━━━━━━━━━━━━━
+🚨🚨🚨 CONTENT GROUNDING RULES (MANDATORY - TEACHER'S MIND) 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━━━
+
+ABSOLUTE REQUIREMENT: Think and act like a REAL TEACHER examining study material.
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 1: CONTENT GROUNDING (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- Use ONLY the content provided below
+- Do NOT use outside knowledge, assumptions, or general facts
+- Read the content line by line and sentence by sentence
+- Generate questions ONLY when a concept, rule, definition, process, or explanation is clearly and explicitly stated
+- Do NOT generate questions from examples alone unless the rule is explicitly explained
+
+❌ STRICTLY FORBIDDEN:
+- Generating questions from assumptions or general knowledge
+- Using information not present in the provided content
+- Creating questions from examples without explicit rules
+- Inferring or guessing information not clearly stated
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 2: TEACHER THINKING PROCESS (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+You MUST follow this exact thinking process:
+
+STEP 1: IDENTIFY CORE CONCEPTS
+- First, carefully identify the core concepts explicitly taught in the content
+- Core concepts may include (depending on subject):
+  * Definitions
+  * Rules or laws
+  * Processes or steps
+  * Formulas
+  * Principles
+  * Key explanations
+- Ignore filler text, stories, illustrations, case studies, decorative examples, or unrelated narration
+- Focus ONLY on explicitly stated educational content
+
+STEP 2: QUESTION GENERATION
+- Generate questions ONLY from the identified core concepts
+- Each question must map clearly to ONE core concept
+- Do NOT repeat the same concept unnecessarily
+- If a concept appears once, do NOT create another question testing the same concept
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 3: NO-GUESSING RULE (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- If an answer is NOT clearly found in the provided content, do NOT guess, infer, or generalize
+- In such cases, DO NOT generate that question
+- Never produce confident but unsupported answers
+- It is acceptable and expected to generate fewer questions if the content does not support more
+
+❌ STRICTLY FORBIDDEN:
+- Guessing answers not explicitly stated
+- Inferring information from context
+- Using general knowledge to fill gaps
+- Creating questions when the answer is not clearly in the content
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 4: CONSISTENCY RULE (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- Do NOT generate multiple questions that test the same fact or concept in different wording
+- Do NOT generate similar questions with different answers
+- All answers must be internally consistent across the entire set
+- Never contradict an earlier answer
+- If entity X is mentioned, all questions about X must have consistent answers
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 5: QUALITY RULE (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- Do NOT force questions to reach a target count
+- If the content supports fewer high-quality questions, STOP gracefully
+- Fewer accurate questions are better than many incorrect ones
+- Quality over quantity - always prioritize accuracy
+
+❌ STRICTLY FORBIDDEN:
+- Generating questions just to meet a count
+- Creating low-quality questions to fill a quota
+- Repeating concepts to reach a number
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 6: SUBJECT-AWARE BEHAVIOR (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+You MUST adapt your approach based on the subject:
+
+- For LANGUAGE subjects (especially ENGLISH):
+  * If the PDF contains ONLY grammar (no stories/poems):
+     - 🚨 ALL questions MUST be about GRAMMAR RULES
+     - ✅ Generate questions about grammar rules (nouns, verbs, adjectives, adverbs, pronouns, etc.)
+     - ✅ Generate questions about sentence structure, syntax, tenses, verb forms, subject-verb agreement
+     - ❌ DO NOT generate questions about poems, stories, or characters
+  * If the PDF contains MIXED content (stories/poems + grammar):
+     - ✅ Generate questions from ALL content types present in the PDF
+     - ✅ If grammar is taught in the PDF (vocabulary, verbs, tenses, etc.), generate grammar questions from those sections
+     - ✅ If stories are in the PDF, generate story questions from those sections
+     - ✅ If poems are in the PDF, generate poem questions from those sections
+     - ✅ Read sentence by sentence and generate questions from whatever content type appears in that section
+     - ❌ DO NOT generate grammar questions if grammar is NOT taught in the PDF
+     - ❌ DO NOT generate story questions if stories are NOT in the PDF
+     - 🚨 CRITICAL: Generate questions ONLY from what is ACTUALLY written in the [STUDY_MATERIAL]
+  * Focus on what is explicitly taught in each section
+  * Generate questions ONLY when concepts/rules are explicitly stated
+  * Read like a teacher: sentence by sentence, identify what is being taught, and generate questions from that
+
+- For MATHEMATICS:
+  * Generate questions ONLY when formulas, steps, or methods are clearly stated
+  * Do NOT create questions from solved examples unless the method is explained
+  * Focus on explicitly taught formulas and procedures
+  * 🚨 CRITICAL: For numerical problems, you MUST compute the final answer
+  * 🚨 CRITICAL: Listing given values alone is NOT an answer - always show calculation steps
+  * 🚨 CRITICAL: For LCM/HCF (GCD) questions, ALWAYS provide:
+     - Method (Prime Factorization, Division Method, etc.)
+     - HCF value (calculated)
+     - LCM value (calculated)
+  * 🚨 CRITICAL: Never stop at "Given:" statements - always proceed to calculation and final answer
+
+- For SCIENCE:
+  * Focus on definitions, laws, processes, and explanations
+  * Generate questions ONLY from explicitly stated scientific facts
+  * Do NOT infer scientific principles not clearly stated
+
+- For SOCIAL STUDIES:
+  * Focus on explicitly stated facts, causes, effects, and explanations
+  * Generate questions ONLY from clearly stated historical/geographical facts
+  * Do NOT add background knowledge unless present in the text
+
+- Never assume syllabus importance beyond what is stated in the content
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 7: SOURCE FAITHFULNESS RULE (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- Treat the provided content as the ONLY textbook
+- Do NOT add background knowledge or real-world facts unless explicitly present in the text
+- Each question must clearly originate from the given content
+- Every answer must be directly traceable to a specific part of the provided content
+
+❌ STRICTLY FORBIDDEN:
+- Adding information from general knowledge
+- Using facts not in the provided content
+- Creating questions that require outside knowledge to answer
+- Assuming information not explicitly stated
+
+━━━━━━━━━━━━━━━━━━━━━━
+TEACHER VERIFICATION CHECKLIST (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+Before generating ANY question, verify:
+✓ Is this concept explicitly stated in the provided content?
+✓ Can I point to the exact sentence/paragraph where this information is found?
+✓ Am I using ONLY information from the provided content?
+✓ Is this question testing a DIFFERENT concept from previous questions?
+✓ Is the answer clearly stated in the content (not inferred or guessed)?
+✓ Would a real teacher generate this question from this content?
+✓ Am I avoiding repetition of the same concept?
+
+If ANY answer is NO, DO NOT generate that question.
+
+━━━━━━━━━━━━━━━━━━━━━━
+EXAMPLES OF CORRECT TEACHER BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ CORRECT (Content-Grounded):
+Content: "The quadratic formula is x = (-b ± √(b² - 4ac)) / 2a. This formula is used to solve quadratic equations."
+Q1: "What is the quadratic formula?" → Answer: "x = (-b ± √(b² - 4ac)) / 2a"
+(✓ Concept explicitly stated, answer directly from content)
+
+✅ CORRECT (Quality Over Quantity):
+Content: "A circle has radius r. The area is πr²."
+Generated: 2 high-quality questions about radius and area
+(✓ Stopped at 2 because content only supports these concepts, didn't force more)
+
+❌ INCORRECT (Outside Knowledge):
+Content: "A circle has radius r."
+Q1: "What is the circumference of a circle?" → Answer: "2πr"
+(✗ Formula not stated in content - DO NOT generate)
+
+❌ INCORRECT (Guessing):
+Content: "Zigzag is a character in the story."
+Q1: "What is Zigzag?" → Answer: "A snake" (not explicitly stated)
+(✗ Answer guessed, not clearly in content - DO NOT generate)
+
+❌ INCORRECT (Repetition):
+Q1: "What is the capital of India?" → Answer: "New Delhi"
+Q2: "Name the capital city of India." → Answer: "New Delhi"
+(✗ Same concept tested twice - FORBIDDEN)
+
+━━━━━━━━━━━━━━━━━━━━━━
+FINAL TEACHER MANDATE
+━━━━━━━━━━━━━━━━━━━━━━
+
+Think like a REAL TEACHER:
+- A teacher reads the textbook carefully
+- A teacher identifies what is EXPLICITLY taught
+- A teacher creates questions ONLY from what is taught
+- A teacher does NOT guess or assume
+- A teacher prioritizes accuracy over quantity
+- A teacher ensures consistency across all questions
+
+If you cannot find explicit support in the content, DO NOT generate that question.
+Fewer accurate questions are ALWAYS better than many incorrect or unsupported questions.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🚨🚨🚨 CRITICAL CONSISTENCY RULE (ABSOLUTELY MANDATORY) 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━━━
+
+ABSOLUTE PROHIBITION - ZERO TOLERANCE FOR INCONSISTENCY:
+
+1. ❌ DO NOT generate multiple questions that test the same fact or concept
+   - If a concept appears once, do NOT repeat it in another question
+   - Each question MUST test a DIFFERENT fact, concept, or piece of information
+   - Example FORBIDDEN: 
+     * Q1: "What is Zigzag?" → Answer: "A snake"
+     * Q2: "What kind of bird is Zigzag?" → Answer: "A singing bird"
+     (This is FORBIDDEN - Zigzag cannot be both a snake and a bird)
+
+2. ❌ DO NOT provide conflicting answers for similar questions
+   - All answers MUST be internally consistent across the entire question set
+   - If Q1 says "X is Y", then Q2 cannot say "X is Z" (where Y ≠ Z)
+   - Example FORBIDDEN:
+     * Q4: "Which bird is described as Zigzag?" → Answer: "A snake" (CONTRADICTION - snake is not a bird)
+     * Q5: "What kind of bird is Zigzag?" → Answer: "A singing bird"
+     (This is FORBIDDEN - creates internal contradiction)
+
+3. ❌ DO NOT test the same information in different ways
+   - If you ask "What is X?" in one question, do NOT ask "Define X" or "Explain X" in another
+   - Each question MUST cover a DIFFERENT aspect or DIFFERENT information
+   - Rotate through DIFFERENT topics, characters, concepts, formulas, or facts
+   - 🚨🚨🚨 CRITICAL: For mathematics, DO NOT generate multiple questions about the same topic (e.g., don't generate 8 questions all about quadratic equations) 🚨🚨🚨
+   - 🚨🚨🚨 CRITICAL: Read through the PDF and identify DIFFERENT mathematics topics (Quadratic Equations, LCM/HCF, Linear Equations, Geometry, Trigonometry, Algebra, etc.) and generate questions from DIFFERENT topics 🚨🚨🚨
+   - 🚨🚨🚨 CRITICAL: If you have 120+ pages of content, there are MANY different topics - use them! Don't repeat the same topic multiple times 🚨🚨🚨
+
+4. ✅ MANDATORY CONSISTENCY REQUIREMENTS:
+   - All answers must be factually consistent with the study material
+   - All answers must be internally consistent with each other
+   - If a character/concept/entity is mentioned in multiple questions, the answers must NOT contradict
+   - Questions must test DIFFERENT facts, not the same fact in different ways
+
+5. ✅ CONSISTENCY VERIFICATION CHECKLIST (MANDATORY):
+   Before finalizing your output, verify:
+   ✓ No two questions test the same fact or concept
+   ✓ No two questions ask about the same entity/concept in conflicting ways
+   ✓ All answers are internally consistent (no contradictions)
+   ✓ If entity X is mentioned in multiple questions, all answers about X are consistent
+   ✓ Each question covers a DIFFERENT topic, concept, or piece of information
+
+EXAMPLES OF FORBIDDEN INCONSISTENCIES (DO NOT GENERATE):
+❌ FORBIDDEN Example 1 (Same Concept):
+   Q1: "What is Zigzag?" → Answer: "A snake"
+   Q2: "What kind of bird is Zigzag?" → Answer: "A singing bird"
+   (FORBIDDEN: Contradictory answers - Zigzag cannot be both snake and bird)
+
+❌ FORBIDDEN Example 2 (Same Fact):
+   Q1: "What is the capital of India?" → Answer: "New Delhi"
+   Q2: "Name the capital city of India." → Answer: "New Delhi"
+   (FORBIDDEN: Same fact tested twice - must test different information)
+
+❌ FORBIDDEN Example 3 (Conflicting Information):
+   Q1: "What is the value of x when x² = 16?" → Answer: "x = 4"
+   Q2: "Solve x² = 16" → Answer: "x = -4"
+   (FORBIDDEN: Inconsistent - both ±4 are correct, but answers contradict)
+
+✅ REQUIRED Example (Different Concepts):
+   Q1: "What is the capital of India?" → Answer: "New Delhi"
+   Q2: "What is the largest river in India?" → Answer: "Ganges"
+   Q3: "Name the highest mountain peak in India." → Answer: "Mount Kanchenjunga"
+   (REQUIRED: Each question tests a DIFFERENT fact - all consistent)
+
+FINAL WARNING:
+If you generate ANY questions that test the same fact/concept OR provide conflicting answers, the ENTIRE output is INVALID and must be regenerated. Every question must test a DIFFERENT fact, and all answers must be internally consistent.
    
    🚨 CRITICAL: QUESTION COMPLEXITY REQUIREMENT 🚨
    - ❌ NEVER generate simple arithmetic questions like "What is 3 + 4?" or "What is 5 × 2?"
@@ -576,23 +872,83 @@ If any rule is violated, REWRITE the answer silently.
          "marks": 10,
          "type": "descriptive",
          "question": "Question text",
-         "answer": "Answer text (12-15+ lines)"
+         "answer": "Answer text (12-15+ lines)",
+         "topic": "Topic/Concept name from the content (e.g., 'Quadratic Formula', 'Photosynthesis', 'World War II')",
+         "source_hint": "Brief hint about where in the content this question comes from (e.g., 'Chapter 3: Algebra', 'Section on Cell Biology')"
        },
        {
          "marks": 2,
          "type": "short",
          "question": "Question text",
-         "answer": "Answer text (2-3 lines)"
+         "answer": "Answer text (2-3 lines)",
+         "topic": "Topic/Concept name from the content",
+         "source_hint": "Brief hint about where in the content this question comes from"
        },
        {
          "marks": 1,
          "type": "mcq",
          "question": "Question text",
          "options": ["Option A", "Option B", "Option C", "Option D"],
-         "correct_answer": "Option A"
+         "correct_answer": "Option A",
+         "topic": "Topic/Concept name from the content",
+         "source_hint": "Brief hint about where in the content this question comes from"
        }
      ]
    }
+
+   🚨🚨🚨 ABSOLUTELY MANDATORY: For EACH question, you MUST include BOTH fields 🚨🚨🚨
+   
+   ❌ MISSING THESE FIELDS = INVALID OUTPUT - YOUR JSON WILL BE REJECTED ❌
+   
+   ✅ REQUIRED FIELD 1: "topic" (MANDATORY - NO EXCEPTIONS)
+     * This is a SPECIFIC topic/concept name EXTRACTED from the [STUDY_MATERIAL] above
+     * DO NOT use generic topics like "Which of the", "What is the", or question starters
+     * DO NOT leave it empty or omit it
+     * Extract the ACTUAL concept/character/story/poem name from the content
+     
+     Examples for GRAMMAR content:
+     - "Modal Verbs", "Past Tense Forms", "Present Continuous Tense", "Subject-Verb Agreement"
+     
+     Examples for LITERATURE content (stories/poems):
+     - "The Grumble Family" (poem name), "Zigzag" (character/story name), "Mulan" (character/story name)
+     - "Charlie Chaplin" (character/topic), "The Tie that Does Not Bind" (story name)
+     - "I am Every Woman" (poem name), "Mr. Sanyal" (character name)
+     
+     Examples for MATHEMATICS content:
+     - "Quadratic Equations", "Discriminant", "Roots of Quadratic Equations", "Quadratic Formula"
+     - "Linear Equations", "Simultaneous Equations", "Polynomial Equations", "Factorization"
+     - "Algebra", "Geometry", "Trigonometry", "Calculus", "Coordinate Geometry"
+     - Extract the EXACT topic name from the [STUDY_MATERIAL] (e.g., if PDF teaches "Quadratic Equations", use "Quadratic Equations")
+   
+   ✅ REQUIRED FIELD 2: "source_hint" (MANDATORY - NO EXCEPTIONS)
+     * This is a SPECIFIC description of WHERE in the [STUDY_MATERIAL] this question originates
+     * DO NOT use generic hints like "From provided study material"
+     * DO NOT leave it empty or omit it
+     * Reference the ACTUAL section, chapter, paragraph, story, or poem from the content
+     
+     Examples for GRAMMAR content:
+     - "Section on Modal Verbs", "Chapter 3: Tenses", "Example explaining Present Continuous", "Rule about Past Perfect"
+     
+     Examples for LITERATURE content (stories/poems):
+     - "Poem 'The Grumble Family'", "Story 'Zigzag'", "Story about Mulan", "Character Charlie Chaplin"
+     - "Story 'The Tie that Does Not Bind'", "Poem 'I am Every Woman'", "Story section about Mr. Sanyal"
+     
+     Examples for MATHEMATICS content:
+     - "Chapter 2: Quadratic Equations", "Section 3.5: Discriminant", "Chapter 4: Roots of Quadratic Equations"
+     - "Chapter 1: Algebra", "Section 2.3: Quadratic Formula", "Chapter 5: Factorization"
+     - "Chapter 6: LCM and GCD", "Section 7.2: LCM and GCD"
+     - Reference the EXACT chapter/section number and topic name from the [STUDY_MATERIAL] where this concept is taught
+     - If the PDF has chapter numbers (e.g., "Chapter 3", "Chapter 6"), include them in the source_hint
+     - If the PDF has section numbers (e.g., "Section 2.5", "Section 7.2"), include them in the source_hint
+     - Extract the EXACT chapter/section name from the PDF content, not generic "Section on..."
+   
+   🚨 CONTENT VERIFICATION REQUIREMENT (MANDATORY):
+   - Before generating each question, you MUST identify the SPECIFIC section/paragraph/story/poem in [STUDY_MATERIAL] where this information appears
+   - The "topic" must be the ACTUAL concept/character/story/poem name from that section
+   - The "source_hint" must reference WHERE in the content this appears (which story, which poem, which section)
+   - If you cannot find a specific section/story/poem containing this information, DO NOT generate that question
+   - Generic topics/hints indicate the question is NOT from the content and is INVALID
+   - Missing topic or source_hint fields = INVALID OUTPUT - regenerate with both fields included
 
 8. JSON VALIDATION:
    - Escape ALL special characters: \\" for quotes, \\n for newlines
@@ -1157,7 +1513,10 @@ def generate_qna(
     remaining_questions: Optional[int] = None,
     distribution_list: Optional[List[Dict[str, Any]]] = None,
     subject: Optional[str] = None,  # Explicit subject selection: mathematics, english, science, social_science, general
+
     is_single_image: bool = False  # Flag for single image uploads (mobile)
+
+    num_parts: Optional[int] = None  # Number of parts selected (for dynamic content limit)
 ) -> Dict[str, Any]:
     """
     Generate Q/A from text using OpenAI
@@ -1197,6 +1556,12 @@ def generate_qna(
     
     if len(distribution_list) == 0:
         raise ValueError("distribution_list cannot be empty")
+    
+    # Filter out items with count 0 (they won't be used anyway)
+    distribution_list = [item for item in distribution_list if item.get("count", 0) > 0]
+    
+    if len(distribution_list) == 0:
+        raise ValueError("distribution_list cannot be empty after filtering (all items have count 0)")
     
     # Validate each item in distribution list has required keys
     for idx, item in enumerate(distribution_list):
@@ -1325,6 +1690,25 @@ SUBJECT: MATHEMATICS - ANSWER STRUCTURE (MANDATORY)
       - "Using the quadratic formula, solve x² + 5x + 6 = 0"
       - "Derive the formula for the area of a circle"
       - "Calculate the discriminant and determine the nature of roots"
+
+5. SUBJECT-SPECIFIC STRICT RULE (MATHEMATICS):
+   🚨 CRITICAL: For numerical problems, you MUST compute the final answer
+   🚨 CRITICAL: Listing given values alone is NOT an answer
+   🚨 CRITICAL: Show necessary steps suitable for the given marks
+   🚨 CRITICAL: Never stop at "Given:" statements - always proceed to calculation and final answer
+   
+   📐 FOR LCM/HCF (GCD) QUESTIONS - MANDATORY REQUIREMENTS:
+   ✅ ALWAYS provide ALL of the following:
+      1) Method: Explain the method used (Prime Factorization, Division Method, etc.)
+      2) HCF value: Calculate and state the HCF (Highest Common Factor/GCD)
+      3) LCM value: Calculate and state the LCM (Least Common Multiple)
+   ✅ Show complete working with all steps
+   ✅ Never leave the answer incomplete - always provide both HCF and LCM values
+   ✅ Example structure for LCM/HCF questions:
+      - Given: Numbers (e.g., 24 and 36)
+      - Method: Prime Factorization Method (or Division Method)
+      - Calculation/Steps: Show step-by-step working
+      - Final Answer: HCF = [value], LCM = [value]
 """,
         "english": """
 ━━━━━━━━━━━━━━━━━━━━━━
@@ -1516,6 +1900,7 @@ x = (-b)/(2a) = (-6)/(2(1)) = -3
 \\]
 """
     
+<<<<<<< HEAD
     # Define newline character to avoid backslash in f-string expressions
     nl = '\n'
     
@@ -1662,11 +2047,518 @@ STRICT RULES FOR SINGLE IMAGE UPLOADS:
 ━━━━━━━━━━━━━━━━━━━━━━
 """
 
+=======
+    # Calculate dynamic content limit based on number of parts
+    # Base limit: 60,000 characters per part (40 pages) - increased to use more content
+    # For multi-part selections, increase limit proportionally to use more content
+    # Supports up to 7-8 parts for comprehensive question generation
+    # Calculate total content length first to determine optimal limit
+    total_content_length_preview = len(text_content)
+    
+    if num_parts and num_parts > 1:
+        # Dynamic content limit: Automatically adjust based on actual content size
+        # Token budget: ~128,000 tokens max
+        # The prompt is VERY long (~120-127k tokens with all rules), leaving very little room
+        # We need to be very conservative with content limits
+        # Roughly 1 token = 4 characters for English, but Tamil/other languages may use more tokens
+        # For safety, assume 1 token = 3.5 chars (more conservative for non-English)
+        # With prompt using ~127k tokens, we have ~1k tokens left = ~3.5k chars max
+        # But we need room for completion tokens, so we need to reduce content significantly
+        # Strategy: Reduce content limits to ensure prompt + content + completion < 128k
+        
+        # More conservative limits that account for the large prompt
+        # Estimate: prompt uses ~127k tokens, we need ~5-10k for completion
+        # So content should use at most ~1-3k tokens = ~3.5-10k chars
+        # But this is too restrictive. The real issue is the prompt is too long.
+        # Better approach: Use more conservative limits that leave room
+        
+        # Base limits per part count (reduced significantly to account for large prompt)
+        base_limits = {
+            2: 80000,    # 80k for 2 parts (~23k tokens)
+            3: 100000,   # 100k for 3 parts (~29k tokens) - reduced from 200k
+            4: 120000,   # 120k for 4 parts (~34k tokens) - reduced from 220k
+            5: 140000,   # 140k for 5 parts (~40k tokens) - reduced from 240k
+            6: 160000,   # 160k for 6 parts (~46k tokens) - reduced from 260k
+            7: 180000,   # 180k for 7 parts (~51k tokens) - reduced from 270k
+            8: 200000    # 200k for 8 parts (~57k tokens) - reduced from 280k
+        }
+        
+        # Get base limit for number of parts
+        if num_parts <= 8:
+            content_limit = base_limits.get(num_parts, 100000)
+        else:
+            content_limit = 200000  # Max safe limit
+        
+        # If total content is smaller than limit, use all of it
+        if total_content_length_preview < content_limit:
+            content_limit = total_content_length_preview
+            print(f"📊 Content is smaller than limit - using all {content_limit:,} characters")
+        
+        # Final safety cap - be very conservative to avoid exceeding token limit
+        # With prompt at ~127k tokens, we need to keep content very small
+        content_limit = min(content_limit, 200000)
+    else:
+        # Single part: use 60,000 characters
+        content_limit = min(60000, total_content_length_preview)
+    
+    # Log content limit for debugging
+    total_content_length = len(text_content)
+    
+    # Smart content coverage: Preserve part boundaries and sample from each part
+    # This ensures questions come from the actual selected parts, not arbitrary sections
+    if total_content_length > content_limit:
+        # Strategy: If content has part markers (--- Part X (Pages Y-Z) ---), sample from each part
+        # Otherwise, use evenly-spaced windows but preserve structure
+        part_markers = []
+        if "--- Part " in text_content:
+            # Content has part markers - extract and preserve them
+            import re
+            # Find all part markers and their positions
+            for match in re.finditer(r'--- Part (\d+) \(Pages (\d+)-(\d+)\) ---', text_content):
+                part_num = int(match.group(1))
+                start_page = int(match.group(2))
+                end_page = int(match.group(3))
+                part_markers.append({
+                    'part_number': part_num,
+                    'start_page': start_page,
+                    'end_page': end_page,
+                    'start_pos': match.start(),
+                    'end_pos': match.end()
+                })
+        
+        if part_markers and len(part_markers) > 0:
+            # Sample from each part proportionally
+            chars_per_part = content_limit // len(part_markers)
+            sampled_parts = []
+            
+            for i, marker in enumerate(part_markers):
+                # Find the start of this part's content (after the marker)
+                part_start = marker['end_pos']
+                # Find the start of the next part (or end of text)
+                if i + 1 < len(part_markers):
+                    part_end = part_markers[i + 1]['start_pos']
+                else:
+                    part_end = len(text_content)
+                
+                part_content = text_content[part_start:part_end]
+                part_length = len(part_content)
+                
+                if part_length > chars_per_part:
+                    # Sample from beginning, middle, and end of this part
+                    sample_size = chars_per_part // 3
+                    beginning = part_content[:sample_size]
+                    middle_start = part_length // 2 - sample_size // 2
+                    middle = part_content[middle_start:middle_start + sample_size]
+                    end = part_content[-sample_size:]
+                    
+                    sampled_part = f"\n\n--- Part {marker['part_number']} (Pages {marker['start_page']}-{marker['end_page']}) ---\n\n"
+                    sampled_part += beginning + "\n\n[... middle section ...]\n\n" + middle + "\n\n[... end section ...]\n\n" + end
+                    sampled_parts.append(sampled_part)
+                else:
+                    # Use entire part if it fits
+                    sampled_parts.append(text_content[marker['start_pos']:part_end])
+            
+            text_content = "".join(sampled_parts)
+            content_used = len(text_content)
+            print(f"Content extraction: Total={total_content_length} chars, Using={content_used} chars (sampled from {len(part_markers)} parts preserving part boundaries), Parts={num_parts or 1}")
+        else:
+            # No part markers - use evenly-spaced windows
+            num_windows = min(5, num_parts or 3)
+            marker_overhead = num_windows * 30
+            available_for_content = content_limit - marker_overhead
+            window_size = available_for_content // num_windows
+            
+            windows = []
+            for i in range(num_windows):
+                if num_windows == 1:
+                    start_pos = 0
+                else:
+                    start_pos = int((i / (num_windows - 1)) * (total_content_length - window_size))
+                
+                end_pos = min(start_pos + window_size, total_content_length)
+                window_content = text_content[start_pos:end_pos]
+                
+                if window_content.strip():
+                    section_label = f"[Section {i+1} of {num_windows} - covering different pages]"
+                    windows.append(f"\n\n{section_label}\n{window_content}")
+            
+            text_content = "".join(windows)
+            content_used = len(text_content)
+            print(f"Content extraction: Total={total_content_length} chars, Using={content_used} chars (sampled from {num_windows} evenly-spaced sections), Parts={num_parts or 1}")
+    else:
+        content_used = total_content_length
+        print(f"Content extraction: Using all {content_used:,} chars (within limit)")
+    
+    # Estimate pages (assuming ~2000 chars per page on average)
+    num_pages_estimate = max(1, int(total_content_length / 2000))
+    questions_per_page = num_questions / max(1, num_pages_estimate) if num_pages_estimate > 0 else num_questions
+    
+    print(f"Content extraction: Total={total_content_length} chars, Using={content_used} chars (limit={content_limit}), Parts={num_parts or 1}, Pages~{num_pages_estimate}, Questions/page~{questions_per_page:.1f}")
+    
+    # Check if content is grammar-focused (but also check for stories/poems)
+    grammar_keywords_check = ['grammar', 'noun', 'verb', 'tense', 'sentence', 'subject-verb', 'parts of speech']
+    literature_keywords_check = ['poem', 'poetry', 'story', 'character', 'narrator', 'plot', 'theme', 'author', 'poet', 'stanza', 'verse']
+    
+    has_grammar_keywords = any(keyword in text_content.lower() for keyword in grammar_keywords_check)
+    has_literature_keywords = any(keyword in text_content.lower() for keyword in literature_keywords_check)
+    
+    # Check for mixed content (both grammar and literature)
+    has_mixed_content = detected_subject == "english" and has_grammar_keywords and has_literature_keywords
+    
+    # Only enforce grammar-only if content has grammar keywords BUT NO literature keywords
+    is_grammar_content = detected_subject == "english" and has_grammar_keywords and not has_literature_keywords
+    
+    if is_grammar_content:
+        print(f"⚠️  PURE GRAMMAR CONTENT DETECTED - Enforcing grammar-only question generation")
+    elif has_mixed_content:
+        print(f"📚 MIXED CONTENT DETECTED (stories/poems/prose + grammar) - Generate questions from ALL content types present in PDF")
+        print(f"   ✅ Content contains: Stories/Poems/Prose AND Grammar (vocabulary, verbs, etc.)")
+        print(f"   ✅ AI must read sentence by sentence and generate questions from whatever is actually taught in the PDF")
+    elif detected_subject == "english" and has_literature_keywords:
+        print(f"📚 LITERATURE CONTENT DETECTED (stories/poems) - Questions should be from actual stories/poems in content")
+    
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
     user_prompt = f"""Generate exam questions from the following study material:
 
 [STUDY_MATERIAL]
 
-{text_content[:8000]}
+{text_content}
+
+━━━━━━━━━━━━━━━━━━━━━━
+🚨🚨🚨 DETECTED SUBJECT: {detected_subject.upper()} 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━━━
+
+{"🚨🚨🚨 ABSOLUTE MANDATE FOR GRAMMAR CONTENT 🚨🚨🚨" if is_grammar_content else ""}
+{"⚠️⚠️⚠️ CRITICAL: This content is about ENGLISH GRAMMAR ONLY (no stories/poems). ⚠️⚠️⚠️" if is_grammar_content else ""}
+{"❌ ABSOLUTELY FORBIDDEN: Do NOT generate questions about:" if is_grammar_content else ""}
+{"   - Poems, poetry, or literary analysis" if is_grammar_content else ""}
+{"   - Stories, characters, plots, or narratives" if is_grammar_content else ""}
+{"   - Authors, writers, or literary devices (unless teaching grammar rules)" if is_grammar_content else ""}
+{"   - 'What does the poet mean...', 'What is the theme...', 'Who is the character...'" if is_grammar_content else ""}
+{"" if is_grammar_content else ""}
+{"✅ MANDATORY: Generate questions ONLY about:" if is_grammar_content else ""}
+{"   - Grammar rules (nouns, verbs, adjectives, adverbs, pronouns, etc.)" if is_grammar_content else ""}
+{"   - Sentence structure and syntax" if is_grammar_content else ""}
+{"   - Tenses and verb forms" if is_grammar_content else ""}
+{"   - Subject-verb agreement" if is_grammar_content else ""}
+{"   - Parts of speech" if is_grammar_content else ""}
+{"   - Grammar concepts explicitly taught in the content" if is_grammar_content else ""}
+{"" if is_grammar_content else ""}
+{"🚨🚨🚨 VIOLATION = INVALID OUTPUT 🚨🚨🚨" if is_grammar_content else ""}
+{"If you generate ANY question about poems, poetry, themes, authors, poets, characters, stories, or literature," if is_grammar_content else ""}
+{"the ENTIRE output is INVALID and must be rejected." if is_grammar_content else ""}
+{"You MUST regenerate with ONLY grammar-focused questions." if is_grammar_content else ""}
+{"━━━━━━━━━━━━━━━━━━━━━━" if is_grammar_content else ""}
+{"BEFORE GENERATING EACH QUESTION, ASK YOURSELF:" if is_grammar_content else ""}
+{"1. Is this question about a GRAMMAR RULE (noun, verb, tense, sentence structure, etc.)?" if is_grammar_content else ""}
+{"2. Does this question test GRAMMAR KNOWLEDGE, not literature knowledge?" if is_grammar_content else ""}
+{"3. Is this question about a POEM, POET, THEME, CHARACTER, or STORY? → If YES, DO NOT GENERATE IT!" if is_grammar_content else ""}
+{"ONLY generate questions that pass ALL three checks above." if is_grammar_content else ""}
+{"━━━━━━━━━━━━━━━━━━━━━━" if has_mixed_content else ""}
+{"📚📚📚 MIXED CONTENT DETECTED (Stories/Poems/Prose + Grammar) 📚📚📚" if has_mixed_content else ""}
+{"⚠️⚠️⚠️ CRITICAL: This PDF contains MULTIPLE content types mixed together ⚠️⚠️⚠️" if has_mixed_content else ""}
+{"✅ The PDF contains: Stories, Poems, Prose, AND Grammar (vocabulary, verbs, tenses, etc.)" if has_mixed_content else ""}
+{"✅ MANDATORY: Read the [STUDY_MATERIAL] sentence by sentence, paragraph by paragraph" if has_mixed_content else ""}
+{"✅ Generate questions from ALL content types that are ACTUALLY present in the PDF:" if has_mixed_content else ""}
+{"   - If a story is in the PDF → Generate questions about characters, events, plots from that story" if has_mixed_content else ""}
+{"   - If a poem is in the PDF → Generate questions about themes, meanings, literary devices from that poem" if has_mixed_content else ""}
+{"   - If grammar rules are taught in the PDF → Generate questions about those grammar rules (vocabulary, verbs, tenses, etc.)" if has_mixed_content else ""}
+{"   - If prose is in the PDF → Generate questions about the content, themes, and concepts from that prose" if has_mixed_content else ""}
+{"🚨🚨🚨 CRITICAL RULE: Generate questions ONLY from what is ACTUALLY written in the [STUDY_MATERIAL] 🚨🚨🚨" if has_mixed_content else ""}
+{"❌ DO NOT use general knowledge - use ONLY what is written in the [STUDY_MATERIAL]" if has_mixed_content else ""}
+{"❌ DO NOT generate questions about grammar if grammar is NOT taught in the PDF" if has_mixed_content else ""}
+{"❌ DO NOT generate questions about stories if stories are NOT in the PDF" if has_mixed_content else ""}
+{"✅ Read each sentence carefully and generate questions from whatever content type appears in that sentence" if has_mixed_content else ""}
+{"━━━━━━━━━━━━━━━━━━━━━━" if detected_subject == "english" and has_literature_keywords and not is_grammar_content and not has_mixed_content else ""}
+{"📚📚📚 LITERATURE CONTENT DETECTED (Stories/Poems Present) 📚📚📚" if detected_subject == "english" and has_literature_keywords and not is_grammar_content and not has_mixed_content else ""}
+{"⚠️⚠️⚠️ CRITICAL: This content contains STORIES and POEMS. ⚠️⚠️⚠️" if detected_subject == "english" and has_literature_keywords and not is_grammar_content and not has_mixed_content else ""}
+{"✅ MANDATORY: Generate questions from the ACTUAL stories and poems in the [STUDY_MATERIAL] above" if detected_subject == "english" and has_literature_keywords and not is_grammar_content and not has_mixed_content else ""}
+{"✅ Read the content sentence by sentence and generate questions about:" if detected_subject == "english" and has_literature_keywords and not is_grammar_content and not has_mixed_content else ""}
+{"   - Characters, events, and plots from the stories" if detected_subject == "english" and has_literature_keywords and not is_grammar_content and not has_mixed_content else ""}
+{"   - Themes, meanings, and literary devices in the poems" if detected_subject == "english" and has_literature_keywords and not is_grammar_content and not has_mixed_content else ""}
+{"   - What the poet/author says, what characters do, what happens in the stories" if detected_subject == "english" and has_literature_keywords and not is_grammar_content and not has_mixed_content else ""}
+{"❌ DO NOT use general knowledge - use ONLY what is written in the [STUDY_MATERIAL]" if detected_subject == "english" and has_literature_keywords and not is_grammar_content and not has_mixed_content else ""}
+
+━━━━━━━━━━━━━━━━━━━━━━
+🚨🚨🚨 CONTENT GROUNDING RULES (MANDATORY - TEACHER'S MIND) 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━━━
+
+ABSOLUTE REQUIREMENT: Think and act like a REAL TEACHER examining study material.
+
+🚨🚨🚨 CRITICAL: You MUST read the [STUDY_MATERIAL] above sentence by sentence, like a teacher reading a textbook 🚨🚨🚨
+- You are reading ACTUAL CONTENT from a PDF/book that was uploaded
+- Every question MUST come from what is EXPLICITLY written in that material
+- Read the content CAREFULLY, sentence by sentence, paragraph by paragraph, line by line
+- The PDF may contain MULTIPLE content types mixed together:
+  * STORIES: Identify characters, events, plots, themes from those stories
+  * POEMS: Identify themes, meanings, literary devices, what the poet says
+  * PROSE: Identify content, themes, concepts from that prose
+  * GRAMMAR RULES: Identify vocabulary, verbs, tenses, grammar concepts that are taught
+- Generate questions from ALL content types that are ACTUALLY present in the PDF
+- 🚨🚨🚨 CRITICAL: Generate questions from DIFFERENT topics/sections/PAGES of the PDF 🚨🚨🚨
+- 🚨🚨🚨 DO NOT generate all questions from the same page - spread questions across DIFFERENT pages/sections 🚨🚨🚨
+- 🚨🚨🚨 CRITICAL: Read through the ENTIRE content (beginning, middle, end) and generate questions from DIFFERENT pages/sections 🚨🚨🚨
+- 🚨🚨🚨 CRITICAL: When providing source_hint, reference DIFFERENT page numbers/sections - don't use the same page for all questions 🚨🚨🚨
+- 🚨🚨🚨 CRITICAL: If content has part markers (--- Part X (Pages Y-Z) ---), source_hint MUST include the actual Part number and page range 🚨🚨🚨
+  * Example: If question is from "--- Part 1 (Pages 1-40) ---", source_hint should be "Part 1 (Page 3)" or "Part 1: Pages 1-40, Section on World War I"
+  * Example: If question is from "--- Part 2 (Pages 41-80) ---", source_hint should be "Part 2 (Page 45)" or "Part 2: Pages 41-80, Section on Russian Revolution"
+  * NEVER use generic page numbers - use the ACTUAL part number and page from the content markers
+- If grammar is taught in the PDF (vocabulary, verbs, tenses, etc.), generate grammar questions from those sections
+- If stories are in the PDF, generate story questions from those sections
+- If poems are in the PDF, generate poem questions from those sections
+- If mathematics topics are in the PDF, generate questions from DIFFERENT topics (not all from the same topic)
+- If social science topics are in the PDF, generate questions from DIFFERENT topics (not all from the same topic like World War I)
+- Generate questions ONLY from what you can SEE and POINT TO in the content
+- For each question, you MUST be able to say: "This question is from [specific section/paragraph/page] which contains [specific content]"
+- If you cannot point to where in the content this information appears, DO NOT generate that question
+- DO NOT use general knowledge - use ONLY what is explicitly written in [STUDY_MATERIAL]
+- Read like a teacher: sentence by sentence, identify what is being taught, and generate questions from that
+- When providing "topic" and "source_hint", they MUST reference the ACTUAL content sections, not generic placeholders
+- The "topic" should be the actual concept/character/theme/grammar rule from the content (e.g., "The Grumble Family", "Modal Verbs", "Character Zigzag", "Past Tense", "LCM and GCD", "World War II")
+- The "source_hint" should reference where in the content this appears with DIFFERENT page numbers (e.g., "Story about Zigzag", "Poem 'The Grumble Family'", "Section on Modal Verbs", "Grammar section on Past Tense", "Chapter 6: LCM and GCD", "பக்கம் 45: World War II")
+- Generic topics like "Which of the" or source hints like "From provided study material" indicate you are NOT reading the content
+- 🚨🚨🚨 CRITICAL: With {total_content_length:,} chars (~{num_pages_estimate} pages), you have MANY different topics and pages - use DIFFERENT pages for different questions! 🚨🚨🚨
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 1: CONTENT GROUNDING (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- Use ONLY the content provided above in [STUDY_MATERIAL]
+- Do NOT use outside knowledge, assumptions, or general facts
+- Read the content line by line and sentence by sentence
+- Generate questions ONLY when a concept, rule, definition, process, or explanation is clearly and explicitly stated
+- Do NOT generate questions from examples alone unless the rule is explicitly explained
+
+❌ STRICTLY FORBIDDEN:
+- Generating questions from assumptions or general knowledge
+- Using information not present in the provided content
+- Creating questions from examples without explicit rules
+- Inferring or guessing information not clearly stated
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 2: TEACHER THINKING PROCESS (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+You MUST follow this exact thinking process:
+
+STEP 1: READ SENTENCE BY SENTENCE (Like a Teacher Reading a Textbook)
+- Read the [STUDY_MATERIAL] sentence by sentence, paragraph by paragraph, like a teacher reading a textbook
+- Identify what is ACTUALLY being taught in each section:
+  * If a section teaches grammar (vocabulary, verbs, tenses, etc.) → This is grammar content
+  * If a section contains a story → This is story content
+  * If a section contains a poem → This is poem content
+  * If a section contains prose → This is prose content
+- The PDF may have ALL of these mixed together - that's normal and expected
+- Read each sentence carefully and identify what content type it belongs to
+
+STEP 2: IDENTIFY CORE CONCEPTS FROM EACH CONTENT TYPE
+- For GRAMMAR sections: Identify vocabulary words, verb forms, tenses, grammar rules explicitly taught
+- For STORY sections: Identify characters, events, plots, themes from those stories
+- For POEM sections: Identify themes, meanings, literary devices, what the poet says
+- For PROSE sections: Identify content, themes, concepts from that prose
+- Core concepts may include (depending on content type):
+  * Grammar: Definitions, rules, verb forms, tenses, vocabulary
+  * Stories: Characters, events, plots, themes
+  * Poems: Themes, meanings, literary devices, poet's message
+  * Prose: Content, themes, concepts, explanations
+- Each content type should generate questions from its own sections
+
+STEP 3: QUESTION GENERATION
+- Generate questions from ALL content types that are present in the PDF
+- If grammar is taught in the PDF, generate grammar questions from those sections
+- If stories are in the PDF, generate story questions from those sections
+- If poems are in the PDF, generate poem questions from those sections
+- Each question must map clearly to ONE specific concept/section from the content
+- Do NOT repeat the same concept unnecessarily
+- If a concept appears once, do NOT create another question testing the same concept
+- Generate questions ONLY from what is explicitly written in the [STUDY_MATERIAL]
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 3: NO-GUESSING RULE (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- If an answer is NOT clearly found in the [STUDY_MATERIAL] above, do NOT guess, infer, or generalize
+- In such cases, DO NOT generate that question
+- Never produce confident but unsupported answers
+- It is acceptable and expected to generate fewer questions if the content does not support more
+
+❌ STRICTLY FORBIDDEN:
+- Guessing answers not explicitly stated in the content
+- Inferring information from context
+- Using general knowledge to fill gaps
+- Creating questions when the answer is not clearly in the content
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 4: CONSISTENCY RULE (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- Do NOT generate multiple questions that test the same fact or concept in different wording
+- Do NOT generate similar questions with different answers
+- All answers must be internally consistent across the entire set
+- Never contradict an earlier answer
+- If entity X is mentioned, all questions about X must have consistent answers
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 5: QUALITY RULE (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- Do NOT force questions to reach a target count
+- If the content supports fewer high-quality questions, STOP gracefully
+- Fewer accurate questions are better than many incorrect ones
+- Quality over quantity - always prioritize accuracy
+
+❌ STRICTLY FORBIDDEN:
+- Generating questions just to meet a count
+- Creating low-quality questions to fill a quota
+- Repeating concepts to reach a number
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 6: SUBJECT-AWARE BEHAVIOR (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+You MUST adapt your approach based on the subject:
+
+- For LANGUAGE subjects (especially ENGLISH):
+  * If the PDF contains ONLY grammar (no stories/poems):
+     - 🚨 ALL questions MUST be about GRAMMAR RULES
+     - ✅ Generate questions about grammar rules (nouns, verbs, adjectives, adverbs, pronouns, etc.)
+     - ✅ Generate questions about sentence structure, syntax, tenses, verb forms, subject-verb agreement
+     - ❌ DO NOT generate questions about poems, stories, or characters
+  * If the PDF contains MIXED content (stories/poems + grammar):
+     - ✅ Generate questions from ALL content types present in the PDF
+     - ✅ If grammar is taught in the PDF (vocabulary, verbs, tenses, etc.), generate grammar questions from those sections
+     - ✅ If stories are in the PDF, generate story questions from those sections
+     - ✅ If poems are in the PDF, generate poem questions from those sections
+     - ✅ Read sentence by sentence and generate questions from whatever content type appears in that section
+     - ❌ DO NOT generate grammar questions if grammar is NOT taught in the PDF
+     - ❌ DO NOT generate story questions if stories are NOT in the PDF
+     - 🚨 CRITICAL: Generate questions ONLY from what is ACTUALLY written in the [STUDY_MATERIAL]
+  * Focus on what is explicitly taught in each section
+  * Generate questions ONLY when concepts/rules are explicitly stated
+  * Read like a teacher: sentence by sentence, identify what is being taught, and generate questions from that
+
+- For MATHEMATICS:
+  * Generate questions ONLY when formulas, steps, or methods are clearly stated
+  * Do NOT create questions from solved examples unless the method is explained
+  * Focus on explicitly taught formulas and procedures
+  * 🚨 CRITICAL: For numerical problems, you MUST compute the final answer
+  * 🚨 CRITICAL: Listing given values alone is NOT an answer - always show calculation steps
+  * 🚨 CRITICAL: For LCM/HCF (GCD) questions, ALWAYS provide:
+     - Method (Prime Factorization, Division Method, etc.)
+     - HCF value (calculated)
+     - LCM value (calculated)
+  * 🚨 CRITICAL: Never stop at "Given:" statements - always proceed to calculation and final answer
+
+- For SCIENCE:
+  * Focus on definitions, laws, processes, and explanations
+  * Generate questions ONLY from explicitly stated scientific facts
+  * Do NOT infer scientific principles not clearly stated
+
+- For SOCIAL STUDIES:
+  * Focus on explicitly stated facts, causes, effects, and explanations
+  * Generate questions ONLY from clearly stated historical/geographical facts
+  * Do NOT add background knowledge unless present in the text
+
+- Never assume syllabus importance beyond what is stated in the content
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULE 7: SOURCE FAITHFULNESS RULE (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY REQUIREMENTS:
+- Treat the [STUDY_MATERIAL] above as the ONLY textbook
+- Do NOT add background knowledge or real-world facts unless explicitly present in the text
+- Each question must clearly originate from the given content
+- Every answer must be directly traceable to a specific part of the provided content
+
+❌ STRICTLY FORBIDDEN:
+- Adding information from general knowledge
+- Using facts not in the provided content
+- Creating questions that require outside knowledge to answer
+- Assuming information not explicitly stated
+
+━━━━━━━━━━━━━━━━━━━━━━
+TEACHER VERIFICATION CHECKLIST (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+Before generating ANY question, verify:
+✓ Is this concept explicitly stated in the [STUDY_MATERIAL] above?
+✓ Can I point to the EXACT sentence/paragraph/section where this information is found?
+✓ Am I using ONLY information from the provided content?
+✓ Is this question testing a DIFFERENT concept from previous questions?
+✓ Is the answer clearly stated in the content (not inferred or guessed)?
+✓ Would a real teacher generate this question from this content?
+✓ Am I avoiding repetition of the same concept?
+✓ Can I provide a SPECIFIC "topic" that names the actual concept from the content?
+   * For Mathematics: Extract exact topic name (e.g., "Quadratic Equations", "Discriminant", "Roots")
+   * For Literature: Extract story/poem/character name (e.g., "The Grumble Family", "Zigzag")
+   * For Grammar: Extract grammar concept (e.g., "Modal Verbs", "Past Tense")
+✓ Can I provide a SPECIFIC "source_hint" that references where in the content this appears?
+   * For Mathematics: Reference exact chapter/section (e.g., "Chapter 2: Quadratic Equations")
+   * For Literature: Reference story/poem (e.g., "Poem 'The Grumble Family'")
+   * For Grammar: Reference section (e.g., "Section on Modal Verbs")
+
+🚨🚨🚨 CRITICAL: If you cannot provide a SPECIFIC topic and source_hint that references the actual content, the question is INVALID. 🚨🚨🚨
+🚨🚨🚨 MISSING topic OR source_hint = INVALID OUTPUT - You MUST regenerate with both fields included 🚨🚨🚨
+🚨🚨🚨 Generic topic OR source_hint = INVALID OUTPUT - You MUST extract specific names from the content 🚨🚨🚨
+🚨🚨🚨 For MATHEMATICS: Extract the EXACT topic name from the PDF (e.g., "Quadratic Equations", "Discriminant", "LCM and GCD") 🚨🚨🚨
+🚨🚨🚨 For MATHEMATICS: Reference the EXACT chapter/section number from the PDF (e.g., "Chapter 2: Quadratic Equations", "Section 3.5: Discriminant", "Chapter 6: LCM and GCD") 🚨🚨🚨
+🚨🚨🚨 If the PDF mentions "Chapter 6" or "Section 2.5", include that EXACT number in the source_hint 🚨🚨🚨
+🚨🚨🚨 EVERY question MUST include BOTH "topic" and "source_hint" fields in the JSON - NO EXCEPTIONS 🚨🚨🚨
+
+If ANY answer is NO, DO NOT generate that question.
+
+━━━━━━━━━━━━━━━━━━━━━━
+EXAMPLES OF CORRECT TEACHER BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ CORRECT (Content-Grounded):
+Content: "The quadratic formula is x = (-b ± √(b² - 4ac)) / 2a. This formula is used to solve quadratic equations."
+Q1: "What is the quadratic formula?" → Answer: "x = (-b ± √(b² - 4ac)) / 2a"
+(✓ Concept explicitly stated, answer directly from content)
+
+✅ CORRECT (Quality Over Quantity):
+Content: "A circle has radius r. The area is πr²."
+Generated: 2 high-quality questions about radius and area
+(✓ Stopped at 2 because content only supports these concepts, didn't force more)
+
+❌ INCORRECT (Outside Knowledge):
+Content: "A circle has radius r."
+Q1: "What is the circumference of a circle?" → Answer: "2πr"
+(✗ Formula not stated in content - DO NOT generate)
+
+❌ INCORRECT (Guessing):
+Content: "Zigzag is a character in the story."
+Q1: "What is Zigzag?" → Answer: "A snake" (not explicitly stated)
+(✗ Answer guessed, not clearly in content - DO NOT generate)
+
+❌ INCORRECT (Repetition):
+Q1: "What is the capital of India?" → Answer: "New Delhi"
+Q2: "Name the capital city of India." → Answer: "New Delhi"
+(✗ Same concept tested twice - FORBIDDEN)
+
+━━━━━━━━━━━━━━━━━━━━━━
+FINAL TEACHER MANDATE
+━━━━━━━━━━━━━━━━━━━━━━
+
+Think like a REAL TEACHER:
+- A teacher reads the textbook carefully
+- A teacher identifies what is EXPLICITLY taught
+- A teacher creates questions ONLY from what is taught
+- A teacher does NOT guess or assume
+- A teacher prioritizes accuracy over quantity
+- A teacher ensures consistency across all questions
+
+If you cannot find explicit support in the [STUDY_MATERIAL] above, DO NOT generate that question.
+Fewer accurate questions are ALWAYS better than many incorrect or unsupported questions.
+
+━━━━━━━━━━━━━━━━━━━━━━
+QUESTION GENERATION PARAMETERS
+━━━━━━━━━━━━━━━━━━━━━━
 
 {single_image_instructions}
 
@@ -1832,6 +2724,75 @@ EXAMPLES OF ABSOLUTELY FORBIDDEN PATTERNS:
 FINAL WARNING:
 If you generate ANY two questions with the same format, opener, structure, or frame, the ENTIRE output is INVALID and must be regenerated. Every single question must be TOTALLY DIFFERENT from all others in format, structure, and framing.
 
+━━━━━━━━━━━━━━━━━━━━━━
+🚨🚨🚨 CRITICAL CONSISTENCY RULE (ABSOLUTELY MANDATORY) 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━━━
+
+ABSOLUTE PROHIBITION - ZERO TOLERANCE FOR INCONSISTENCY:
+
+1. ❌ DO NOT generate multiple questions that test the same fact or concept
+   - If a concept appears once, do NOT repeat it in another question
+   - Each question MUST test a DIFFERENT fact, concept, or piece of information
+   - Example FORBIDDEN: 
+     * Q1: "What is Zigzag?" → Answer: "A snake"
+     * Q2: "What kind of bird is Zigzag?" → Answer: "A singing bird"
+     (This is FORBIDDEN - Zigzag cannot be both a snake and a bird)
+
+2. ❌ DO NOT provide conflicting answers for similar questions
+   - All answers MUST be internally consistent across the entire question set
+   - If Q1 says "X is Y", then Q2 cannot say "X is Z" (where Y ≠ Z)
+   - Example FORBIDDEN:
+     * Q4: "Which bird is described as Zigzag?" → Answer: "A snake" (CONTRADICTION - snake is not a bird)
+     * Q5: "What kind of bird is Zigzag?" → Answer: "A singing bird"
+     (This is FORBIDDEN - creates internal contradiction)
+
+3. ❌ DO NOT test the same information in different ways
+   - If you ask "What is X?" in one question, do NOT ask "Define X" or "Explain X" in another
+   - Each question MUST cover a DIFFERENT aspect or DIFFERENT information
+   - Rotate through DIFFERENT topics, characters, concepts, formulas, or facts
+   - 🚨🚨🚨 CRITICAL: For mathematics, DO NOT generate multiple questions about the same topic (e.g., don't generate 8 questions all about quadratic equations) 🚨🚨🚨
+   - 🚨🚨🚨 CRITICAL: Read through the PDF and identify DIFFERENT mathematics topics (Quadratic Equations, LCM/HCF, Linear Equations, Geometry, Trigonometry, Algebra, etc.) and generate questions from DIFFERENT topics 🚨🚨🚨
+   - 🚨🚨🚨 CRITICAL: If you have 120+ pages of content, there are MANY different topics - use them! Don't repeat the same topic multiple times 🚨🚨🚨
+
+4. ✅ MANDATORY CONSISTENCY REQUIREMENTS:
+   - All answers must be factually consistent with the study material
+   - All answers must be internally consistent with each other
+   - If a character/concept/entity is mentioned in multiple questions, the answers must NOT contradict
+   - Questions must test DIFFERENT facts, not the same fact in different ways
+
+5. ✅ CONSISTENCY VERIFICATION CHECKLIST (MANDATORY):
+   Before finalizing your output, verify:
+   ✓ No two questions test the same fact or concept
+   ✓ No two questions ask about the same entity/concept in conflicting ways
+   ✓ All answers are internally consistent (no contradictions)
+   ✓ If entity X is mentioned in multiple questions, all answers about X are consistent
+   ✓ Each question covers a DIFFERENT topic, concept, or piece of information
+
+EXAMPLES OF FORBIDDEN INCONSISTENCIES (DO NOT GENERATE):
+❌ FORBIDDEN Example 1 (Same Concept):
+   Q1: "What is Zigzag?" → Answer: "A snake"
+   Q2: "What kind of bird is Zigzag?" → Answer: "A singing bird"
+   (FORBIDDEN: Contradictory answers - Zigzag cannot be both snake and bird)
+
+❌ FORBIDDEN Example 2 (Same Fact):
+   Q1: "What is the capital of India?" → Answer: "New Delhi"
+   Q2: "Name the capital city of India." → Answer: "New Delhi"
+   (FORBIDDEN: Same fact tested twice - must test different information)
+
+❌ FORBIDDEN Example 3 (Conflicting Information):
+   Q1: "What is the value of x when x² = 16?" → Answer: "x = 4"
+   Q2: "Solve x² = 16" → Answer: "x = -4"
+   (FORBIDDEN: Inconsistent - both ±4 are correct, but answers contradict)
+
+✅ REQUIRED Example (Different Concepts):
+   Q1: "What is the capital of India?" → Answer: "New Delhi"
+   Q2: "What is the largest river in India?" → Answer: "Ganges"
+   Q3: "Name the highest mountain peak in India." → Answer: "Mount Kanchenjunga"
+   (REQUIRED: Each question tests a DIFFERENT fact - all consistent)
+
+FINAL CONSISTENCY WARNING:
+If you generate ANY questions that test the same fact/concept OR provide conflicting answers, the ENTIRE output is INVALID and must be regenerated. Every question must test a DIFFERENT fact, and all answers must be internally consistent.
+
 {marks_structure}
 
 === DIFFICULTY MODE (STRICT - MUST FOLLOW) ===
@@ -1890,6 +2851,91 @@ If you generate ANY simple arithmetic or basic symbol identification question in
 
 {exam_friendly_examples if detected_subject == "mathematics" else ""}
 
+=== BOARD EXAM QUESTION FRAMING (MANDATORY - FOLLOW EXAM PATTERNS) ===
+🚨🚨🚨 CRITICAL: Generate questions EXACTLY as they appear in board exams 🚨🚨🚨
+
+BOARD EXAM QUESTION PATTERNS (MANDATORY TO FOLLOW):
+
+1. QUESTIONS MUST BE CLEAR AND UNDERSTANDABLE:
+   ✅ Use simple, direct language that students can easily understand
+   ✅ Avoid complex sentence structures - keep questions straightforward
+   ✅ Each question should test ONE specific concept or fact
+   ✅ Questions should be self-contained (no ambiguity)
+
+2. QUESTION FRAMING FOR DIFFERENT SUBJECTS:
+
+   FOR SOCIAL SCIENCE / HISTORY:
+   ✅ Use clear, factual questions: "முதல் உலகப் போர் எப்போது தொடங்கியது?" (When did World War I begin?)
+   ✅ For 2-mark questions: "முதல் உலகப் போரின் முக்கிய காரணங்களை குறிப்பிடவும்" (List the main causes of World War I)
+   ✅ For 3-mark questions: "முதல் உலகப் போரின் பின்னணி மற்றும் அதன் முக்கிய அம்சங்களை விளக்குக" (Explain the background and main features of World War I)
+   ✅ For 5-mark questions: "முதல் உலகப் போரின் காரணங்கள் மற்றும் விளைவுகளை முழுமையாக விவரிக்கவும்" (Describe the causes and effects of World War I in detail)
+   ❌ AVOID: Vague questions, overly complex phrasing, ambiguous wording
+
+   FOR MATHEMATICS:
+   ✅ Use clear problem statements: "x² - 4 = 0 என்ற சமன்பாட்டின் மூலங்களை கண்டறியவும்" (Find the roots of the equation x² - 4 = 0)
+   ✅ For 10-mark questions: Provide complete step-by-step solutions with clear headings
+   ✅ Show all calculations and intermediate steps
+
+   FOR SCIENCE:
+   ✅ Use clear, concept-based questions: "பிரகாசத்தின் வேகம் என்ன?" (What is the speed of light?)
+   ✅ For descriptive questions: Ask for explanations with examples
+
+3. QUESTION STRUCTURE REQUIREMENTS:
+   ✅ 1-mark MCQ: Clear question with 4 distinct options
+   ✅ 2-mark Short Answer: Direct question requiring brief explanation (2-3 sentences)
+   ✅ 3-mark Descriptive: Question requiring explanation with examples (4-6 sentences)
+   ✅ 5-mark Descriptive: Comprehensive question requiring detailed explanation (8-12 sentences with introduction, body, conclusion)
+   ✅ 10-mark Descriptive: Very detailed question requiring complete analysis (15-20 sentences with multiple sections)
+
+4. LANGUAGE AND CLARITY:
+   ✅ Use proper grammar and correct terminology
+   ✅ Questions should be in the target language (Tamil/English/etc.) as specified
+   ✅ Avoid jargon unless it's part of the curriculum
+   ✅ Each question should be independently answerable
+
+5. SOURCE HINT REQUIREMENTS:
+   ✅ MUST reference actual part numbers: "Part 1 (Page 3)", "Part 2 (Page 15)"
+   ✅ MUST reference actual page numbers from the content: "பக்கம் 3", "பக்கம் 15"
+   ✅ MUST reference actual sections: "Section on World War I", "Chapter 2: Quadratic Equations"
+   ❌ NEVER use generic hints like "From provided study material" or "பக்கம் 31" for all questions
+   ✅ Each question's source_hint should be UNIQUE and reference DIFFERENT pages/sections
+
+6. EXAMPLES OF GOOD BOARD EXAM QUESTIONS:
+
+   ✅ GOOD (1-mark MCQ):
+      "முதல் உலகப் போர் எப்போது தொடங்கியது?"
+      Options: A. 1912, B. 1914, C. 1916, D. 1918
+      Answer: 1914
+      Source: Part 1 (Page 3)
+
+   ✅ GOOD (2-mark Short Answer):
+      "முதல் உலகப் போரின் முக்கிய காரணங்களை குறிப்பிடவும்."
+      Answer: "முதல் உலகப் போரின் முக்கிய காரணங்கள்: 1. காலனிய ஆட்சிகள், 2. தேசியத்துவம், 3. இராணுவ ஒப்பந்தங்கள்"
+      Source: Part 1 (Page 5)
+
+   ✅ GOOD (5-mark Descriptive):
+      "முதல் உலகப் போரின் காரணங்கள் மற்றும் விளைவுகளை முழுமையாக விவரிக்கவும்."
+      Answer: [Detailed explanation with introduction, main points, and conclusion]
+      Source: Part 2 (Page 20)
+
+7. EXAMPLES OF BAD QUESTIONS (AVOID):
+
+   ❌ BAD: "முதல் உலகப் போரின் வெடிவின் காரணங்களில் ஒன்று என்ன?" (Unclear phrasing - "வெடிவின்" is awkward)
+   ✅ GOOD: "முதல் உலகப் போரின் முக்கிய காரணங்களில் ஒன்று என்ன?" (Clear and direct)
+
+   ❌ BAD: "இங்கிலாந்து மற்றும் பிரான்சின் மத்திய ஆட்சியின் பெயர் என்ன?" (Confusing - what is "மத்திய ஆட்சி"?)
+   ✅ GOOD: "முதல் உலகப் போரில் இங்கிலாந்து மற்றும் பிரான்ஸ் சேர்ந்த கூட்டணியின் பெயர் என்ன?" (Clear and specific)
+
+   ❌ BAD: Generic source hints like "பக்கம் 31" for all questions
+   ✅ GOOD: Specific source hints like "Part 1 (Page 3): World War I Causes" or "Part 2 (Page 15): Russian Revolution"
+
+CRITICAL REQUIREMENTS:
+- Every question MUST be framed like a real board exam question
+- Questions MUST be clear, understandable, and unambiguous
+- Source hints MUST reference actual part numbers and pages from the content
+- Questions MUST follow the exact mark distribution requested
+- Language MUST be appropriate for board exams (formal, clear, correct)
+
 === QUESTION FORMAT VARIATION (ABSOLUTELY MANDATORY - ZERO TOLERANCE) ===
 [CRITICAL] STRICTLY FORBIDDEN: NO REPETITION OF QUESTION FORMATS, OPENERS, STRUCTURES, OR FRAMES [CRITICAL]
 
@@ -1942,6 +2988,10 @@ CRITICAL ENFORCEMENT:
 === GENERAL RULES ===
 1. TOTAL questions generated must NOT exceed {remaining_questions}.
 2. Follow the mark distribution EXACTLY as requested.
+   🚨🚨🚨 CRITICAL: You MUST generate questions for ALL marks values in the distribution 🚨🚨🚨
+   🚨🚨🚨 If distribution includes 10 marks, you MUST generate 10-mark questions 🚨🚨🚨
+   🚨🚨🚨 If distribution includes 5 marks, you MUST generate 5-mark questions 🚨🚨🚨
+   🚨🚨🚨 DO NOT skip any marks values - generate questions for ALL requested marks 🚨🚨🚨
 3. Use correct question types:
    - MCQ → 4 options + correct_answer field (ONLY for 1-2 marks)
    - Short Answer (1–2 marks) → type: "short"
@@ -1972,7 +3022,109 @@ CRITICAL ENFORCEMENT:
 8. MCQs must be distinct and meaningful - avoid similar or overlapping options or questions that test the same concept.
 9. Output must ALWAYS follow this exact JSON format (STRUCTURED - NO \\n, NO paragraphs):
 
+<<<<<<< HEAD
 {json_example_math if detected_subject == "mathematics" else (json_example_other if detected_subject in ["english", "science", "social_science"] else json_example_general)}
+=======
+{f"""
+{{
+  "questions": [
+    {{
+      "marks": 5,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Given the function f(x) = 2x² + 3x + 1, find the roots using the quadratic formula.",
+      "correct_answer": {{
+        "given": "f(x) = 2x² + 3x + 1",
+        "formula": "x = (-b ± √(b² - 4ac)) / (2a), where D = b² - 4ac",
+        "coefficients": "a = 2, b = 3, c = 1",
+        "steps": [
+          "D = b² - 4ac = 3² - 4(2)(1) = 9 - 8 = 1",
+          "x = (-3 ± √1) / 4 = (-3 ± 1) / 4",
+          "x = (-3 + 1) / 4 = -1/2 and x = (-3 - 1) / 4 = -1"
+        ],
+        "final": "Final Answer: x = -1/2, -1"
+      }}
+    }},
+    {{
+      "marks": 10,
+      "type": "descriptive",
+      "difficulty": "hard",
+      "question": "Analyze the function f(x) = 3x³ - 6x² + 2. Find the critical points and determine their nature.",
+      "topic": "Calculus - Critical Points",
+      "source_hint": "Chapter on Derivatives and Applications",
+      "correct_answer": {{
+        "given": "f(x) = 3x³ - 6x² + 2",
+        "definition": "Critical points occur where the first derivative is zero or undefined.",
+        "formula": "First derivative: f'(x) = 9x² - 12x\\nSecond derivative: f''(x) = 18x - 12",
+        "steps": [
+          "Step 1: Calculate first derivative: f'(x) = 9x² - 12x",
+          "Step 2: Set first derivative to zero: f'(x) = 9x² - 12x = 0",
+          "Step 3: Factor the equation: x(9x - 12) = 0",
+          "Step 4: Find critical points: x = 0 or x = 12/9 = 4/3",
+          "Step 5: Calculate second derivative: f''(x) = 18x - 12",
+          "Step 6: Apply second derivative test: f''(0) = -12 < 0 (local maximum), f''(4/3) = 12 > 0 (local minimum)"
+        ],
+        "function_values": [
+          "f(0) = 3(0)³ - 6(0)² + 2 = 2",
+          "f(4/3) = 3(4/3)³ - 6(4/3)² + 2 = -14/9"
+        ],
+        "final": "Final Answer: Local maximum at (0, 2), Local minimum at (4/3, -14/9)"
+      }}
+    }},
+""" if detected_subject == "mathematics" else f"""
+{{
+  "questions": [
+    {{
+      "marks": 3,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Describe the main character's development in the story.",
+      "topic": "Character Development",
+      "source_hint": "Chapter 5: Character Analysis",
+      "correct_answer": "The main character undergoes significant growth throughout the narrative. Initially, they are portrayed as naive and inexperienced. As the story progresses, they face various challenges that test their resolve. These experiences shape their personality and worldview. By the end, they emerge as a more mature and understanding individual."
+    }},
+    {{
+      "marks": 5,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Explain the theme of the poem and analyze its literary devices.",
+      "topic": "Poetry Analysis",
+      "source_hint": "Section on Literary Analysis",
+      "correct_answer": {{
+        "introduction": "The poem explores themes of nature and human connection, using vivid imagery to create emotional resonance.",
+        "explanation": "The poet uses vivid imagery to depict natural scenes, creating a sense of harmony between humans and the environment. The language choices emphasize the interconnectedness of all living things.",
+        "analysis": "Literary devices such as metaphor and personification enhance the emotional impact. The metaphor of nature as a teacher allows readers to connect deeply with the poet's message about learning from the natural world.",
+        "conclusion": "The poem effectively conveys the relationship between humans and nature through its masterful use of language and imagery, leaving readers with a profound appreciation for the natural world."
+      }}
+    }},
+    {{
+      "marks": 10,
+      "type": "descriptive",
+      "difficulty": "hard",
+      "question": "Comprehensively analyze the historical significance of the event and its impact.",
+      "topic": "Historical Events Analysis",
+      "source_hint": "Chapter 8: Major Historical Events",
+      "correct_answer": {{
+        "background": "The event occurred during a period of significant change in society, marking a transition from traditional to modern approaches.",
+        "key_points": ["First, the event marked a turning point in political structures", "Second, it influenced subsequent economic developments", "Third, it changed social relationships and cultural norms"],
+        "explanation": "The event's significance lies in its transformative nature. It challenged existing power structures and created new opportunities for different social groups. The immediate consequences were felt across multiple sectors of society.",
+        "conclusion": "The event had lasting impact on society, shaping the course of history for generations to come. Its legacy continues to influence contemporary discussions and policies."
+      }}
+    }},
+""" if detected_subject in ["english", "science", "social_science"] else f"""
+{{
+  "questions": [
+    {{
+      "marks": 5,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Explain the concept and provide examples.",
+      "topic": "General Concept",
+      "source_hint": "Relevant section from study material",
+      "correct_answer": "Definition: The concept is defined as... Explanation: It involves several key aspects... Example: For instance... Conclusion: In summary..."
+    }},
+"""}
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
     {{
       "marks": 1,
       "type": "mcq",
@@ -2027,7 +3179,11 @@ Difficulty level: {difficulty}
 - Check each question before outputting: Is it in {target_language_name}? If not, rewrite it.
 
 LANGUAGE-SPECIFIC EXAM STYLE (MANDATORY):
+🚨 TARGET LANGUAGE: {target_language_name.upper()} 🚨
+You MUST generate ALL content (questions, answers, options) EXCLUSIVELY in {target_language_name}. NO EXCEPTIONS.
+
 You MUST use formal exam-style phrasing appropriate for {target_language_name}:
+<<<<<<< HEAD
 - Tamil (ta-IN): Use formal கல்வி மொழி Tamil. Use patterns like: "... என்றால் என்ன?", "சுருக்கமாக எழுதுக", "விளக்குக", "விவரிக்கவும்", "வேறுபாடுகளை எழுதுக". Avoid spoken Tamil. ALL questions and answers MUST be in Tamil script.
 - English (en): Use formal academic tone. Use patterns like: "Define …", "Explain …", "Describe …", "Write short notes on …", "Differentiate between …"
 - Hindi (hi-IN): Use शुद्ध हिन्दी / परीक्षा शैली. Use: "परिभाषित कीजिए", "समझाइए", "विवरण दीजिए", "लघु उत्तरीय प्रश्न", "दीर्घ उत्तरीय प्रश्न"
@@ -2037,6 +3193,24 @@ You MUST use formal exam-style phrasing appropriate for {target_language_name}:
 - Arabic (ar): Use Modern Standard Arabic. Use: "ما هو …؟", "اشرح", "وضح"
 - Spanish (es): Use neutral academic Spanish. Use: "Defina …", "Explique …", "Describa …"
 CRITICAL: All questions and answers MUST use the appropriate exam-style phrasing for {target_language_name}. DO NOT use casual or spoken language - ONLY formal exam-style phrasing.
+=======
+- Tamil: Use formal கல்வி மொழி Tamil. Use patterns like: "... என்றால் என்ன?", "சுருக்கமாக எழுதுக", "விளக்குக", "விவரிக்கவும்", "வேறுபாடுகளை எழுதுக". Avoid spoken Tamil. Generate questions and answers in Tamil script ONLY.
+- English: Use formal academic tone. Use patterns like: "Define …", "Explain …", "Describe …", "Write short notes on …", "Differentiate between …"
+- Hindi: Use शुद्ध हिन्दी / परीक्षा शैली. Use: "परिभाषित कीजिए", "समझाइए", "विवरण दीजिए", "लघु उत्तरीय प्रश्न", "दीर्घ उत्तरीय प्रश्न". Generate in Devanagari script ONLY.
+- Telugu: Use formal textbook Telugu. Use: "అంటే ఏమిటి?", "సంక్షిప్తంగా వ్రాయండి", "వివరించండి". Generate in Telugu script ONLY.
+- Kannada: Use school exam style Kannada. Use: "ಎಂದರೆ ಏನು?", "ಸಂಕ್ಷಿಪ್ತ ಉಕ್ಕಿ ಬರೆಯಿರಿ", "ವಿವರಿಸಿ". Generate in Kannada script ONLY.
+- Malayalam: Use formal academic Malayalam. Use: "എന്താണ്?", "വ്യാഖ്യാനിക്കുക", "സംക്ഷിപ്തമായി എഴുതുക". Generate in Malayalam script ONLY.
+- Arabic: Use Modern Standard Arabic. Use: "ما هو …؟", "اشرح", "وضح". Generate in Arabic script ONLY.
+- Spanish: Use neutral academic Spanish. Use: "Defina …", "Explique …", "Describa …"
+
+CRITICAL LANGUAGE ENFORCEMENT:
+- If target language is {target_language_name}, EVERY SINGLE WORD must be in {target_language_name}
+- Question text: {target_language_name} ONLY - NO English, NO code-switching
+- Answer text: {target_language_name} ONLY - NO English, NO code-switching  
+- MCQ options: {target_language_name} ONLY - NO English, NO code-switching
+- DO NOT use casual or spoken language - ONLY formal exam-style phrasing
+- DO NOT mix languages - if you see English content in the study material but target is {target_language_name}, translate and generate in {target_language_name}
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
 
 🚨 ABSOLUTE LANGUAGE REQUIREMENT 🚨
 - If target language is Tamil: ALL questions MUST be in Tamil (தமிழ் script). NO English questions allowed.
@@ -2045,6 +3219,7 @@ CRITICAL: All questions and answers MUST use the appropriate exam-style phrasing
 - This applies to BOTH questions AND answers - they must match the target language.
 - If you generate even ONE question in the wrong language, the entire output is INVALID.
 
+<<<<<<< HEAD
 🎯 QUALITY-FIRST REQUIREMENTS - READ CAREFULLY 🎯
 
 QUESTION COUNT (PREFERRED TARGET - QUALITY OVER QUANTITY):
@@ -2069,13 +3244,70 @@ DISTRIBUTION PREFERENCES (QUALITY-FIRST APPROACH):
 - ✅ If you can generate all questions matching the distribution, do so
 - ✅ If content is limited, generate fewer questions but maintain quality
 - ✅ Focus on clarity, correctness, and syllabus relevance
+=======
+QUALITY OVER QUANTITY (HIGHEST PRIORITY):
+- ✅ Generate questions ONLY if the content clearly supports them
+- ✅ Do NOT force additional questions to meet a number
+- ✅ If the content does not support the requested number of questions, generate the maximum number of HIGH-QUALITY questions possible
+- ✅ Do NOT repeat question patterns, equations, or ideas
+- ✅ Do NOT invent or stretch content to increase count
+- ✅ Quality is MORE IMPORTANT than quantity
+- ✅ If you can only generate fewer than {actual_num_questions} high-quality questions, generate only what you can support with the content
+
+CONTENT ABUNDANCE DETECTION:
+- 📊 This content is {total_content_length:,} characters (~{num_pages_estimate} pages estimated)
+- 📊 For {actual_num_questions} questions, you need approximately {questions_per_page:.1f} questions per page
+- 📊 This content is ABUNDANT and should easily support {actual_num_questions} unique, high-quality questions
+- 📊 With this much content, you should be able to generate the full {actual_num_questions} questions without repetition
+- 📊 Use different topics, concepts, and angles from throughout the content to ensure uniqueness
+
+QUESTION COUNT (TARGET - STRIVE FOR FULL COUNT WHEN CONTENT IS ABUNDANT):
+- 🎯 Target: Generate exactly {actual_num_questions} questions
+- 🎯 The "questions" array in your JSON should contain {actual_num_questions} question objects
+- 🎯 With abundant content ({total_content_length:,} chars, ~{num_pages_estimate} pages), you should be able to generate the full {actual_num_questions} questions
+- 🎯 Use different sections, topics, and concepts from the content to ensure all {actual_num_questions} questions are unique
+- 🎯 Spread questions across different parts/pages of the content - don't focus on just one section or page
+- 🎯 Read through the ENTIRE content (beginning, middle, end) and generate questions from DIFFERENT pages/sections
+- 🎯 If content has page markers (e.g., "Part 1 (Pages 1-40)", "Part 2 (Pages 41-80)"), use DIFFERENT parts/pages for different questions
+- 🎯 When providing source_hint, reference DIFFERENT page numbers/sections - don't use the same page for all questions
+- 🎯 If content supports fewer questions, generate only the number you can support with HIGH QUALITY
+- 🎯 NEVER exceed {remaining_questions} questions
+- 🎯 NEVER generate low-quality or repetitive questions just to meet the count
+- 🎯 NEVER invent content or stretch material to create more questions
+
+DISTRIBUTION REQUIREMENTS (MANDATORY - STRICT ENFORCEMENT):
+🚨🚨🚨 CRITICAL: You MUST follow the distribution EXACTLY 🚨🚨🚨
+- Distribution: {distribution_string}
+- You MUST generate questions for ALL marks values in the distribution
+- If distribution includes 10 marks, you MUST generate 10-mark questions (NO EXCEPTIONS)
+- If distribution includes 5 marks, you MUST generate 5-mark questions (NO EXCEPTIONS)
+- If distribution includes 3 marks, you MUST generate 3-mark questions (NO EXCEPTIONS)
+- DO NOT skip any marks values - generate questions for ALL requested marks
+- DO NOT generate only 1-mark and 2-mark questions if 5-mark and 10-mark are requested
+- The distribution is MANDATORY - you must follow it EXACTLY
+- With {total_content_length:,} chars (~{num_pages_estimate} pages), there is MORE than enough content to generate ALL requested marks
+- 🚨🚨🚨 FAILURE TO GENERATE ALL MARKS VALUES = INVALID OUTPUT 🚨🚨🚨
+- 🚨🚨🚨 If you skip 10-mark or 5-mark questions, the output is INVALID and must be regenerated 🚨🚨🚨
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
 
 QUALITY CHECK BEFORE OUTPUT:
 1. Count the questions in your "questions" array
+<<<<<<< HEAD
 2. Verify each question is high-quality, clearly worded, and syllabus-relevant
 3. Ensure no questions are invented or forced if content doesn't support them
 4. If you have fewer than {actual_num_questions} questions but they are all high-quality, that is acceptable
 5. Output when you have generated the best possible questions from the content
+=======
+2. Verify ALL marks values from the distribution are present:
+   - Check: Do I have 10-mark questions if distribution requires them?
+   - Check: Do I have 5-mark questions if distribution requires them?
+   - Check: Do I have 3-mark questions if distribution requires them?
+   - Check: Do I have all other marks values from the distribution?
+3. Verify all questions are HIGH QUALITY and UNIQUE (no repetition)
+4. Verify all questions are supported by the content (no invented content)
+5. 🚨🚨🚨 CRITICAL: If ANY marks value from the distribution is missing, you MUST regenerate to include it 🚨🚨🚨
+6. Only output when you have verified ALL marks values are present AND quality and uniqueness
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
 - Output ONLY valid JSON - no markdown, no explanations, no text before/after JSON
 - CRITICAL: EVERY question MUST have a "correct_answer" field - this is MANDATORY for ALL mark values (1, 2, 3, 5, 10 marks)
 - For 5+ marks: Use structured format (object with subject-appropriate fields)
@@ -2084,7 +3316,16 @@ QUALITY CHECK BEFORE OUTPUT:
   * Science: Use object with definition, explanation, example, conclusion (OR string with embedded headings)
   * Social Science: Use object with background, key_points, explanation, conclusion (OR string with embedded headings)
 - For 1-3 marks: Can use simple string format, but MUST provide an answer
+🚨 CRITICAL LANGUAGE REQUIREMENT 🚨
 - All questions, options, and answers MUST be in {target_language_name} ONLY
+- DO NOT mix languages - if target language is {target_language_name}, generate EVERYTHING in {target_language_name}
+- Question text: {target_language_name} ONLY
+- Answer text: {target_language_name} ONLY  
+- MCQ options: {target_language_name} ONLY
+- If target language is Tamil, use Tamil script (தமிழ்) for ALL content
+- If target language is Hindi, use Devanagari script (हिंदी) for ALL content
+- If target language is English, use English for ALL content
+- NO code-switching or language mixing allowed
 - NEVER generate a question without an answer - if you cannot generate an answer, do not generate the question
 - Match question type to marks:
 
@@ -2101,6 +3342,20 @@ ANSWER FORMAT RULES (MANDATORY - SUBJECT-SPECIFIC):
   - "function_values": array of strings (calculate function values at critical points, if applicable) - REQUIRED for 10 marks when finding extrema
   - "final": string (final answer with "Final Answer:" prefix) - REQUIRED for 5+ marks, NO \\boxed, use plain text
   - For 10-mark math: MUST also include "definition" field
+  
+  🚨 CRITICAL FOR MATHEMATICS - SUBJECT-SPECIFIC STRICT RULE:
+  - For numerical problems, you MUST compute the final answer - listing given values alone is NOT an answer
+  - Show necessary steps suitable for the given marks
+  - Never stop at "Given:" statements - always proceed to calculation and final answer
+  
+  📐 FOR LCM/HCF (GCD) QUESTIONS - MANDATORY REQUIREMENTS:
+  - ALWAYS provide ALL of the following:
+    1) Method: Explain the method used (Prime Factorization, Division Method, etc.)
+    2) HCF value: Calculate and state the HCF (Highest Common Factor/GCD)
+    3) LCM value: Calculate and state the LCM (Least Common Multiple)
+  - Show complete working with all steps
+  - Never leave the answer incomplete - always provide both HCF and LCM values
+  - Example structure: Given → Method → Calculation/Steps → Final Answer: HCF = [value], LCM = [value]
 
   FOR ENGLISH/LITERATURE (5+ marks):
   - "introduction": string - REQUIRED for 5+ marks
@@ -2212,6 +3467,7 @@ For 1 mark questions: Use simple string format, but MUST provide an answer.
 
 Now generate the questions strictly within the allowed limit, ensuring answer lengths match the mark requirements exactly and follow the difficulty-based structure. REMEMBER: EVERY question MUST have a correct_answer field.
 
+<<<<<<< HEAD
 🎯 FINAL QUALITY CHECK BEFORE OUTPUTTING JSON:
 1. Generate high-quality questions from the study material (target: {actual_num_questions})
 2. Count the questions: questions.length should be close to {actual_num_questions} (fewer is acceptable if quality is maintained)
@@ -2223,6 +3479,56 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
 ✅ ACCEPTABLE: Generating fewer questions if content is insufficient or quality would be compromised
 ✅ FOCUS: Quality, clarity, correctness, and syllabus relevance over exact count
 """
+=======
+🚨 FINAL VERIFICATION BEFORE OUTPUTTING JSON:
+1. Generate HIGH-QUALITY questions from the content - TARGET: {actual_num_questions} questions
+2. With {total_content_length:,} characters of content (~{num_pages_estimate} pages), you should be able to generate all {actual_num_questions} questions
+3. Verify all questions are UNIQUE (no repetition of patterns, equations, or ideas)
+4. Verify all questions are supported by the content (no invented or stretched content)
+5. Verify distribution as closely as possible (quality over exact matching)
+6. Use different topics, sections, and concepts from throughout the content to ensure uniqueness
+7. If content is truly insufficient (very short content), generate only what you can support with HIGH QUALITY
+8. Only output JSON when you have verified quality and uniqueness
+{"9. 🚨 GRAMMAR CONTENT CHECK: Verify EVERY question is about GRAMMAR RULES, NOT poems/stories/characters" if is_grammar_content else ""}
+{"10. 🚨 If ANY question is about poetry, themes, authors, or literature, REJECT the entire output and regenerate" if is_grammar_content else ""}
+{"11. 🚨 For EACH question, verify you can point to the SPECIFIC section in [STUDY_MATERIAL] where this concept is taught" if is_grammar_content else ""}
+{"12. 🚨 For EACH question, provide a SPECIFIC topic (actual concept name) and source_hint (actual content location)" if is_grammar_content else ""}
+{"13. 🚨 Generic topics like 'Which of the' or source hints like 'From provided study material' indicate you are NOT reading the content - this is INVALID" if is_grammar_content else ""}
+
+CRITICAL: With abundant content ({total_content_length:,} chars), strive to generate the full {actual_num_questions} questions. Quality is important, but with this much content, you should be able to achieve both quality AND quantity.
+{"🚨🚨🚨 FINAL GRAMMAR REMINDER: For grammar content, ONLY grammar questions are valid. Literature questions = INVALID OUTPUT." if is_grammar_content else ""}
+{"🚨🚨🚨 FINAL CONTENT REMINDER: You MUST read the [STUDY_MATERIAL] and extract topics/source hints from ACTUAL content sections, not use generic placeholders." if is_grammar_content else ""}"""
+
+    try:
+        # Calculate max_tokens based on number of questions requested
+        # BUT: We must ensure prompt + content + max_tokens <= 128,000 tokens
+        # The prompt is already very large (~127k tokens based on error), so we have very little room
+        # Estimate: ~200-300 tokens per question (including JSON structure)
+        estimated_tokens_per_question = 300
+        max_tokens_estimate = (num_questions * estimated_tokens_per_question) + 2000
+        
+        # Estimate prompt + content tokens
+        # Rough estimate: 1 token ≈ 3.5 characters for non-English content (Tamil uses more tokens)
+        # For Tamil/other languages, use 1 token ≈ 2.5 chars (more conservative)
+        estimated_content_tokens = len(text_content) // 2.5
+        estimated_prompt_tokens = (len(SYSTEM_PROMPT) + len(user_prompt)) // 2.5
+        
+        # Calculate available tokens for completion
+        # Leave a safety margin of 2000 tokens to account for estimation errors
+        total_estimated = estimated_prompt_tokens + estimated_content_tokens
+        available_for_completion = max(2000, 128000 - total_estimated - 2000)
+        
+        # Use the smaller of: requested tokens or available tokens
+        max_tokens = min(max_tokens_estimate, available_for_completion)
+        
+        # Cap at 16384 (GPT-4o-mini's max output tokens)
+        max_tokens = min(max_tokens, 16384)
+        
+        # Ensure minimum of 2000 tokens for small requests
+        max_tokens = max(max_tokens, 2000)
+        
+        print(f"📊 Token budget: Prompt~{estimated_prompt_tokens:.0f}k, Content~{estimated_content_tokens:.0f}k, Total~{total_estimated:.0f}k, Available for completion: {available_for_completion:.0f}k, Requesting: {max_tokens}k")
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
 
     try:
         response = client.chat.completions.create(
@@ -2232,8 +3538,20 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.7,
-            response_format={"type": "json_object"}
-        )
+                response_format={"type": "json_object"},
+                max_tokens=max_tokens
+            )
+        except Exception as api_error:
+            # Check if it's a context length exceeded error
+            error_str = str(api_error)
+            if "context_length_exceeded" in error_str or "maximum context length" in error_str:
+                raise ValueError(
+                    f"Content is too large for AI processing. The selected PDF parts contain too much content. "
+                    f"Please try selecting fewer parts or reduce the number of questions requested. "
+                    f"Error details: {error_str[:200]}"
+                )
+            # Re-raise other errors
+            raise
         
         # Extract token usage
         usage = response.usage
@@ -2277,6 +3595,10 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
         # Get response content
         response_content = response.choices[0].message.content.strip()
         
+        # Log response preview for debugging
+        print(f"📥 AI Response length: {len(response_content)} characters")
+        print(f"📥 Response preview (first 500 chars): {response_content[:500]}...")
+        
         # Clean and fix common JSON issues
         try:
             # Remove any markdown code blocks if present
@@ -2287,6 +3609,7 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
             
             # Try to parse JSON
             result = json.loads(response_content)
+            print("✅ JSON parsed successfully")
             
         except json.JSONDecodeError as e:
             print(f"❌ JSON parsing error: {e}")
@@ -2346,27 +3669,89 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
                 print("✅ Successfully parsed JSON after fixing")
             except json.JSONDecodeError as e2:
                 print(f"❌ Still failed after fixes: {e2}")
-                # Last resort: try to extract just the questions array
-                questions_match = re.search(r'"questions"\s*:\s*\[.*?\]', fixed_content, re.DOTALL)
-                if questions_match:
-                    try:
-                        # Try to reconstruct a minimal valid JSON
-                        questions_json = '{"questions": ' + questions_match.group(0).split(':', 1)[1].strip() + '}'
-                        result = json.loads(questions_json)
-                        print("✅ Successfully extracted questions array")
+                # Last resort: try to extract complete question objects from truncated JSON
+                # Find the questions array start
+                questions_start = fixed_content.find('"questions"')
+                if questions_start >= 0:
+                    # Find the opening bracket after "questions"
+                    bracket_start = fixed_content.find('[', questions_start)
+                    if bracket_start >= 0:
+                        # Try to extract complete question objects one by one
+                        questions_text = fixed_content[bracket_start:]
+                        questions_list = []
+                        current_pos = 1  # Skip the opening bracket
+                        brace_count = 0
+                        in_string = False
+                        escape_next = False
+                        question_start = -1
+                        
+                        # Parse character by character to find complete question objects
+                        for i, char in enumerate(questions_text[1:], 1):  # Start from position 1 (after '[')
+                            if escape_next:
+                                escape_next = False
+                                continue
+                            
+                            if char == '\\':
+                                escape_next = True
+                                continue
+                            
+                            if char == '"' and not escape_next:
+                                in_string = not in_string
+                                continue
+                            
+                            if in_string:
+                                continue
+                            
+                            if char == '{':
+                                if brace_count == 0:
+                                    question_start = i
+                                brace_count += 1
+                            elif char == '}':
+                                brace_count -= 1
+                                if brace_count == 0 and question_start >= 0:
+                                    # Found a complete question object
+                                    question_json = questions_text[question_start:i+1]
+                                    try:
+                                        question_obj = json.loads(question_json)
+                                        questions_list.append(question_obj)
+                                        print(f"✅ Extracted question {len(questions_list)} from truncated JSON")
                     except:
+                                        # Skip invalid question
+                                        pass
+                                    question_start = -1
+                            elif char == ']' and brace_count == 0:
+                                # End of questions array
+                                break
+                        
+                        if questions_list:
+                            result = {"questions": questions_list}
+                            print(f"✅ Successfully extracted {len(questions_list)} questions from truncated JSON")
+                        else:
+                            # Sanitize error message to avoid Unicode encoding issues
+                            error_preview = response_content[:200].encode('ascii', 'ignore').decode('ascii')
                         raise ValueError(
                             f"Failed to parse AI response as JSON after all fixes. "
                             f"Original error: {str(e)}. "
                             f"Fix error: {str(e2)}. "
-                            f"Response preview: {response_content[:500]}..."
+                                f"Response appears to be truncated. Response preview: {error_preview}..."
                         )
                 else:
+                        # Sanitize error message to avoid Unicode encoding issues
+                        error_preview = response_content[:200].encode('ascii', 'ignore').decode('ascii')
                     raise ValueError(
                         f"Failed to parse AI response as JSON. "
                         f"Error: {str(e)}. "
                         f"Error at line {e.lineno}, column {e.colno}. "
-                        f"Response preview: {response_content[:500]}..."
+                            f"Response preview: {error_preview}..."
+                        )
+                else:
+                    # Sanitize error message to avoid Unicode encoding issues
+                    error_preview = response_content[:200].encode('ascii', 'ignore').decode('ascii')
+                    raise ValueError(
+                        f"Failed to parse AI response as JSON. "
+                        f"Error: {str(e)}. "
+                        f"Error at line {e.lineno}, column {e.colno}. "
+                        f"Response preview: {error_preview}..."
                     )
         
         # Validate result structure
@@ -2381,17 +3766,198 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
         
         # Validate exact distribution matching
         questions = result.get("questions", [])
+        
+        # ============================================
+        # CONTENT GROUNDING RULES COMPLIANCE LOGGING
+        # ============================================
+        print("\n" + "="*80)
+        print("📋 CONTENT GROUNDING RULES COMPLIANCE CHECK")
+        print("="*80)
+        print(f"Total questions generated: {len(questions)}")
+        print(f"Content length: {len(text_content)} characters")
+        print(f"Expected questions: {num_questions}")
+        
+        # Check for topic and source_hint fields
+        questions_with_topic = 0
+        questions_with_source_hint = 0
+        questions_missing_both = 0
+        topics_found = []
+        
+        for idx, q in enumerate(questions):
+            has_topic = bool(q.get("topic"))
+            has_source_hint = bool(q.get("source_hint"))
+            
+            if has_topic:
+                questions_with_topic += 1
+                topics_found.append(q.get("topic"))
+            if has_source_hint:
+                questions_with_source_hint += 1
+            if not has_topic and not has_source_hint:
+                questions_missing_both += 1
+                print(f"⚠️  Q{idx+1}: Missing both 'topic' and 'source_hint' fields")
+        
+        print(f"\n📊 Topic/Source Tracking:")
+        print(f"   ✅ Questions with 'topic': {questions_with_topic}/{len(questions)} ({questions_with_topic*100//len(questions) if questions else 0}%)")
+        print(f"   ✅ Questions with 'source_hint': {questions_with_source_hint}/{len(questions)} ({questions_with_source_hint*100//len(questions) if questions else 0}%)")
+        print(f"   ⚠️  Questions missing both: {questions_missing_both}/{len(questions)}")
+        
+        if topics_found:
+            print(f"\n📚 Topics identified by AI:")
+            for i, topic in enumerate(topics_found[:10], 1):  # Show first 10
+                print(f"   {i}. {topic}")
+            if len(topics_found) > 10:
+                print(f"   ... and {len(topics_found) - 10} more")
+        
+        # Check for content grounding violations
+        print(f"\n🔍 Content Grounding Analysis:")
+        
+        # Check question uniqueness (no repetition)
+        question_texts = [q.get("question", "").lower().strip() for q in questions]
+        unique_questions = len(set(question_texts))
+        duplicate_count = len(questions) - unique_questions
+        print(f"   ✅ Unique questions: {unique_questions}/{len(questions)}")
+        if duplicate_count > 0:
+            print(f"   ⚠️  Duplicate questions detected: {duplicate_count}")
+        
+        # Check for common violations
+        violations = []
+        
+        # Check if questions seem to test different concepts
+        if len(topics_found) < len(set(topics_found)):
+            violations.append(f"Topic repetition detected: {len(topics_found) - len(set(topics_found))} repeated topics")
+        
+        # Check answer consistency (basic check)
+        answers = [str(q.get("correct_answer", q.get("answer", ""))).lower() for q in questions]
+        if len(answers) != len(set(answers)):
+            print(f"   ⚠️  Some answers appear similar (potential consistency issue)")
+        
+        if violations:
+            print(f"\n⚠️  Potential Content Grounding Violations:")
+            for v in violations:
+                print(f"   - {v}")
+        else:
+            print(f"   ✅ No obvious content grounding violations detected")
+        
+        # Subject-specific validation
+        print(f"\n🎯 Subject-Specific Validation:")
+        print(f"   Detected Subject: {detected_subject}")
+        
+        if detected_subject == "english":
+            # Check if content is grammar-focused (but also check for stories/poems)
+            grammar_keywords = ['grammar', 'noun', 'verb', 'tense', 'sentence', 'subject-verb', 'parts of speech', 
+                              'adjective', 'adverb', 'pronoun', 'preposition', 'conjunction', 'article']
+            literature_keywords = ['poem', 'poetry', 'story', 'character', 'narrator', 'plot', 'theme', 'author', 'poet', 'stanza', 'verse']
+            
+            has_grammar = any(keyword in text_content.lower() for keyword in grammar_keywords)
+            has_literature = any(keyword in text_content.lower() for keyword in literature_keywords)
+            
+            # Only validate grammar-only if content is PURELY grammar (no literature)
+            is_grammar_content = has_grammar and not has_literature
+            
+            if is_grammar_content:
+                print(f"   ⚠️  GRAMMAR CONTENT DETECTED - Validating questions are grammar-focused...")
+                grammar_questions = 0
+                non_grammar_questions = []
+                
+                for idx, q in enumerate(questions):
+                    question_text = q.get('question', '').lower()
+                    topic = q.get('topic', '').lower()
+                    
+                    # Check if question is about grammar
+                    is_grammar_q = any(keyword in question_text or keyword in topic 
+                                      for keyword in grammar_keywords + ['rule', 'structure', 'agreement', 'form'])
+                    
+                    # Check if question is about stories/characters/poetry (should NOT be for grammar content)
+                    is_story_q = any(keyword in question_text 
+                                    for keyword in [
+                                        'character', 'story', 'narrator', 'plot', 'theme', 'author', 'poet', 'poem', 'poetry',
+                                        'who was', 'what happened', 'describe the', 'tell about', 'literary device',
+                                        'what does the poet', 'what is the theme', 'who is the author', 'explain the poet',
+                                        'analyze how the poem', 'discuss the various ways', 'poet\'s attitude', 'poet\'s outlook',
+                                        'primary theme', 'main theme', 'literary devices', 'figure of speech', 'metaphor', 'simile'
+                                    ])
+                    
+                    if is_grammar_q and not is_story_q:
+                        grammar_questions += 1
+                    else:
+                        non_grammar_questions.append((idx + 1, q.get('question', 'N/A')[:80]))
+                
+                print(f"   ✅ Grammar-focused questions: {grammar_questions}/{len(questions)}")
+                if non_grammar_questions:
+                    print(f"   🚨 CRITICAL VIOLATION: {len(non_grammar_questions)} non-grammar questions detected!")
+                    print(f"   ⚠️  These questions violate grammar content grounding rules:")
+                    for q_num, q_text in non_grammar_questions[:10]:  # Show first 10
+                        print(f"      Q{q_num}: {q_text}...")
+                    
+                    # Calculate violation percentage
+                    violation_percentage = (len(non_grammar_questions) / len(questions)) * 100
+                    print(f"   ⚠️  Violation rate: {violation_percentage:.1f}% ({len(non_grammar_questions)}/{len(questions)} questions)")
+                    
+                    # If more than 50% are non-grammar, raise an error to force regeneration
+                    if violation_percentage > 50:
+                        violation_details = ", ".join([f"Q{q_num}" for q_num, _ in non_grammar_questions[:5]])
+                        raise ValueError(
+                            f"CRITICAL GRAMMAR VIOLATION: {violation_percentage:.1f}% of questions ({len(non_grammar_questions)}/{len(questions)}) "
+                            f"are non-grammar questions for grammar content. Violating questions: {violation_details}. "
+                            f"ALL questions MUST be about grammar rules (nouns, verbs, tenses, sentence structure, etc.), "
+                            f"NOT about poems, stories, characters, or literature. Please regenerate with grammar-only focus."
+                        )
+                    elif violation_percentage > 30:
+                        print(f"   🚨 CRITICAL: Over 30% of questions are non-grammar. This violates grammar content grounding rules!")
+                        print(f"   ⚠️  Recommendation: Regenerate with stricter grammar-only enforcement")
+        
+        # Check for generic/auto-assigned topics and source hints (indicates content not being used)
+        generic_topics = ["Which of the", "What is the", "Who is the", "General", "Grammar Concept", "Grammar Concept (AI should specify from content)", ""]
+        generic_hints = ["From provided study material", "Grammar content section (AI should specify exact location)", ""]
+        content_grounding_issues = []
+        
+        for idx, q in enumerate(questions):
+            topic = q.get('topic', '').strip()
+            source_hint = q.get('source_hint', '').strip()
+            
+            if topic in generic_topics or source_hint in generic_hints:
+                content_grounding_issues.append((idx + 1, topic, source_hint))
+        
+        if content_grounding_issues:
+            print(f"\n⚠️  CONTENT GROUNDING WARNING:")
+            print(f"   {len(content_grounding_issues)} questions have generic/auto-assigned topics or source hints")
+            print(f"   This suggests questions may NOT be properly extracted from the [STUDY_MATERIAL]")
+            print(f"   Generic values indicate AI may be using general knowledge instead of reading the content:")
+            for q_num, topic, hint in content_grounding_issues[:10]:
+                print(f"      Q{q_num}: topic='{topic}', source_hint='{hint}'")
+            print(f"   ⚠️  Recommendation: AI should read the content and extract SPECIFIC topics and source locations")
+        
+        # Log sample questions for manual review
+        print(f"\n📝 Sample Questions (first 3) for Content Grounding Review:")
+        for idx, q in enumerate(questions[:3], 1):
+            print(f"\n   Q{idx}: {q.get('question', 'N/A')[:100]}...")
+            topic = q.get('topic', '❌ MISSING')
+            source_hint = q.get('source_hint', '❌ MISSING')
+            topic_status = "⚠️ GENERIC" if topic in generic_topics else "✅"
+            hint_status = "⚠️ GENERIC" if source_hint in generic_hints else "✅"
+            print(f"      Topic: {topic} {topic_status}")
+            print(f"      Source Hint: {source_hint} {hint_status}")
+            print(f"      Marks: {q.get('marks', 'N/A')}")
+        
+        print("="*80 + "\n")
         actual_count = len(questions)
         
         # Check if count matches expected
         expected_count = sum(item.get("count", 0) for item in distribution_list)
-        print(f"📊 Question count check: Expected={expected_count}, Got={actual_count}, Remaining={remaining_questions}")
+        print(f"Question count check: Expected={expected_count}, Got={actual_count}, Remaining={remaining_questions}")
         
         if actual_count < expected_count:
+<<<<<<< HEAD
             print(f"⚠️  INFO: AI generated {actual_count} questions (target was {expected_count})")
             print(f"   This is acceptable - quality-first approach allows fewer questions if content is limited.")
             print(f"   Distribution target: {distribution_list}")
             print(f"   Total target: {expected_count}, Generated: {actual_count}, Difference: {expected_count - actual_count}")
+=======
+            print(f"INFO: AI generated {actual_count} high-quality questions (requested {expected_count})")
+            print(f"   This is acceptable - quality over quantity. Content may not support more questions.")
+            print(f"   Distribution requested: {distribution_list}")
+            print(f"   Total expected: {expected_count}, Got: {actual_count}, Difference: {expected_count - actual_count}")
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
             
             # Check distribution breakdown
             if distribution_list:
@@ -2401,31 +3967,57 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
                     count = dist_item.get('count', 0)
                     q_type = dist_item.get('type', 'unknown')
                     actual_for_this = len([q for q in questions if q.get('marks') == marks and q.get('type', '').lower() == q_type.lower()])
+<<<<<<< HEAD
                     print(f"     - {count} questions of {marks} marks ({q_type}): Target {count}, Got {actual_for_this}")
             
             print(f"   Questions received: {[q.get('question', 'N/A')[:50] for q in questions]}")
             # Accept fewer questions - quality-first approach
             # No error raised - continue with what we have
             print(f"✅ Accepting {actual_count} questions (quality-first approach)")
+=======
+                    print(f"     - {count} questions of {marks} marks ({q_type}): Expected {count}, Got {actual_for_this}, Difference {count - actual_for_this}")
+            
+            print(f"   Questions received: {[q.get('question', 'N/A')[:50] for q in questions]}")
+            # Accept the result - quality over quantity. Do not retry.
+            # Store the actual count for frontend notification
+            result["actual_question_count"] = actual_count
+            result["requested_question_count"] = expected_count
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
         
         if actual_count != expected_count and actual_count != remaining_questions:
-            print(f"⚠️  Question count mismatch: Expected {expected_count}, Got {actual_count}, Remaining: {remaining_questions}")
+            print(f"Question count mismatch: Expected {expected_count}, Got {actual_count}, Remaining: {remaining_questions}")
             # If we got more than allowed, truncate
             if actual_count > remaining_questions:
-                print(f"⚠️  Truncating questions from {actual_count} to {remaining_questions}")
+                print(f"Truncating questions from {actual_count} to {remaining_questions}")
                 questions = questions[:remaining_questions]
                 result["questions"] = questions
             # If we got fewer, log it but keep what we have
         
         # Validate distribution matches
+        if distribution_list:
         distribution_validation = _validate_distribution(questions, distribution_list)
         if not distribution_validation["valid"]:
             print(f"⚠️  Distribution mismatch: {distribution_validation['message']}")
+                
+                # Check for critical missing marks (10 marks, 5 marks)
+                missing_marks = []
+                for item in distribution_list:
+                    marks = item.get("marks", 0)
+                    q_type = item.get("type", "").lower()
+                    count = item.get("count", 0)
+                    actual_count = len([q for q in questions if q.get('marks') == marks and q.get('type', '').lower() == q_type])
+                    if actual_count == 0 and count > 0:
+                        missing_marks.append(f"{marks} marks ({q_type})")
+                
+                if missing_marks:
+                    print(f"🚨 CRITICAL: Missing marks values: {', '.join(missing_marks)}")
+                    print(f"🚨 The AI did not generate questions for these marks values - this violates the distribution requirement!")
+                
             # Try to fix distribution, but ensure we don't lose questions
             fixed_questions = _fix_distribution(questions, distribution_list, remaining_questions)
             if len(fixed_questions) < len(questions) and len(fixed_questions) < remaining_questions:
                 # If fixing reduced the count, try to keep all questions and just reorder
-                print(f"⚠️  Fixing distribution reduced count from {len(questions)} to {len(fixed_questions)}. Attempting to preserve all questions...")
+                    print(f"Fixing distribution reduced count from {len(questions)} to {len(fixed_questions)}. Attempting to preserve all questions...")
                 # Keep all questions, just ensure we don't exceed limit
                 questions = questions[:remaining_questions]
             else:
@@ -2438,6 +4030,154 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
                 q["id"] = i + 1
             if "difficulty" not in q:
                 q["difficulty"] = difficulty
+            
+            # Ensure topic and source_hint fields exist (for content grounding verification)
+            generic_topics = ["Which of the", "What is the", "Who is the", "General", "Grammar Concept", ""]
+            generic_hints = ["From provided study material", ""]
+            
+            current_topic = q.get("topic", "").strip()
+            current_hint = q.get("source_hint", "").strip()
+            
+            if "topic" not in q or not current_topic or current_topic in generic_topics:
+                print(f"⚠️  WARNING: Question {i+1} missing or generic 'topic' field - AI should have extracted this from content!")
+                print(f"   Question: {q.get('question', 'N/A')[:80]}...")
+                # Try to extract a meaningful topic from the question
+                question_text = q.get("question", "")
+                question_lower = question_text.lower()
+                
+                # Look for literature content (stories/poems/characters)
+                literature_patterns = [
+                    (r"['\"]([^'\"]+)['\"]", "story/poem name"),  # Extract quoted names
+                    (r"story ['\"]([^'\"]+)['\"]", "story name"),
+                    (r"poem ['\"]([^'\"]+)['\"]", "poem name"),
+                    (r"character ([A-Z][a-z]+)", "character name"),
+                ]
+                
+                extracted_topic = None
+                
+                # First, try to extract story/poem/character names
+                for pattern, desc in literature_patterns:
+                    match = re.search(pattern, question_text, re.IGNORECASE)
+                    if match:
+                        extracted_topic = match.group(1).strip()
+                        if len(extracted_topic) > 2:  # Valid name
+                            break
+                
+                # If no literature name found, look for mathematics concepts first
+                if not extracted_topic:
+                    # Check if it's a mathematics question
+                    math_indicators = ['x²', 'x³', 'equation', 'formula', 'solve', 'find', 'calculate', 'discriminant', 'root', 'quadratic', 'linear', 'polynomial', 'algebra', 'geometry']
+                    is_math = any(indicator in question_lower for indicator in math_indicators)
+                    
+                    if is_math:
+                        # Mathematics topic detection
+                        math_concepts = {
+                            'quadratic equation': 'Quadratic Equations',
+                            'quadratic formula': 'Quadratic Formula',
+                            'discriminant': 'Discriminant',
+                            'roots': 'Roots of Quadratic Equations',
+                            'linear equation': 'Linear Equations',
+                            'simultaneous equation': 'Simultaneous Equations',
+                            'polynomial': 'Polynomial Equations',
+                            'factorization': 'Factorization',
+                            'algebra': 'Algebra',
+                            'geometry': 'Geometry',
+                            'trigonometry': 'Trigonometry',
+                            'coordinate geometry': 'Coordinate Geometry',
+                            'calculus': 'Calculus',
+                        }
+                        
+                        # Check for specific math concepts
+                        for keyword, topic in math_concepts.items():
+                            if keyword in question_lower:
+                                extracted_topic = topic
+                                break
+                        
+                        # If still no topic, try to infer from equation type
+                        if not extracted_topic:
+                            if 'x²' in question_text or 'quadratic' in question_lower:
+                                extracted_topic = 'Quadratic Equations'
+                            elif 'x³' in question_text or 'polynomial' in question_lower:
+                                extracted_topic = 'Polynomial Equations'
+                            elif 'discriminant' in question_lower or 'd =' in question_lower or 'd=' in question_lower:
+                                extracted_topic = 'Discriminant'
+                            elif 'linear' in question_lower:
+                                extracted_topic = 'Linear Equations'
+                            else:
+                                extracted_topic = 'Algebra'  # Default for math
+                    else:
+                        # Look for grammar concepts
+                        grammar_concepts = {
+                            'modal verb': 'Modal Verbs',
+                            'past form': 'Past Tense Forms',
+                            'phrasal verb': 'Phrasal Verbs',
+                            'future tense': 'Future Tense',
+                            'present continuous': 'Present Continuous Tense',
+                            'negative form': 'Negative Forms',
+                            'past perfect': 'Past Perfect Tense',
+                            'compound sentence': 'Compound Sentences',
+                            'future perfect': 'Future Perfect Tense',
+                            'present perfect': 'Present Perfect Tense',
+                            'passive voice': 'Passive Voice',
+                            'simple past': 'Simple Past Tense',
+                            'present tense': 'Present Tense',
+                            'future continuous': 'Future Continuous Tense',
+                            'interrogative form': 'Interrogative Forms',
+                            'present perfect continuous': 'Present Perfect Continuous Tense',
+                            'past continuous': 'Past Continuous Tense'
+                        }
+                        for keyword, topic in grammar_concepts.items():
+                            if keyword in question_lower:
+                                extracted_topic = topic
+                                break
+                
+                # If still no topic, extract from question start (first few words) - but avoid for math
+                if not extracted_topic:
+                    # For math, don't extract random words - use a default
+                    if any(indicator in question_lower for indicator in ['x²', 'x³', 'equation', 'formula', 'solve']):
+                        extracted_topic = 'Mathematics Topic'  # Generic math topic
+                    else:
+                        # Remove question words and extract meaningful words
+                        words = question_text.split()
+                        # Skip common question starters
+                        skip_words = {'what', 'who', 'which', 'where', 'when', 'why', 'how', 'is', 'are', 'was', 'were', 'the', 'a', 'an'}
+                        meaningful_words = [w for w in words[:5] if w.lower() not in skip_words and len(w) > 2]
+                        if meaningful_words:
+                            extracted_topic = ' '.join(meaningful_words[:3])  # First 3 meaningful words
+                
+                q["topic"] = extracted_topic or "Content Topic (AI should specify from content)"
+                print(f"   → Auto-assigned topic: {q['topic']} (⚠️ AI should have extracted this from content)")
+            
+            if "source_hint" not in q or not current_hint or current_hint in generic_hints:
+                print(f"⚠️  WARNING: Question {i+1} missing or generic 'source_hint' field - AI should have referenced specific content location!")
+                print(f"   Question: {q.get('question', 'N/A')[:80]}...")
+                # Set a more specific source hint based on topic
+                topic = q.get("topic", "")
+                question_text = q.get("question", "")
+                
+                # Check content type
+                is_literature = any(word in question_text.lower() for word in ['story', 'poem', 'poetry', 'character', 'author', 'poet', 'narrator'])
+                is_math = any(word in question_text.lower() for word in ['x²', 'x³', 'equation', 'formula', 'solve', 'discriminant', 'quadratic', 'algebra'])
+                
+                if topic and topic != "Content Topic (AI should specify from content)" and topic != "Mathematics Topic":
+                    if is_literature:
+                        # For literature, use story/poem format
+                        if any(word in topic.lower() for word in ['family', 'woman', 'zigzag', 'mulan', 'chaplin', 'sanyal', 'tie']):
+                            q["source_hint"] = f"Story/Poem '{topic}'"
+                        else:
+                            q["source_hint"] = f"Story section about {topic}"
+                    elif is_math:
+                        # For mathematics, use chapter/section format
+                        q["source_hint"] = f"Chapter/Section on {topic}"
+                    else:
+                        # For grammar, use section format
+                        q["source_hint"] = f"Section on {topic}"
+                else:
+                    if is_math:
+                        q["source_hint"] = "Mathematics section (AI should specify exact chapter/topic)"
+                    else:
+                        q["source_hint"] = "Content section (AI should specify exact location)"
+                print(f"   → Auto-assigned source_hint: {q['source_hint']} (⚠️ AI should have referenced specific content section)")
             # Normalize type field
             q_type = q.get("type", "").lower()
             if q_type == "short":
@@ -2506,19 +4246,18 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
         # Track question count at each step
         expected_count = sum(item.get("count", 0) for item in distribution_list)
         count_before_duplicate_check = len(questions)
-        print(f"📊 Step 1 - After parsing: {count_before_duplicate_check} questions")
+        print(f"Step 1 - After parsing: {count_before_duplicate_check} questions")
         
-        # Check for duplicate questions (applies to all languages)
+        # Check for duplicate questions (applies to all languages) - just log, don't remove yet
         _check_duplicate_questions(questions)
         count_after_duplicate_check = len(questions)
-        if count_after_duplicate_check != count_before_duplicate_check:
-            print(f"⚠️  WARNING: Duplicate check changed count from {count_before_duplicate_check} to {count_after_duplicate_check}")
         
         # Auto-check exam quality (strict validation)
         questions, has_format_repetition = _validate_exam_quality(questions, difficulty, target_language)
         count_after_validation = len(questions)
-        print(f"📊 Step 2 - After validation: {count_after_validation} questions")
+        print(f"Step 2 - After validation: {count_after_validation} questions")
         
+<<<<<<< HEAD
         # QUALITY-FIRST: Accept questions even if format repetition detected
         # No retries - just log and accept
         if has_format_repetition:
@@ -2536,19 +4275,29 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
             
             print(f"⚠️  Format repetition detected ({unique_starters}/{total_questions} unique starters). Accepting questions anyway (quality-first approach).")
             # Don't raise error - accept questions
+=======
+        # Remove duplicate questions (exact or very similar)
+        questions = _remove_duplicate_questions(questions)
+        count_after_dedup = len(questions)
+        if count_after_dedup < count_after_validation:
+            print(f"Removed {count_after_validation - count_after_dedup} duplicate question(s). Remaining: {count_after_dedup}")
+        
+        # Log format repetition but don't retry - accept the result
+            if has_format_repetition:
+            print(f"INFO: Format repetition detected but accepting questions. Quality over quantity.")
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
         
         if count_after_validation != count_before_duplicate_check:
-            print(f"⚠️  WARNING: Validation changed count from {count_before_duplicate_check} to {count_after_validation}")
-            print(f"   This should not happen - validation should not remove questions!")
+            print(f"INFO: Validation changed count from {count_before_duplicate_check} to {count_after_validation}")
+            print(f"   This is acceptable - quality over quantity. Some questions may have been removed for quality.")
         
-        # Ensure we have the exact number requested
+        # Accept quality questions - don't enforce exact count
         if count_after_validation < expected_count:
-            print(f"❌ CRITICAL: After validation, we have {count_after_validation} questions but need {expected_count}")
-            print(f"   Missing {expected_count - count_after_validation} question(s)")
-            print(f"   This is a critical error - questions should not be removed during validation")
+            print(f"INFO: After validation, we have {count_after_validation} quality questions (requested {expected_count})")
+            print(f"   Accepting result - quality over quantity. Content may not support more questions.")
         elif count_after_validation > expected_count:
             # If we have more than expected, keep exactly the expected number
-            print(f"📊 Trimming to exactly {expected_count} questions (had {count_after_validation})")
+            print(f"INFO: Trimming to exactly {expected_count} questions (had {count_after_validation})")
             questions = questions[:expected_count]
         
         # Post-process 10-mark math questions: convert LaTeX to board-style format
@@ -2560,18 +4309,32 @@ Now generate the questions strictly within the allowed limit, ensuring answer le
         if count_after_postprocess != count_before_postprocess:
             print(f"⚠️  WARNING: Post-processing changed count from {count_before_postprocess} to {count_after_postprocess}")
         
+<<<<<<< HEAD
         # Final count check (QUALITY-FIRST: Accept whatever we have)
         final_count = len(questions)
         if final_count != expected_count:
             print(f"ℹ️  FINAL COUNT: Generated {final_count} questions (requested {expected_count}). Accepting for quality-first approach.")
+=======
+        # Final count check - accept quality questions, don't raise errors
+        final_count = len(questions)
+        if final_count != expected_count:
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
             if final_count < expected_count:
-                print(f"   Current questions:")
-                for i, q in enumerate(questions, 1):
-                    print(f"     Q{i}: {q.get('marks', '?')} marks, type={q.get('type', '?')}")
+                print(f"INFO: Final count: Generated {final_count} quality questions (requested {expected_count})")
+                print(f"   Accepting result - quality over quantity. Content may not support more questions.")
         else:
+<<<<<<< HEAD
             print(f"✅ FINAL COUNT: Generated {final_count} questions (as requested)")
         
         # Never raise error for count mismatch - accept what we have (quality-first)
+=======
+                print(f"INFO: Final count: Generated {final_count} questions (requested {expected_count})")
+                # Truncate to expected count if we got more
+                questions = questions[:expected_count]
+        final_count = len(questions)
+        else:
+            print(f"INFO: Final count: Exactly {final_count} questions (as requested)")
+>>>>>>> 3369d74 (Update StudyQnA backend and frontend changes)
         
         # Store usage log ID for later linking
         if usage_log_id:
@@ -2626,8 +4389,8 @@ def _check_duplicate_questions(questions: List[Dict[str, Any]]) -> None:
             union = len(words1 | words2)
             similarity = intersection / union if union > 0 else 0
             
-            # If similarity is very high (>80%), consider it a duplicate
-            if similarity > 0.8:
+            # If similarity is very high (>90%), consider it a duplicate (increased from 80% to be less aggressive)
+            if similarity > 0.9:
                 duplicates_found.append({
                     "index1": j + 1,
                     "index2": i + 1,
@@ -2640,15 +4403,71 @@ def _check_duplicate_questions(questions: List[Dict[str, Any]]) -> None:
         seen_questions[i] = normalized_q1
     
     if duplicates_found:
-        print(f"⚠️  WARNING: Found {len(duplicates_found)} potential duplicate question(s):")
+        print(f"WARNING: Found {len(duplicates_found)} potential duplicate question(s):")
         for dup in duplicates_found:
             print(f"   - Question {dup['index1']} and Question {dup['index2']} are very similar "
                   f"(similarity: {dup['similarity']:.1%})")
             print(f"     Q{dup['index1']}: {dup['question1']}...")
             print(f"     Q{dup['index2']}: {dup['question2']}...")
-        print("   ⚠️  The AI should generate unique questions covering different topics/concepts.")
+        print("   The AI should generate unique questions covering different topics/concepts.")
     else:
-        print("✅ No duplicate questions detected - all questions are unique")
+        print("No duplicate questions detected - all questions are unique")
+
+def _remove_duplicate_questions(questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Remove duplicate or very similar questions from the list.
+    Returns a list with duplicates removed, keeping the first occurrence.
+    """
+    if len(questions) < 2:
+        return questions
+    
+    # Normalize question text for comparison
+    def normalize_text(text: str) -> str:
+        if not text:
+            return ""
+        normalized = " ".join(text.lower().split())
+        normalized = re.sub(r'[^\w\s]', '', normalized)
+        return normalized
+    
+    unique_questions = []
+    seen_normalized = set()
+    removed_count = 0
+    
+    for q in questions:
+        question_text = q.get("question", "").strip()
+        if not question_text:
+            unique_questions.append(q)  # Keep questions without text
+            continue
+        
+        normalized = normalize_text(question_text)
+        
+        # Check if this is a duplicate
+        is_duplicate = False
+        for seen_norm in seen_normalized:
+            words1 = set(normalized.split())
+            words2 = set(seen_norm.split())
+            
+            if len(words1) == 0 or len(words2) == 0:
+                continue
+            
+            intersection = len(words1 & words2)
+            union = len(words1 | words2)
+            similarity = intersection / union if union > 0 else 0
+            
+            # If similarity is very high (>90%), it's a duplicate (increased from 80% to be less aggressive)
+            if similarity > 0.9:
+                is_duplicate = True
+                removed_count += 1
+                break
+        
+        if not is_duplicate:
+            unique_questions.append(q)
+            seen_normalized.add(normalized)
+    
+    if removed_count > 0:
+        print(f"Removed {removed_count} duplicate question(s). Remaining: {len(unique_questions)}")
+    
+    return unique_questions
 
 def _build_distribution_list(marks_pattern: str, qna_type: str, num_questions: int) -> List[Dict[str, Any]]:
     """
