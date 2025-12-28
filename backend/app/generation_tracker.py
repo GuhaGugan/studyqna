@@ -36,11 +36,11 @@ def get_daily_generation_limit(user: User) -> int:
     if is_premium:
         limit = settings.PREMIUM_DAILY_GENERATION_LIMIT
         # Debug: Log the limit being used
-        logger.info(f"📊 Premium daily generation limit for user {user.id}: {limit}")
+        logger.info(f"Premium daily generation limit for user {user.id}: {limit}")
         return limit
     else:
         limit = settings.FREE_DAILY_GENERATION_LIMIT
-        logger.info(f"📊 Free daily generation limit for user {user.id}: {limit}")
+        logger.info(f"Free daily generation limit for user {user.id}: {limit}")
         return limit
 
 def check_daily_generation_limit(db: Session, user: User) -> tuple[bool, int, int, str]:

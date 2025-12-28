@@ -16,10 +16,15 @@ class OTPVerify(BaseModel):
     email: EmailStr
     otp: str
 
+class DeviceLoginRequest(BaseModel):
+    email: EmailStr
+    device_token: str
+
 class Token(BaseModel):
     access_token: str
     token_type: str
     role: str
+    device_token: Optional[str] = None  # Device token for 30-day remember me
 
 # User Schemas
 class UserBase(BaseModel):
@@ -145,8 +150,14 @@ class PremiumRequestApprove(BaseModel):
 # Admin Schemas
 class UserQuotaAdjust(BaseModel):
     user_id: int
-    pdf_limit: Optional[int] = None  # New field
-    image_limit: Optional[int] = None  # New field
+    total_questions_limit: Optional[int] = None  # Total questions limit
+    daily_questions_limit: Optional[int] = None  # Daily questions limit
+    reset_total_questions_limit: Optional[bool] = False  # Reset total questions limit to default (700)
+    reset_daily_questions_limit: Optional[bool] = False  # Reset daily questions limit to default (50)
+    reset_total_questions_count: Optional[bool] = False  # Reset total questions count (sets reset timestamp to now)
+    reset_daily_questions_count: Optional[bool] = False  # Reset daily questions count (sets reset timestamp to now)
+    pdf_limit: Optional[int] = None  # Keep for backward compatibility
+    image_limit: Optional[int] = None  # Keep for backward compatibility
     upload_quota: Optional[int] = None  # Keep for backward compatibility
     image_quota: Optional[int] = None  # Keep for backward compatibility
     extend_validity_days: Optional[int] = None

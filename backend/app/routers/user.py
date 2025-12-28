@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.routers.dependencies import get_current_user
-from app.models import User, PremiumRequest, PremiumStatus, Upload, UsageLog, FileType, LoginLog
+from app.models import User, PremiumRequest, PremiumStatus, Upload, UsageLog, FileType, LoginLog, DeviceSession
 from app.schemas import UserResponse, PremiumRequestCreate, PremiumRequestResponse, UserProfileResponse
 from app.config import settings
 from app.generation_tracker import get_daily_generation_stats
@@ -13,6 +13,7 @@ router = APIRouter()
 
 @router.post("/logout")
 async def logout_user(
+    logout_all_devices: bool = False,  # Optional: logout from all devices
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -29,6 +30,14 @@ async def logout_user(
         login_log.logout_at = datetime.utcnow()
         db.commit()
         print(f"✅ Logged logout for user: {current_user.email} at {login_log.logout_at}")
+    
+    # If logout_all_devices is True, remove all device sessions
+    if logout_all_devices:
+        deleted_count = db.query(DeviceSession).filter(
+            DeviceSession.user_id == current_user.id
+        ).delete()
+        db.commit()
+        print(f"✅ Removed {deleted_count} device session(s) for user: {current_user.email}")
     
     return {"message": "Logged out successfully"}
 
@@ -143,23 +152,61 @@ async def get_user_profile(
     # Get daily generation stats
     generation_stats = get_daily_generation_stats(db, current_user.id)
     
-    # Calculate total questions based on upload quotas
-    # Formula: (PDF uploads remaining × QUESTIONS_PER_PDF_UPLOAD) + (Image uploads remaining × QUESTIONS_PER_IMAGE_UPLOAD) = Total questions available
-    # Premium: 15 PDF × 20 = 300, 20 Image × 20 = 400, Total = 700 questions
+    # Calculate total questions based on actual questions generated from QnASet records
+    from app.models import QnASet
+    
+    # Count total questions from QnASets (after reset timestamp if set)
+    if current_user.total_questions_reset_at:
+        reset_timestamp_total = current_user.total_questions_reset_at
+        qna_sets = db.query(QnASet).filter(
+            QnASet.user_id == current_user.id,
+            QnASet.created_at >= reset_timestamp_total
+        ).all()
+    else:
+        qna_sets = db.query(QnASet).filter(
+            QnASet.user_id == current_user.id
+        ).all()
+    
+    questions_used = 0
+    for qna_set in qna_sets:
+        if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+            questions = qna_set.qna_json.get("questions", [])
+            if isinstance(questions, list):
+                questions_used += len(questions)
+    
+    # Count daily questions (questions generated after reset timestamp)
+    today_start = datetime.combine(now.date(), datetime.min.time())
+    # If reset timestamp is set and is today or later, use it
+    if current_user.daily_questions_reset_at:
+        if current_user.daily_questions_reset_at.date() >= now.date():
+            reset_timestamp = current_user.daily_questions_reset_at
+        else:
+            # Reset timestamp is from a previous day, use today's start instead
+            reset_timestamp = today_start
+    else:
+        reset_timestamp = today_start
+    
+    daily_qna_sets = db.query(QnASet).filter(
+        QnASet.user_id == current_user.id,
+        QnASet.created_at >= reset_timestamp
+    ).all()
+    
+    daily_questions_used = 0
+    for qna_set in daily_qna_sets:
+        if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+            questions = qna_set.qna_json.get("questions", [])
+            if isinstance(questions, list):
+                daily_questions_used += len(questions)
+    
+    # Set limits based on premium status - use user's actual limit fields (can be customized by admin)
     if is_premium:
-        # Use config values to ensure consistency
-        pdf_questions_per_upload = settings.QUESTIONS_PER_PDF_UPLOAD  # Default: 20
-        image_questions_per_upload = settings.QUESTIONS_PER_IMAGE_UPLOAD  # Default: 20
-        
-        pdf_questions_available = pdf_remaining * pdf_questions_per_upload  # PDF uploads × 20
-        image_questions_available = image_remaining * image_questions_per_upload  # Image uploads × 20
-        questions_remaining = pdf_questions_available + image_questions_available
-        
-        questions_limit = settings.PREMIUM_TOTAL_QUESTIONS_LIMIT  # 700 questions total
-        questions_used = questions_limit - questions_remaining
+        # Use user's actual limit fields (defaults to 700 and 50 if not set, but can be customized by admin)
+        questions_limit = current_user.total_questions_limit or settings.PREMIUM_TOTAL_QUESTIONS_LIMIT
+        daily_questions_limit = current_user.daily_questions_limit or settings.PREMIUM_DAILY_GENERATION_LIMIT
+        questions_remaining = max(0, questions_limit - questions_used)
     else:
         questions_limit = 0
-        questions_used = 0
+        daily_questions_limit = 0
         questions_remaining = 0
     
     usage_stats = {
@@ -184,6 +231,11 @@ async def get_user_profile(
             "used": questions_used,
             "remaining": questions_remaining,
             "limit": questions_limit
+        },
+        "daily_questions": {
+            "used": daily_questions_used,
+            "remaining": max(0, daily_questions_limit - daily_questions_used),
+            "limit": daily_questions_limit
         },
         "monthly_reset_date": monthly_reset_date,
         "monthly_reset_day": monthly_reset_day

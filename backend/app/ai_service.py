@@ -121,11 +121,195 @@ Answer FORMAT is controlled by SUBJECT.
 Answer LENGTH is controlled by MARKS.
 
 ━━━━━━━━━━━━━━━━━━━━━━
-SUBJECT-WISE RULES (MANDATORY)
+STRICT ANSWER RULES BY MARKS AND SUBJECT (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+🚨 CRITICAL: Follow board-exam writing standards. Answer format MUST match marks AND subject.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🧮 MATHEMATICS - STRICT RULES
+━━━━━━━━━━━━━━━━━━━━━━
+
+• 1 MARK:
+  ✅ One-line factual answer
+  ✅ Direct formula/equation result
+  ✅ NO steps, NO explanation
+  ✅ Example: "x = ±3" or "Area = 25 cm²"
+
+• 2 MARKS:
+  ✅ Formula + answer
+  ✅ Brief working (1-2 lines)
+  ✅ Example: "Using formula: x = (-b ± √D)/(2a), D = 25-24 = 1, ∴ x = 2 or 3"
+
+• 3 MARKS:
+  ✅ Formula + substitution + answer
+  ✅ Brief explanation with steps (3-4 lines)
+  ✅ Example: "Given: x² - 5x + 6 = 0. Using quadratic formula: x = (5 ± √1)/2. Substituting: x = 2 or 3"
+
+• 5 MARKS:
+  ✅ Given → Formula → Steps → Final Answer
+  ✅ Structured medium answer with explanation (6-8 lines)
+  ✅ Show all working clearly
+  ✅ Example format:
+     "Given: [data]
+      Formula: [formula]
+      Steps: [step 1], [step 2], [step 3]
+      Final Answer: [boxed result]"
+
+• 10 MARKS:
+  🚨🚨🚨 CRITICAL: MANDATORY STRUCTURE - ALL SECTIONS REQUIRED - NO EXCEPTIONS 🚨🚨🚨
+    1. Given (MANDATORY - 2-3 lines) - State the problem clearly
+    2. Formula/Theorem (MANDATORY - 1-2 lines) - State the formula or theorem used
+    3. Step-by-step Working (MANDATORY - 6-8 lines) - Show all calculation steps
+    4. Final Answer (MANDATORY - 1-2 lines) - Boxed final answer with conclusion
+  ✅ Comprehensive answer (12-15+ lines MINIMUM - NO EXCEPTIONS)
+  ❌❌❌ NEVER skip Given section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Formula/Theorem section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Step-by-step Working - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Final Answer - answer is INVALID and will be REJECTED without it
+  ✅ Use clear section headings: Given:, Formula:, Steps:, Final Answer:
+
+━━━━━━━━━━━━━━━━━━━━━━
+🔬 SCIENCE - STRICT RULES
+━━━━━━━━━━━━━━━━━━━━━━
+
+• 1 MARK:
+  ✅ One-line factual answer
+  ✅ Direct definition or fact
+  ✅ NO explanation
+
+• 2 MARKS:
+  ✅ Definition + 1 point
+  ✅ Brief explanation (2-3 lines)
+  ✅ Example: "X is defined as Y. It involves Z."
+
+• 3 MARKS:
+  ✅ Explanation + example
+  ✅ Brief explanation with one example (4-5 lines)
+  ✅ Example: "X is Y because Z. For instance, A demonstrates this concept."
+
+• 5 MARKS:
+  ✅ Definition + diagram (if applicable) + explanation
+  ✅ Structured medium answer (6-8 lines)
+  ✅ Include relevant examples or applications
+
+• 10 MARKS:
+  🚨🚨🚨 CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS 🚨🚨🚨
+    1. Definition (MANDATORY - 2-3 lines) - Clear definition of the concept
+    2. Explanation (MANDATORY - 4-6 lines) - Comprehensive explanation of principles
+    3. Example (MANDATORY - 2-3 lines) - Practical example or application
+    4. Conclusion (MANDATORY - 2-3 lines) - Summary and significance
+  ✅ Comprehensive answer (12-15+ lines MINIMUM - NO EXCEPTIONS)
+  ❌❌❌ NEVER skip Definition section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Explanation section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Example section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Conclusion section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER write only Explanation + Conclusion - this is INVALID and will be REJECTED
+  ✅ Use clear section headings: Definition:, Explanation:, Example:, Conclusion:
+
+━━━━━━━━━━━━━━━━━━━━━━
+🏛 SOCIAL SCIENCE - STRICT RULES
+━━━━━━━━━━━━━━━━━━━━━━
+
+🚨🚨🚨 CRITICAL WARNING FOR 10-MARK SOCIAL SCIENCE ANSWERS 🚨🚨🚨
+ALL 10-MARK SOCIAL SCIENCE ANSWERS MUST INCLUDE ALL 4 SECTIONS:
+1. Background/Context (MANDATORY - 2-3 lines)
+2. Key Points (MANDATORY - 4-5 lines with 3-4 points)
+3. Explanation (MANDATORY - 4-6 lines)
+4. Conclusion (MANDATORY - 2-3 lines)
+TOTAL: 12-15+ lines MINIMUM
+❌ ANSWERS WITH ONLY EXPLANATION + CONCLUSION ARE INVALID AND WILL BE REJECTED
+❌ ANSWERS MISSING BACKGROUND/CONTEXT ARE INVALID AND WILL BE REJECTED
+❌ ANSWERS MISSING KEY POINTS ARE INVALID AND WILL BE REJECTED
+✅ USE CLEAR SECTION HEADINGS: "Background/Context:", "Key Points:", "Explanation:", "Conclusion:"
+
+• 1 MARK:
+  ✅ Direct fact
+  ✅ One-line factual answer
+  ✅ NO explanation
+
+• 2 MARKS:
+  ✅ Direct fact with brief context
+  ✅ 2-3 lines maximum
+  ✅ Example: "X occurred in Y year. It was significant because Z."
+
+• 3 MARKS:
+  ✅ Reason / explanation
+  ✅ Brief explanation (4-5 lines)
+  ✅ Include cause or reason
+
+• 5 MARKS:
+  ✅ 3-4 bullet points
+  ✅ Structured answer with key points (6-8 lines)
+  ✅ Each point clearly explained
+
+• 10 MARKS:
+  🚨🚨🚨 CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS 🚨🚨🚨
+    1. Background/Context (2-3 lines) - Historical/geographical context - ABSOLUTELY MANDATORY
+    2. Key Points (4-5 lines) - 3-4 key points with details - ABSOLUTELY MANDATORY
+    3. Explanation (4-6 lines) - Comprehensive explanation of relationships and causes - ABSOLUTELY MANDATORY
+    4. Conclusion (2-3 lines) - Strong conclusion summarizing all points - ABSOLUTELY MANDATORY
+  ✅ Comprehensive answer (12-15+ lines MINIMUM - NO EXCEPTIONS)
+  ❌❌❌ NEVER skip Background/Context section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Key Points section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Explanation section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Conclusion section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER write only Explanation + Conclusion - this is INVALID and will be REJECTED
+  ✅ Cover: historical/geographical context, multiple key points with details, comprehensive explanation, strong conclusion
+  ✅ Format: Use clear section headings (Background/Context:, Key Points:, Explanation:, Conclusion:)
+
+━━━━━━━━━━━━━━━━━━━━━━
+📖 ENGLISH - STRICT RULES
+━━━━━━━━━━━━━━━━━━━━━━
+
+• 1 MARK:
+  ✅ One-line factual answer
+  ✅ Direct answer only
+
+• 2 MARKS:
+  ✅ Brief explanation
+  ✅ 2-3 lines maximum
+  ✅ Concise but complete
+
+• 3 MARKS:
+  ✅ Explanation + example
+  ✅ Short paragraph (4-5 lines)
+  ✅ Include one example
+
+• 5 MARKS:
+  ✅ Paragraph style
+  ✅ Medium paragraph (6-8 lines)
+  ✅ Well-structured explanation
+
+• 10 MARKS:
+  🚨🚨🚨 CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS 🚨🚨🚨
+    1. Introduction (MANDATORY - 2-3 lines) - Context and overview
+    2. Explanation (MANDATORY - 4-6 lines) - Detailed explanation of the topic
+    3. Analysis (MANDATORY - 4-6 lines) - Critical analysis with examples
+    4. Conclusion (MANDATORY - 2-3 lines) - Summary and final thoughts
+  ✅ Comprehensive answer (12-15+ lines MINIMUM - NO EXCEPTIONS)
+  ❌❌❌ NEVER skip Introduction section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Explanation section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Analysis section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER skip Conclusion section - answer is INVALID and will be REJECTED without it
+  ❌❌❌ NEVER write only Explanation + Conclusion - this is INVALID and will be REJECTED
+  ✅ Use clear section headings: Introduction:, Explanation:, Analysis:, Conclusion:
+
+━━━━━━━━━━━━━━━━━━━━━━
+🈳 GENERAL KNOWLEDGE - STRICT RULES
+━━━━━━━━━━━━━━━━━━━━━━
+
+• Mostly 1-3 marks
+• Direct factual answers
+• NO long explanations
+• Keep answers concise and factual
+
+━━━━━━━━━━━━━━━━━━━━━━
+SUBJECT-WISE HEADING STRUCTURE (MANDATORY)
 ━━━━━━━━━━━━━━━━━━━━━━
 
 1. MATHEMATICS:
-   ✅ USE these headings:
+   ✅ USE these headings for 5+ marks:
       - Given
       - Formula
       - Calculation / Steps
@@ -136,7 +320,7 @@ SUBJECT-WISE RULES (MANDATORY)
    ❌ DO NOT use: Introduction, Explanation, Analysis, Conclusion (these are for other subjects)
 
 2. ENGLISH (Literature/Language):
-   ✅ USE these headings:
+   ✅ USE these headings for 5+ marks:
       - Introduction
       - Explanation
       - Analysis
@@ -147,7 +331,7 @@ SUBJECT-WISE RULES (MANDATORY)
    ❌ NEVER use: Given, Formula, Calculation (these are for Mathematics only)
 
 3. SCIENCE (Theory - Physics, Chemistry, Biology):
-   ✅ USE these headings:
+   ✅ USE these headings for 5+ marks:
       - Definition
       - Explanation
       - Example (if needed)
@@ -157,25 +341,31 @@ SUBJECT-WISE RULES (MANDATORY)
    ❌ DO NOT use: Given, Formula, Calculation (unless it's a calculation-based science question)
 
 4. SOCIAL SCIENCE (History, Geography, Civics, Economics):
-   ✅ USE these headings:
-      - Background / Context
-      - Key Points
-      - Explanation
-      - Conclusion
-   ✅ Provide historical/geographical context
-   ✅ List key points clearly
-   ✅ Explain relationships and causes
+   ✅ USE these headings for 5+ marks (ALL MANDATORY for 10 marks):
+      - Background / Context (MANDATORY - 2-3 lines for 10 marks)
+      - Key Points (MANDATORY - 3-4 points, 4-5 lines for 10 marks)
+      - Explanation (MANDATORY - 4-6 lines for 10 marks)
+      - Conclusion (MANDATORY - 2-3 lines for 10 marks)
+   ✅ For 10 marks: ALL 4 sections MUST be present, totaling 12-15+ lines
+   ✅ Provide historical/geographical context (Background section)
+   ✅ List 3-4 key points with details (Key Points section)
+   ✅ Explain relationships and causes comprehensively (Explanation section)
+   ✅ Strong conclusion summarizing all points (Conclusion section)
    ❌ DO NOT use: Given, Formula, Calculation (these are for Mathematics only)
+   ❌ NEVER skip Background or Key Points sections - they are MANDATORY for 10 marks
 
 ━━━━━━━━━━━━━━━━━━━━━━
-MARK-BASED LENGTH CONTROL
+MARK-BASED LENGTH CONTROL (STRICT)
 ━━━━━━━━━━━━━━━━━━━━━━
 
-Marks control LENGTH only (regardless of subject):
-- 1 mark → one sentence (1-2 lines)
-- 2 marks → short paragraph (2-3 lines)
-- 5 marks → explained answer (7-9 lines)
-- 10 marks → detailed, structured answer (9-10 lines minimum)
+Marks control LENGTH and STRUCTURE (subject-specific rules apply above):
+- 1 mark → one-line factual answer (1-2 lines maximum)
+- 2 marks → short definition/explanation (2-3 lines)
+- 3 marks → brief explanation with example (4-5 lines)
+- 5 marks → structured medium answer with explanation (6-8 lines)
+- 10 marks → detailed, step-by-step exam-oriented answer (12-15+ lines minimum)
+
+⚠️ IMPORTANT: Follow subject-specific rules above for answer structure and format.
 
 ━━━━━━━━━━━━━━━━━━━━━━
 STRICT RULE
@@ -355,6 +545,76 @@ If any rule is violated, REWRITE the answer silently.
    - MCQ: Must have "options" array with exactly 4 options and "correct_answer" field
    - Short Answer (1-2 marks): Type "short", very brief answer
    - Descriptive (1-10 marks): Type "descriptive", answer length varies by marks (1 mark = 1-2 lines, 3 marks = 4-5 lines, etc.)
+
+━━━━━━━━━━━━━━━━━━━━━━
+📝 QUESTION FRAMING RULES (CRITICAL FOR QUALITY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+🚨 MANDATORY: All questions MUST be clear, unambiguous, and well-framed
+
+1. QUESTION CLARITY REQUIREMENTS:
+   ✅ Questions MUST be grammatically correct
+   ✅ Questions MUST be complete sentences (unless formula-based)
+   ✅ Questions MUST be unambiguous - only ONE correct interpretation
+   ✅ Questions MUST test specific knowledge from the content
+   ✅ Questions MUST be phrased in formal exam-style language
+   ❌ NEVER use incomplete sentences (unless formula-based)
+   ❌ NEVER use ambiguous phrasing that could have multiple interpretations
+   ❌ NEVER use casual or conversational language
+   ❌ NEVER use unclear pronouns or vague references
+
+2. MCQ QUESTION FRAMING (SPECIFIC RULES):
+   ✅ Question stem MUST be a complete, clear question or statement
+   ✅ Question stem MUST be grammatically correct
+   ✅ Question stem MUST clearly indicate what is being asked
+   ✅ All 4 options MUST be grammatically consistent with the question stem
+   ✅ All 4 options MUST be plausible and related to the topic
+   ✅ Correct answer MUST be clearly the best/most accurate option
+   ✅ Wrong options (distractors) MUST be plausible but clearly incorrect
+   ✅ Options MUST be similar in length (avoid one very long option)
+   ✅ Options MUST be parallel in structure (all start with same type of word if applicable)
+   ❌ NEVER use "All of the above" or "None of the above" as options
+   ❌ NEVER make the correct answer obviously different in format/length
+   ❌ NEVER use options that are too similar to each other
+   ❌ NEVER use options that are completely unrelated to the question
+
+3. MCQ OPTIONS QUALITY:
+   ✅ Option A, B, C, D must all be distinct and meaningful
+   ✅ Distractors (wrong options) should test common misconceptions
+   ✅ Distractors should be factually related to the topic
+   ✅ All options should be approximately the same length
+   ✅ Correct answer should not stand out due to formatting or length
+   ❌ NEVER use obviously wrong options that are too easy to eliminate
+   ❌ NEVER use options that are identical or nearly identical
+   ❌ NEVER use options that are completely unrelated to the question topic
+
+4. QUESTION STRUCTURE EXAMPLES:
+   
+   ✅ GOOD MCQ Examples:
+   - "முதல் உலகப்போரின் போது பிரிட்டனைத் தாக்கிய நாடு எது?" (Which country attacked Britain during the First World War?)
+   - "What is the value of x if 2x + 5 = 13?"
+   - "Which of the following is the capital of France?"
+   
+   ❌ BAD MCQ Examples:
+   - "First World War?" (incomplete, unclear)
+   - "Who attacked?" (too vague, missing context)
+   - "Britain was attacked by?" (incomplete sentence)
+   
+   ✅ GOOD Descriptive Examples:
+   - "முதல் உலகப்போரின் காரணங்களை விளக்குக." (Explain the causes of the First World War.)
+   - "Describe the process of photosynthesis."
+   - "விவரிக்கவும்: முதல் உலகப்போரின் விளைவுகள்." (Describe: Effects of the First World War.)
+   
+   ❌ BAD Descriptive Examples:
+   - "First World War causes" (not a complete sentence)
+   - "Tell about photosynthesis" (too casual)
+   - "What happened?" (too vague)
+
+5. LANGUAGE-SPECIFIC FRAMING:
+   - Tamil: Use formal question patterns like "X ஐ விளக்குக", "X என்றால் என்ன?", "X ஐ விவரிக்கவும்"
+   - English: Use formal patterns like "Explain...", "Describe...", "What is...?", "Define..."
+   - Hindi: Use formal patterns like "विवरण दीजिए", "समझाइए", "परिभाषित कीजिए"
+   - All languages: Maintain formal, academic tone throughout
 
 3A. LANGUAGE RULES (VERY IMPORTANT):
    Follow the exact exam-style phrasing used in the target language:
@@ -602,6 +862,7 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
     validated_questions = []
     has_repetition = False
     has_hard_mode_violation = False  # Track hard mode violations
+    has_invalid_10mark_answer = False  # Track invalid 10-mark answers for ALL subjects
     
     # Track question formats for variation check
     question_starters = []
@@ -697,60 +958,182 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
         
         # Rule 1: Marks-based line count validation
         if marks == 10:
-            if answer_lines < 10:
+            # Require 12-15 lines minimum (not just 10) for ALL subjects
+            if answer_lines < 12:
                 is_valid = False
-                issues.append(f"10-mark answer must have minimum 10-15 lines, got {answer_lines}. Short answers are INVALID.")
+                has_invalid_10mark_answer = True
+                issues.append(f"10-mark answer must have minimum 12-15 lines, got {answer_lines}. Short answers are INVALID.")
                 issues.append("10-mark answer is too short. Must be treated as a board-exam answer script with full working.")
             
-            # Check for mandatory parts (STRICT - all must be present)
-            # For structured format, check dictionary keys directly
+            # Detect answer format type
+            is_social_science = False
+            is_english_format = False
+            is_science_format = False
+            is_math_format = False
+            
             if isinstance(answer, dict):
-                has_given = "given" in answer and answer.get("given")
-                has_definition = "definition" in answer and answer.get("definition")
-                has_formula = "formula" in answer and answer.get("formula") and str(answer.get("formula")).strip() != ""
-                has_steps = "steps" in answer and isinstance(answer.get("steps"), list) and len(answer.get("steps", [])) > 0
-                has_function_values = "function_values" in answer and isinstance(answer.get("function_values"), list) and len(answer.get("function_values", [])) > 0
-                has_explanation = has_steps and len(answer.get("steps", [])) >= 3  # Multiple steps imply explanation
-                has_conclusion = "final" in answer and answer.get("final")
+                # Check for Social Science format
+                if answer.get("background") or answer.get("context") or answer.get("key_points"):
+                    is_social_science = True
+                # Check for English format
+                elif answer.get("introduction") or answer.get("analysis"):
+                    is_english_format = True
+                # Check for Science format
+                elif answer.get("definition") and (answer.get("explanation") or answer.get("example")):
+                    is_science_format = True
+                # Check for Math format
+                elif answer.get("given") or answer.get("formula") or answer.get("steps"):
+                    is_math_format = True
             else:
-                # For string format, check text content
+                # String format: detect by keywords
+                has_background = any(word in answer_lower for word in ["background", "context", "பின்னணி", "पृष्ठभूमि", "background:", "context:"])
+                has_key_points = any(word in answer_lower for word in ["key points", "key point", "முக்கிய புள்ளிகள்", "मुख्य बिंदु", "key points:", "key point:"])
+                has_explanation = any(word in answer_lower for word in ["explanation", "explain", "விளக்கம்", "व्याख्या", "explanation:"])
+                has_conclusion = any(word in answer_lower for word in ["conclusion", "முடிவு", "निष्कर्ष", "conclusion:"])
+                has_introduction = any(word in answer_lower for word in ["introduction", "பரிச்சேதனை", "परिचय", "introduction:"])
+                has_analysis = any(word in answer_lower for word in ["analysis", "பகுப்பாய்வு", "विश्लेषण", "analysis:"])
                 has_given = any(word in answer_lower for word in ["given", "கொடுக்கப்பட்டது", "दिया गया", "given:", "provided"])
-                has_definition = any(word in answer_lower for word in ["definition", "define", "வரையறை", "परिभाषा"]) or any(word in answer_lower for word in ["concept", "term", "meaning"])
                 has_formula = any(word in answer_lower for word in ["formula", "சூத்திரம்", "सूत्र", "formula:", "theorem", "theorem:"]) or "=" in answer_text or "D =" in answer_text
-                has_steps = any(word in answer_lower for word in ["step", "படி", "चरण", "step 1", "step 2", "calculation"]) or any(char.isdigit() for char in answer_text.split('\n')[0] if len(answer_text.split('\n')) > 5)
-                has_explanation = any(word in answer_lower for word in ["explain", "reasoning", "therefore", "hence", "thus", "because", "விளக்கம்", "व्याख्या"]) or answer_lines >= 8
-                has_conclusion = any(word in answer_lower for word in ["conclusion", "final answer", "therefore", "thus", "hence", "முடிவு", "निष्कर्ष"]) or "final answer:" in answer_lower or "\\boxed" in answer_text or "boxed" in answer_lower
+                
+                # For 10-mark answers: if it has explanation+conclusion but missing background/key_points, treat as Social Science (invalid)
+                if marks == 10 and has_explanation and has_conclusion and not has_background and not has_key_points and not has_given and not has_formula:
+                    is_social_science = True  # Likely Social Science but missing required sections
+                elif has_background or has_key_points:
+                    is_social_science = True
+                elif has_introduction or has_analysis:
+                    is_english_format = True
+                elif has_given or has_formula:
+                    is_math_format = True
+                else:
+                    is_science_format = True  # Default to science if unclear
             
+            # Check for mandatory parts based on format
             missing_parts = []
-            if not has_given:
-                missing_parts.append("Given")
-            if not has_definition and not has_formula:  # Definition OR formula (definition is optional if formula is present)
-                missing_parts.append("Definition/Formula")
-            if not has_formula:
-                missing_parts.append("Formula/Theorem")
-            if not has_steps:
-                missing_parts.append("Step-by-step working")
-            if not has_explanation:
-                missing_parts.append("Logical explanation")
-            if not has_conclusion:
-                missing_parts.append("Final conclusion statement")
             
-            if missing_parts:
-                is_valid = False
-                issues.append(f"10-mark answer missing mandatory parts: {', '.join(missing_parts)}. Must include: Given, Definition (if applicable), Formula/Theorem, Step-by-step working, Logical explanation, Final conclusion.")
-            
-            # Check for boxed answer
-            if isinstance(answer, dict):
-                final_answer = answer.get("final", "")
-                has_boxed = "\\boxed" in str(final_answer) or "boxed" in str(final_answer).lower()
+            if is_social_science:
+                # Social Science: Background, Key Points, Explanation, Conclusion
+                if isinstance(answer, dict):
+                    has_background = (answer.get("background") or answer.get("context"))
+                    has_key_points = answer.get("key_points")
+                    has_explanation = answer.get("explanation")
+                    has_conclusion = answer.get("conclusion")
+                else:
+                    has_background = any(word in answer_lower for word in ["background", "context", "பின்னணி", "पृष्ठभूमि", "background:", "context:"])
+                    has_key_points = any(word in answer_lower for word in ["key points", "key point", "முக்கிய புள்ளிகள்", "मुख्य बिंदु", "key points:", "key point:"])
+                    has_explanation = any(word in answer_lower for word in ["explanation", "explain", "விளக்கம்", "व्याख्या", "explanation:"])
+                    has_conclusion = any(word in answer_lower for word in ["conclusion", "முடிவு", "निष्कर्ष", "conclusion:"])
+                
+                if not has_background:
+                    missing_parts.append("Background/Context")
+                if not has_key_points:
+                    missing_parts.append("Key Points")
+                if not has_explanation:
+                    missing_parts.append("Explanation")
+                if not has_conclusion:
+                    missing_parts.append("Conclusion")
+                
+                if missing_parts:
+                    is_valid = False
+                    has_invalid_10mark_answer = True
+                    issues.append(f"10-mark Social Science answer missing mandatory parts: {', '.join(missing_parts)}. Must include: Background/Context, Key Points (3-4 points), Explanation, Conclusion (total 12-15+ lines).")
+            elif is_english_format:
+                # English: Introduction, Explanation, Analysis, Conclusion
+                if isinstance(answer, dict):
+                    has_introduction = answer.get("introduction")
+                    has_explanation = answer.get("explanation")
+                    has_analysis = answer.get("analysis")
+                    has_conclusion = answer.get("conclusion")
+                else:
+                    has_introduction = any(word in answer_lower for word in ["introduction", "பரிச்சேதனை", "परिचय", "introduction:"])
+                    has_explanation = any(word in answer_lower for word in ["explanation", "explain", "விளக்கம்", "व्याख्या", "explanation:"])
+                    has_analysis = any(word in answer_lower for word in ["analysis", "பகுப்பாய்வு", "विश्लेषण", "analysis:"])
+                    has_conclusion = any(word in answer_lower for word in ["conclusion", "முடிவு", "निष्कर्ष", "conclusion:"])
+                
+                if not has_introduction:
+                    missing_parts.append("Introduction")
+                if not has_explanation:
+                    missing_parts.append("Explanation")
+                if not has_analysis:
+                    missing_parts.append("Analysis")
+                if not has_conclusion:
+                    missing_parts.append("Conclusion")
+                
+                if missing_parts:
+                    is_valid = False
+                    has_invalid_10mark_answer = True
+                    issues.append(f"10-mark English answer missing mandatory parts: {', '.join(missing_parts)}. Must include: Introduction, Explanation, Analysis, Conclusion (total 12-15+ lines).")
+            elif is_science_format:
+                # Science: Definition, Explanation, Example, Conclusion
+                if isinstance(answer, dict):
+                    has_definition = answer.get("definition")
+                    has_explanation = answer.get("explanation")
+                    has_example = answer.get("example")
+                    has_conclusion = answer.get("conclusion")
+                else:
+                    has_definition = any(word in answer_lower for word in ["definition", "define", "வரையறை", "परिभाषा", "definition:"])
+                    has_explanation = any(word in answer_lower for word in ["explanation", "explain", "விளக்கம்", "व्याख्या", "explanation:"])
+                    has_example = any(word in answer_lower for word in ["example", "எடுத்துக்காட்டு", "उदाहरण", "example:"])
+                    has_conclusion = any(word in answer_lower for word in ["conclusion", "முடிவு", "निष्कर्ष", "conclusion:"])
+                
+                if not has_definition:
+                    missing_parts.append("Definition")
+                if not has_explanation:
+                    missing_parts.append("Explanation")
+                if not has_example:
+                    missing_parts.append("Example")
+                if not has_conclusion:
+                    missing_parts.append("Conclusion")
+                
+                if missing_parts:
+                    is_valid = False
+                    has_invalid_10mark_answer = True
+                    issues.append(f"10-mark Science answer missing mandatory parts: {', '.join(missing_parts)}. Must include: Definition, Explanation, Example, Conclusion (total 12-15+ lines).")
             else:
-                has_boxed = "\\boxed" in answer_text or "boxed" in answer_lower
-            
-            # Check for final answer (either "Final Answer:" prefix or boxed format)
-            has_final_answer = "final answer:" in answer_lower or "\\boxed" in answer_text or "boxed" in answer_lower
-            if not has_final_answer:
-                is_valid = False
-                issues.append("10-mark answer must have clear final answer (use 'Final Answer:' prefix)")
+                # Mathematics: Given, Definition, Formula, Steps, Explanation, Final
+                if isinstance(answer, dict):
+                    has_given = "given" in answer and answer.get("given")
+                    has_definition = "definition" in answer and answer.get("definition")
+                    has_formula = "formula" in answer and answer.get("formula") and str(answer.get("formula")).strip() != ""
+                    has_steps = "steps" in answer and isinstance(answer.get("steps"), list) and len(answer.get("steps", [])) > 0
+                    has_explanation = has_steps and len(answer.get("steps", [])) >= 3
+                    has_conclusion = "final" in answer and answer.get("final")
+                else:
+                    has_given = any(word in answer_lower for word in ["given", "கொடுக்கப்பட்டது", "दिया गया", "given:", "provided"])
+                    has_definition = any(word in answer_lower for word in ["definition", "define", "வரையறை", "परिभाषा"]) or any(word in answer_lower for word in ["concept", "term", "meaning"])
+                    has_formula = any(word in answer_lower for word in ["formula", "சூத்திரம்", "सूत्र", "formula:", "theorem", "theorem:"]) or "=" in answer_text or "D =" in answer_text
+                    has_steps = any(word in answer_lower for word in ["step", "படி", "चरण", "step 1", "step 2", "calculation"]) or any(char.isdigit() for char in answer_text.split('\n')[0] if len(answer_text.split('\n')) > 5)
+                    has_explanation = any(word in answer_lower for word in ["explain", "reasoning", "therefore", "hence", "thus", "because", "விளக்கம்", "व्याख्या"]) or answer_lines >= 8
+                    has_conclusion = any(word in answer_lower for word in ["conclusion", "final answer", "therefore", "thus", "hence", "முடிவு", "निष्कर्ष"]) or "final answer:" in answer_lower or "\\boxed" in answer_text or "boxed" in answer_lower
+                
+                if not has_given:
+                    missing_parts.append("Given")
+                if not has_definition and not has_formula:
+                    missing_parts.append("Definition/Formula")
+                if not has_formula:
+                    missing_parts.append("Formula/Theorem")
+                if not has_steps:
+                    missing_parts.append("Step-by-step working")
+                if not has_explanation:
+                    missing_parts.append("Logical explanation")
+                if not has_conclusion:
+                    missing_parts.append("Final conclusion statement")
+                
+                if missing_parts:
+                    is_valid = False
+                    has_invalid_10mark_answer = True
+                    issues.append(f"10-mark Mathematics answer missing mandatory parts: {', '.join(missing_parts)}. Must include: Given, Definition (if applicable), Formula/Theorem, Step-by-step working, Logical explanation, Final conclusion.")
+                
+                # Check for final answer (Mathematics only)
+                if isinstance(answer, dict):
+                    final_answer = answer.get("final", "")
+                    has_boxed = "\\boxed" in str(final_answer) or "boxed" in str(final_answer).lower()
+                else:
+                    has_boxed = "\\boxed" in answer_text or "boxed" in answer_lower
+                
+                has_final_answer = "final answer:" in answer_lower or "\\boxed" in answer_text or "boxed" in answer_lower
+                if not has_final_answer:
+                    is_valid = False
+                    issues.append("10-mark Mathematics answer must have clear final answer (use 'Final Answer:' prefix)")
         
         elif marks == 5:
             # Check if it's English literature format
@@ -1077,6 +1460,11 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
         print(f"🚨 CRITICAL: HARD MODE VIOLATIONS DETECTED - Regenerating questions to ensure complexity...")
         return validated_questions, True  # Return True to trigger regeneration
     
+    # CRITICAL: If 10-mark answers are invalid (missing parts or too short) for ANY subject, trigger regeneration
+    if has_invalid_10mark_answer:
+        print(f"🚨 CRITICAL: 10-MARK ANSWERS ARE INVALID - Missing mandatory sections or too short (<12 lines). Regenerating to ensure all required sections and 12-15+ lines...")
+        return validated_questions, True  # Return True to trigger regeneration
+    
     return validated_questions, has_repetition
 
 def generate_qna(
@@ -1088,7 +1476,8 @@ def generate_qna(
     target_language: str = "english",
     remaining_questions: Optional[int] = None,
     distribution_list: Optional[List[Dict[str, Any]]] = None,
-    subject: Optional[str] = None  # Explicit subject selection: mathematics, english, science, social_science, general
+    subject: Optional[str] = None,  # Explicit subject selection: mathematics, english, science, social_science, general
+    num_parts: Optional[int] = None  # Number of parts selected (for dynamic content limit)
 ) -> Dict[str, Any]:
     """
     Generate Q/A from text using OpenAI
@@ -1437,11 +1826,126 @@ x = (-b)/(2a) = (-6)/(2(1)) = -3
 \\]
 """
     
+    # Calculate dynamic content limit based on ACTUAL content size
+    # This adapts to varying content sizes per part, ensuring we use all available content
+    # while staying within safe token limits
+    total_content_length = len(text_content)
+    
+    # Define maximum safe limits based on number of parts (to prevent token overflow)
+    # gpt-4o-mini has 128,000 token limit
+    # The prompt is very long (includes all rules, examples, etc.), so we need to be conservative
+    # Based on error: 260K chars resulted in 152K tokens, so ~0.58 tokens per char
+    # But prompt adds significant tokens, so we need to leave more room
+    # Safe limits: leave ~40K tokens for prompt and response
+    max_safe_limits = {
+        1: 150000,   # Single part: up to 150K chars (~88K tokens for content + 40K for prompt/response)
+        2: 200000,   # 2 parts: up to 200K chars (~116K tokens total)
+        3: 250000,   # 3-4 parts: up to 250K chars (~145K tokens total)
+        4: 250000,
+        5: 300000,   # 5-6 parts: up to 300K chars (~174K tokens total)
+        6: 300000,
+        7: 350000,   # 7-8 parts: up to 350K chars (~203K tokens total - may exceed, but try)
+        8: 350000
+    }
+    
+    # Get the maximum safe limit for this number of parts
+    num_parts_actual = num_parts or 1
+    max_safe_limit = max_safe_limits.get(num_parts_actual, max_safe_limits.get(8, 1500000))
+    
+    # Use ALL available content if it's within safe limits, otherwise cap at safe limit
+    # This ensures we never ignore content unnecessarily, but also don't exceed token limits
+    if total_content_length <= max_safe_limit:
+        # Content fits within safe limit - use ALL of it
+        content_limit = total_content_length
+        print(f"✅ Content extraction: Using ALL {total_content_length:,} chars (within safe limit of {max_safe_limit:,})")
+    else:
+        # Content exceeds safe limit - use up to safe limit
+        content_limit = max_safe_limit
+        percentage_used = (max_safe_limit / total_content_length) * 100
+        print(f"⚠️ Content extraction: Using {max_safe_limit:,} of {total_content_length:,} chars ({percentage_used:.1f}%) - capped at safe limit")
+    
+    # Log final content usage
+    actual_used = min(content_limit, total_content_length)
+    print(f"📚 Content extraction: Total={total_content_length:,} chars, Using={actual_used:,} chars (limit={content_limit:,}), Parts={num_parts_actual}")
+    
+    # Build subject-specific warning for 10-mark answers
+    subject_warning = ""
+    subject_lower = detected_subject.lower()
+    if subject_lower in ["social_science", "social science"]:
+        subject_warning = """
+━━━━━━━━━━━━━━━━━━━━━━
+🚨🚨🚨 CRITICAL REMINDER FOR 10-MARK SOCIAL SCIENCE ANSWERS 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━━━
+ALL 10-MARK SOCIAL SCIENCE ANSWERS MUST INCLUDE ALL 4 SECTIONS:
+1. Background/Context: (MANDATORY - 2-3 lines)
+2. Key Points: (MANDATORY - 4-5 lines with 3-4 points)
+3. Explanation: (MANDATORY - 4-6 lines)
+4. Conclusion: (MANDATORY - 2-3 lines)
+TOTAL: 12-15+ lines MINIMUM
+❌ ANSWERS WITH ONLY EXPLANATION + CONCLUSION ARE INVALID
+❌ ANSWERS MISSING BACKGROUND/CONTEXT ARE INVALID
+❌ ANSWERS MISSING KEY POINTS ARE INVALID
+✅ USE CLEAR SECTION HEADINGS: 'Background/Context:', 'Key Points:', 'Explanation:', 'Conclusion:'
+━━━━━━━━━━━━━━━━━━━━━━
+"""
+    elif subject_lower in ["science", "physics", "chemistry", "biology"]:
+        subject_warning = """
+━━━━━━━━━━━━━━━━━━━━━━
+🚨🚨🚨 CRITICAL REMINDER FOR 10-MARK SCIENCE ANSWERS 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━━━
+ALL 10-MARK SCIENCE ANSWERS MUST INCLUDE ALL 4 SECTIONS:
+1. Definition: (MANDATORY - 2-3 lines)
+2. Explanation: (MANDATORY - 4-6 lines)
+3. Example: (MANDATORY - 2-3 lines)
+4. Conclusion: (MANDATORY - 2-3 lines)
+TOTAL: 12-15+ lines MINIMUM
+❌ ANSWERS WITH ONLY EXPLANATION + CONCLUSION ARE INVALID
+❌ ANSWERS MISSING DEFINITION ARE INVALID
+❌ ANSWERS MISSING EXAMPLE ARE INVALID
+✅ USE CLEAR SECTION HEADINGS: 'Definition:', 'Explanation:', 'Example:', 'Conclusion:'
+━━━━━━━━━━━━━━━━━━━━━━
+"""
+    elif subject_lower in ["english", "literature"]:
+        subject_warning = """
+━━━━━━━━━━━━━━━━━━━━━━
+🚨🚨🚨 CRITICAL REMINDER FOR 10-MARK ENGLISH ANSWERS 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━━━
+ALL 10-MARK ENGLISH ANSWERS MUST INCLUDE ALL 4 SECTIONS:
+1. Introduction: (MANDATORY - 2-3 lines)
+2. Explanation: (MANDATORY - 4-6 lines)
+3. Analysis: (MANDATORY - 4-6 lines)
+4. Conclusion: (MANDATORY - 2-3 lines)
+TOTAL: 12-15+ lines MINIMUM
+❌ ANSWERS WITH ONLY EXPLANATION + CONCLUSION ARE INVALID
+❌ ANSWERS MISSING INTRODUCTION ARE INVALID
+❌ ANSWERS MISSING ANALYSIS ARE INVALID
+✅ USE CLEAR SECTION HEADINGS: 'Introduction:', 'Explanation:', 'Analysis:', 'Conclusion:'
+━━━━━━━━━━━━━━━━━━━━━━
+"""
+    elif subject_lower in ["mathematics", "math", "maths"]:
+        subject_warning = """
+━━━━━━━━━━━━━━━━━━━━━━
+🚨🚨🚨 CRITICAL REMINDER FOR 10-MARK MATHEMATICS ANSWERS 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━━━
+ALL 10-MARK MATHEMATICS ANSWERS MUST INCLUDE ALL SECTIONS:
+1. Given: (MANDATORY - 2-3 lines)
+2. Formula/Theorem: (MANDATORY - 1-2 lines)
+3. Step-by-step Working: (MANDATORY - 6-8 lines)
+4. Final Answer: (MANDATORY - 1-2 lines with boxed answer)
+TOTAL: 12-15+ lines MINIMUM
+❌ ANSWERS MISSING GIVEN ARE INVALID
+❌ ANSWERS MISSING FORMULA/THEOREM ARE INVALID
+❌ ANSWERS MISSING STEP-BY-STEP WORKING ARE INVALID
+❌ ANSWERS MISSING FINAL ANSWER ARE INVALID
+✅ USE CLEAR SECTION HEADINGS: 'Given:', 'Formula:', 'Steps:', 'Final Answer:'
+━━━━━━━━━━━━━━━━━━━━━━
+"""
+    
     user_prompt = f"""Generate exam questions from the following study material:
 
 [STUDY_MATERIAL]
 
-{text_content[:8000]}
+{text_content[:content_limit]}
 
 Maximum Questions Allowed Per Upload: {remaining_questions}
 Remaining Questions Allowed: {remaining_questions}
@@ -1486,6 +1990,7 @@ CRITICAL RULE: SUBJECT-BASED ANSWER FORMAT
 ━━━━━━━━━━━━━━━━━━━━━━
 
 🚨 DETECTED SUBJECT: {detected_subject.upper()}
+{subject_warning}
 
 IMPORTANT: Answer structure MUST depend on the SUBJECT, not only on marks.
 
@@ -1796,22 +2301,45 @@ CRITICAL ENFORCEMENT:
    - MCQ → 4 options + correct_answer field (ONLY for 1-2 marks)
    - Short Answer (1–2 marks) → type: "short"
    - Descriptive (1–10 marks) → type: "descriptive" (1 mark = 1-2 lines, 3+ marks = detailed)
-4. ANSWER LENGTH RULES (STRICT - MUST FOLLOW EXACTLY):
-   - 1 mark → 1–2 lines ONLY (very short, factual, direct answer - maximum 2 lines)
-   - 2 marks → 2–3 lines ONLY (brief explanation, concise - exactly 2-3 lines)
-   - 3 marks → 4–5 lines ONLY (short descriptive paragraph - exactly 4-5 lines)
-   - 5 marks → 6–8 lines ONLY (medium descriptive with examples - exactly 6-8 lines)
-   - 10 marks → 9-10 lines minimum (STRICT - board-exam answer script format)
-     * Structure depends on subject:
-       - Mathematics: Given → Formula → Calculation/Steps → Final Answer
-       - English: Introduction → Explanation → Analysis → Conclusion
-       - Science: Definition → Explanation → Example → Conclusion
-       - Social Science: Background/Context → Key Points → Explanation → Conclusion
-     * Short answers are INVALID
-     * Treat as board-exam answer script with full working/explanation
+4. ANSWER LENGTH RULES (STRICT - MUST FOLLOW EXACTLY - SUBJECT-SPECIFIC):
    
-   CRITICAL: Count lines carefully. Answers MUST match the specified line count for each mark value.
-   CRITICAL: For mathematics, follow difficulty-based answer structure (Easy: 1-2 lines, Medium: 3-6 lines, Hard: 8-15 lines)
+   🧮 MATHEMATICS (Follow board-exam writing standards):
+   - 1 mark → 1–2 lines (one-line factual answer, direct formula/equation result, NO steps)
+   - 2 marks → 2–3 lines (formula + answer, brief working)
+   - 3 marks → 4–5 lines (formula + substitution + answer, brief explanation with steps)
+   - 5 marks → 6–8 lines (Given → Formula → Steps → Final Answer, structured medium answer)
+   - 10 marks → 12–15+ lines (Full working + explanation, detailed step-by-step)
+   - ⚠️ Lines don't matter as much as steps - focus on complete solution for 10 marks
+   
+   🔬 SCIENCE (Follow board-exam writing standards):
+   - 1 mark → 1–2 lines (one-line factual answer, direct definition or fact)
+   - 2 marks → 2–3 lines (definition + 1 point, brief explanation)
+   - 3 marks → 4–5 lines (explanation + example, brief explanation with one example)
+   - 5 marks → 6–8 lines (definition + diagram + explanation, structured medium answer)
+   - 10 marks → 12–15+ lines (Introduction → Explanation → Example → Conclusion, comprehensive)
+   
+   🏛 SOCIAL SCIENCE (Follow board-exam writing standards):
+   - 1 mark → 1–2 lines (direct fact, one-line factual answer)
+   - 2 marks → 2–3 lines (direct fact with brief context)
+   - 3 marks → 4–5 lines (reason/explanation, brief explanation)
+   - 5 marks → 6–8 lines (3–4 bullet points, structured answer with key points)
+   - 10 marks → 12–15+ lines (intro + causes + effects + conclusion, comprehensive)
+   
+   📖 ENGLISH (Follow board-exam writing standards):
+   - 1 mark → 1–2 lines (one-line factual answer, direct answer only)
+   - 2 marks → 2–3 lines (brief explanation, concise but complete)
+   - 3 marks → 4–5 lines (explanation + example, short paragraph)
+   - 5 marks → 6–8 lines (paragraph style, well-structured explanation)
+   - 10 marks → 12–15+ lines (Introduction + Analysis + Conclusion, detailed essay-style)
+   
+   🈳 GENERAL KNOWLEDGE:
+   - Mostly 1–3 marks
+   - Direct factual answers
+   - NO long explanations
+   - Keep answers concise and factual
+   
+   CRITICAL: Count lines carefully. Answers MUST match the specified line count for each mark value AND subject.
+   CRITICAL: Follow subject-specific structure rules as specified in the STRICT ANSWER RULES section above.
 5. If remaining_questions is less than the requested total, DO NOT generate extra questions. Fill only up to the allowed limit.
 6. All questions must come ONLY from the study material.
 7. CRITICAL: NO duplicated questions - each question must be completely unique and distinct.
@@ -1820,6 +2348,58 @@ CRITICAL ENFORCEMENT:
    - Avoid rephrasing the same question - each question must test different knowledge points
    - Ensure variety in question topics, concepts, and difficulty levels
 8. MCQs must be distinct and meaningful - avoid similar or overlapping options or questions that test the same concept.
+
+━━━━━━━━━━━━━━━━━━━━━━
+📝 QUESTION FRAMING QUALITY (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+🚨 CRITICAL: All questions MUST be well-framed, clear, and unambiguous
+
+QUESTION CLARITY RULES:
+✅ Questions MUST be complete, grammatically correct sentences
+✅ Questions MUST be unambiguous - only ONE correct interpretation possible
+✅ Questions MUST use formal exam-style language (NO casual or conversational tone)
+✅ Questions MUST clearly indicate what knowledge is being tested
+✅ MCQ question stems MUST be complete statements or questions
+✅ All MCQ options MUST be grammatically consistent with the question stem
+✅ All MCQ options MUST be parallel in structure and similar in length
+✅ MCQ distractors (wrong options) MUST be plausible but clearly incorrect
+❌ NEVER use incomplete sentences (unless formula-based)
+❌ NEVER use ambiguous phrasing with multiple possible interpretations
+❌ NEVER use vague pronouns or unclear references
+❌ NEVER use "All of the above" or "None of the above" as options
+❌ NEVER make correct answer stand out due to length or format
+
+MCQ OPTIONS QUALITY:
+✅ All 4 options (A, B, C, D) must be distinct and meaningful
+✅ Wrong options should test common misconceptions or related concepts
+✅ Options should be approximately the same length
+✅ Options should be parallel in grammatical structure
+✅ Correct answer should not be obviously different from others
+❌ NEVER use obviously wrong options that are too easy to eliminate
+❌ NEVER use options that are identical or nearly identical
+❌ NEVER use options completely unrelated to the question topic
+
+QUESTION FRAMING EXAMPLES:
+
+✅ GOOD MCQ Question:
+Question: "முதல் உலகப்போரின் போது பிரிட்டனைத் தாக்கிய நாடு எது?"
+Options: ["ஜெர்மனி", "இத்தாலி", "ரஷ்யா", "பிரான்ஸ்"]
+Correct: "ஜெர்மனி"
+(Complete question, clear context, all options are related countries, grammatically consistent)
+
+❌ BAD MCQ Question:
+Question: "First World War?"
+Options: ["Germany", "Italy", "Russia", "France"]
+(Question is incomplete, unclear what is being asked)
+
+✅ GOOD Descriptive Question:
+"முதல் உலகப்போரின் காரணங்கள் மற்றும் விளைவுகளை விவரிக்கவும்."
+(Complete sentence, clear instruction, formal language)
+
+❌ BAD Descriptive Question:
+"First World War causes and effects"
+(Not a complete sentence, too casual)
 9. Output must ALWAYS follow this exact JSON format (STRUCTURED - NO \\n, NO paragraphs):
 
 {f"""
@@ -1956,43 +2536,57 @@ Include answers: true
 Difficulty level: {difficulty}
 
 LANGUAGE-SPECIFIC EXAM STYLE (MANDATORY):
+🚨 TARGET LANGUAGE: {target_language_name.upper()} 🚨
+You MUST generate ALL content (questions, answers, options) EXCLUSIVELY in {target_language_name}. NO EXCEPTIONS.
+
 You MUST use formal exam-style phrasing appropriate for {target_language_name}:
-- Tamil (ta-IN): Use formal கல்வி மொழி Tamil. Use patterns like: "... என்றால் என்ன?", "சுருக்கமாக எழுதுக", "விளக்குக", "விவரிக்கவும்", "வேறுபாடுகளை எழுதுக". Avoid spoken Tamil.
-- English (en): Use formal academic tone. Use patterns like: "Define …", "Explain …", "Describe …", "Write short notes on …", "Differentiate between …"
-- Hindi (hi-IN): Use शुद्ध हिन्दी / परीक्षा शैली. Use: "परिभाषित कीजिए", "समझाइए", "विवरण दीजिए", "लघु उत्तरीय प्रश्न", "दीर्घ उत्तरीय प्रश्न"
-- Telugu (te-IN): Use formal textbook Telugu. Use: "అంటే ఏమిటి?", "సంక్షిప్తంగా వ్రాయండి", "వివరించండి"
-- Kannada (kn-IN): Use school exam style Kannada. Use: "ಎಂದರೆ ಏನು?", "ಸಂಕ್ಷಿಪ್ತ ಉಕ್ಕಿ ಬರೆಯಿರಿ", "ವಿವರಿಸಿ"
-- Malayalam (ml-IN): Use formal academic Malayalam. Use: "എന്താണ്?", "വ്യാഖ്യാനിക്കുക", "സംക്ഷിപ്തമായി എഴുതുക"
-- Arabic (ar): Use Modern Standard Arabic. Use: "ما هو …؟", "اشرح", "وضح"
-- Spanish (es): Use neutral academic Spanish. Use: "Defina …", "Explique …", "Describa …"
-CRITICAL: All questions and answers MUST use the appropriate exam-style phrasing for {target_language_name}. DO NOT use casual or spoken language - ONLY formal exam-style phrasing.
+- Tamil: Use formal கல்வி மொழி Tamil. Use patterns like: "... என்றால் என்ன?", "சுருக்கமாக எழுதுக", "விளக்குக", "விவரிக்கவும்", "வேறுபாடுகளை எழுதுக". Avoid spoken Tamil. Generate questions and answers in Tamil script ONLY.
+- English: Use formal academic tone. Use patterns like: "Define …", "Explain …", "Describe …", "Write short notes on …", "Differentiate between …"
+- Hindi: Use शुद्ध हिन्दी / परीक्षा शैली. Use: "परिभाषित कीजिए", "समझाइए", "विवरण दीजिए", "लघु उत्तरीय प्रश्न", "दीर्घ उत्तरीय प्रश्न". Generate in Devanagari script ONLY.
+- Telugu: Use formal textbook Telugu. Use: "అంటే ఏమిటి?", "సంక్షిప్తంగా వ్రాయండి", "వివరించండి". Generate in Telugu script ONLY.
+- Kannada: Use school exam style Kannada. Use: "ಎಂದರೆ ಏನು?", "ಸಂಕ್ಷಿಪ್ತ ಉಕ್ಕಿ ಬರೆಯಿರಿ", "ವಿವರಿಸಿ". Generate in Kannada script ONLY.
+- Malayalam: Use formal academic Malayalam. Use: "എന്താണ്?", "വ്യാഖ്യാനിക്കുക", "സംക്ഷിപ്തമായി എഴുതുക". Generate in Malayalam script ONLY.
+- Arabic: Use Modern Standard Arabic. Use: "ما هو …؟", "اشرح", "وضح". Generate in Arabic script ONLY.
+- Spanish: Use neutral academic Spanish. Use: "Defina …", "Explique …", "Describa …"
+
+CRITICAL LANGUAGE ENFORCEMENT:
+- If target language is {target_language_name}, EVERY SINGLE WORD must be in {target_language_name}
+- Question text: {target_language_name} ONLY - NO English, NO code-switching
+- Answer text: {target_language_name} ONLY - NO English, NO code-switching  
+- MCQ options: {target_language_name} ONLY - NO English, NO code-switching
+- DO NOT use casual or spoken language - ONLY formal exam-style phrasing
+- DO NOT mix languages - if you see English content in the study material but target is {target_language_name}, translate and generate in {target_language_name}
 
 🚨🚨🚨 CRITICAL REQUIREMENTS - READ CAREFULLY 🚨🚨🚨
 
-QUESTION COUNT (MANDATORY - NO EXCEPTIONS - ZERO TOLERANCE):
-- 🚨 You MUST generate EXACTLY {actual_num_questions} questions - NOT {actual_num_questions - 1}, NOT {actual_num_questions + 1}, EXACTLY {actual_num_questions}
-- 🚨 The "questions" array in your JSON MUST contain exactly {actual_num_questions} question objects
-- 🚨 Count your questions BEFORE outputting - if the count is not {actual_num_questions}, you have made an error
-- 🚨 If you generate fewer than {actual_num_questions} questions, your output is INVALID and will be rejected
-- 🚨 If you generate more than {actual_num_questions} questions, your output is INVALID and will be rejected
-- 🚨 STEP-BY-STEP VERIFICATION:
-  1. Generate all {actual_num_questions} questions
-  2. Count them: questions.length should equal {actual_num_questions}
-  3. If count ≠ {actual_num_questions}, REGENERATE until you have exactly {actual_num_questions}
-  4. Only output when you have verified the count is exactly {actual_num_questions}
-- 🚨 DISTRIBUTION REQUIREMENT: You must generate questions matching this distribution: {distribution_string}
-- 🚨 If you cannot generate exactly {actual_num_questions} questions matching the distribution, DO NOT generate any questions at all
+QUALITY OVER QUANTITY (HIGHEST PRIORITY):
+- ✅ Generate questions ONLY if the content clearly supports them
+- ✅ Do NOT force additional questions to meet a number
+- ✅ If the content does not support the requested number of questions, generate the maximum number of HIGH-QUALITY questions possible
+- ✅ Do NOT repeat question patterns, equations, or ideas
+- ✅ Do NOT invent or stretch content to increase count
+- ✅ Quality is MORE IMPORTANT than quantity
+- ✅ If you can only generate fewer than {actual_num_questions} high-quality questions, generate only what you can support with the content
 
-DISTRIBUTION REQUIREMENTS:
-- Follow the distribution EXACTLY: {distribution_string}
-- NEVER exceed {remaining_questions} questions
-- NEVER generate fewer questions than the distribution requires
+QUESTION COUNT (TARGET - NOT MANDATORY):
+- 🎯 Target: Generate up to {actual_num_questions} questions if content supports them
+- 🎯 The "questions" array in your JSON should contain up to {actual_num_questions} question objects
+- 🎯 If content supports fewer questions, generate only the number you can support with HIGH QUALITY
+- 🎯 NEVER exceed {remaining_questions} questions
+- 🎯 NEVER generate low-quality or repetitive questions just to meet the count
+- 🎯 NEVER invent content or stretch material to create more questions
+
+DISTRIBUTION REQUIREMENTS (FLEXIBLE):
+- Follow the distribution as closely as possible: {distribution_string}
+- If content doesn't support the full distribution, generate the best questions you can from the available content
+- Prioritize quality and uniqueness over exact distribution matching
 
 VERIFICATION BEFORE OUTPUT:
 1. Count the questions in your "questions" array
-2. Verify the count equals {actual_num_questions} exactly
-3. If count ≠ {actual_num_questions}, you must regenerate or fix the count
-4. Only output when you have exactly {actual_num_questions} questions
+2. Verify all questions are HIGH QUALITY and UNIQUE (no repetition)
+3. Verify all questions are supported by the content (no invented content)
+4. If you have fewer than {actual_num_questions} questions but they are all high-quality, that is ACCEPTABLE
+5. Only output when you have verified quality and uniqueness
 - Output ONLY valid JSON - no markdown, no explanations, no text before/after JSON
 - CRITICAL: EVERY question MUST have a "correct_answer" field - this is MANDATORY for ALL mark values (1, 2, 3, 5, 10 marks)
 - For 5+ marks: Use structured format (object with subject-appropriate fields)
@@ -2001,8 +2595,104 @@ VERIFICATION BEFORE OUTPUT:
   * Science: Use object with definition, explanation, example, conclusion (OR string with embedded headings)
   * Social Science: Use object with background, key_points, explanation, conclusion (OR string with embedded headings)
 - For 1-3 marks: Can use simple string format, but MUST provide an answer
+🚨 CRITICAL LANGUAGE REQUIREMENT 🚨
 - All questions, options, and answers MUST be in {target_language_name} ONLY
+- DO NOT mix languages - if target language is {target_language_name}, generate EVERYTHING in {target_language_name}
+- Question text: {target_language_name} ONLY
+- Answer text: {target_language_name} ONLY  
+- MCQ options: {target_language_name} ONLY
+- If target language is Tamil, use Tamil script (தமிழ்) for ALL content
+- If target language is Hindi, use Devanagari script (हिंदी) for ALL content
+- If target language is English, use English for ALL content
+- NO code-switching or language mixing allowed
 - NEVER generate a question without an answer - if you cannot generate an answer, do not generate the question
+
+━━━━━━━━━━━━━━━━━━━━━━
+📝 QUESTION FRAMING QUALITY (MANDATORY - READ CAREFULLY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+🚨 CRITICAL: All questions MUST be well-framed, clear, grammatically correct, and unambiguous
+
+1. QUESTION CLARITY REQUIREMENTS:
+   ✅ Questions MUST be complete, grammatically correct sentences
+   ✅ Questions MUST be unambiguous - only ONE correct interpretation possible
+   ✅ Questions MUST use formal exam-style language (NO casual or conversational tone)
+   ✅ Questions MUST clearly indicate what knowledge is being tested
+   ✅ Questions MUST be phrased naturally and read smoothly
+   ❌ NEVER use incomplete sentences (unless formula-based like "If x² = 16, find x")
+   ❌ NEVER use ambiguous phrasing with multiple possible interpretations
+   ❌ NEVER use vague pronouns or unclear references
+   ❌ NEVER use casual or conversational language
+
+2. MCQ QUESTION FRAMING (SPECIFIC RULES):
+   ✅ Question stem MUST be a complete, clear question or statement
+   ✅ Question stem MUST be grammatically correct
+   ✅ Question stem MUST clearly indicate what is being asked
+   ✅ All 4 options MUST be grammatically consistent with the question stem
+   ✅ All 4 options MUST be plausible and related to the topic
+   ✅ Correct answer MUST be clearly the best/most accurate option
+   ✅ Wrong options (distractors) MUST be plausible but clearly incorrect
+   ✅ Options MUST be similar in length (avoid one very long option)
+   ✅ Options MUST be parallel in structure (all start with same type of word if applicable)
+   ✅ Options should test understanding, not just recall
+   ❌ NEVER use "All of the above" or "None of the above" as options
+   ❌ NEVER make the correct answer obviously different in format/length
+   ❌ NEVER use options that are too similar to each other
+   ❌ NEVER use options that are completely unrelated to the question
+
+3. MCQ OPTIONS QUALITY:
+   ✅ Option A, B, C, D must all be distinct and meaningful
+   ✅ Distractors (wrong options) should test common misconceptions
+   ✅ Distractors should be factually related to the topic
+   ✅ All options should be approximately the same length
+   ✅ Correct answer should not stand out due to formatting or length
+   ✅ Options should be grammatically parallel (e.g., all nouns, all phrases, all sentences)
+   ❌ NEVER use obviously wrong options that are too easy to eliminate
+   ❌ NEVER use options that are identical or nearly identical
+   ❌ NEVER use options completely unrelated to the question topic
+
+4. QUESTION STRUCTURE EXAMPLES:
+
+   ✅ GOOD MCQ Examples:
+   - "முதல் உலகப்போரின் போது பிரிட்டனைத் தாக்கிய நாடு எது?" (Which country attacked Britain during the First World War?)
+     Options: ["ஜெர்மனி", "இத்தாலி", "ரஷ்யா", "பிரான்ஸ்"]
+   - "What is the value of x if 2x + 5 = 13?"
+     Options: ["4", "5", "6", "7"]
+   - "Which of the following is the capital of France?"
+     Options: ["Paris", "London", "Berlin", "Madrid"]
+   
+   ❌ BAD MCQ Examples:
+   - "First World War?" (incomplete, unclear)
+   - "Who attacked?" (too vague, missing context)
+   - "Britain was attacked by?" (incomplete sentence)
+   - "What happened in 1914?" (too vague, multiple possible answers)
+   
+   ✅ GOOD Descriptive Examples:
+   - "முதல் உலகப்போரின் காரணங்களை விளக்குக." (Explain the causes of the First World War.)
+   - "Describe the process of photosynthesis in detail."
+   - "விவரிக்கவும்: முதல் உலகப்போரின் விளைவுகள்." (Describe: Effects of the First World War.)
+   
+   ❌ BAD Descriptive Examples:
+   - "First World War causes" (not a complete sentence)
+   - "Tell about photosynthesis" (too casual)
+   - "What happened?" (too vague)
+   - "Explain it" (unclear reference)
+
+5. GRAMMATICAL CORRECTNESS:
+   ✅ All questions MUST be grammatically correct in the target language
+   ✅ All options MUST be grammatically correct
+   ✅ Subject-verb agreement MUST be correct
+   ✅ Proper punctuation MUST be used
+   ✅ Proper capitalization MUST be used (as per language rules)
+   ❌ NEVER use incorrect grammar
+   ❌ NEVER use incorrect punctuation
+   ❌ NEVER use incorrect capitalization
+
+6. LANGUAGE-SPECIFIC FRAMING PATTERNS:
+   - Tamil: Use formal patterns like "X ஐ விளக்குக", "X என்றால் என்ன?", "X ஐ விவரிக்கவும்", "X இன் காரணங்கள் என்ன?"
+   - English: Use formal patterns like "Explain...", "Describe...", "What is...?", "Define...", "Which of the following...?"
+   - Hindi: Use formal patterns like "विवरण दीजिए", "समझाइए", "परिभाषित कीजिए", "निम्नलिखित में से कौन सा...?"
+   - All languages: Maintain formal, academic tone throughout
 - Match question type to marks:
 
 ANSWER FORMAT RULES (MANDATORY - SUBJECT-SPECIFIC):
@@ -2034,11 +2724,13 @@ ANSWER FORMAT RULES (MANDATORY - SUBJECT-SPECIFIC):
   - OR can be a single string with embedded headings: "Definition: ... Explanation: ... Example: ... Conclusion: ..."
 
   FOR SOCIAL SCIENCE (5+ marks):
-  - "background" or "context": string - REQUIRED for 5+ marks
-  - "key_points": string or array of strings - REQUIRED for 5+ marks
-  - "explanation": string - REQUIRED for 5+ marks
-  - "conclusion": string - REQUIRED for 5+ marks
+  - "background" or "context": string - REQUIRED for 5+ marks (2-3 lines for 10 marks)
+  - "key_points": string or array of strings - REQUIRED for 5+ marks (3-4 key points, 4-5 lines total for 10 marks)
+  - "explanation": string - REQUIRED for 5+ marks (4-6 lines for 10 marks)
+  - "conclusion": string - REQUIRED for 5+ marks (2-3 lines for 10 marks)
+  - For 10 marks: ALL fields MUST be present and substantial, totaling 12-15+ lines
   - OR can be a single string with embedded headings: "Background/Context: ... Key Points: ... Explanation: ... Conclusion: ..."
+  - If using string format, ensure it has ALL sections and totals 12-15+ lines
 
 CRITICAL: For non-mathematics subjects, DO NOT use math-style fields (given, formula, steps). Use subject-appropriate fields as specified above.
 - For 10-mark questions: MUST include ALL required fields for the subject
@@ -2081,18 +2773,42 @@ For 5 MARKS:
 ✓ Final answer clearly stated: "Final Answer: ..." (exam-friendly format, NO LaTeX)
 
 For 10 MARKS (STRICT BOARD-EXAM RULES):
-✓ Answer has minimum 10-15 lines (NO SHORT ANSWERS - INVALID)
-✓ ALL mandatory parts present (in order):
+✓ Answer has minimum 12-15 lines (NO SHORT ANSWERS - INVALID)
+✓ ALL mandatory parts present based on SUBJECT:
+
+  FOR MATHEMATICS (10 marks):
   (i) Given - What is provided in the problem
   (ii) Definition (if applicable) - Define key terms/concepts
   (iii) Formula/Theorem - State the formula or theorem
   (iv) Step-by-step working - Numbered steps with complete calculations
   (v) Logical explanation - Explain reasoning and method
   (vi) Final conclusion statement - Summarize and state final answer
-✓ Step numbering present (Step 1, Step 2, Step 3, ...)
-✓ Final answer clearly stated: "Final Answer: ..." (exam-friendly format, NO LaTeX)
+  
+  FOR SOCIAL SCIENCE (10 marks) - ALL 4 SECTIONS MANDATORY:
+  (i) Background/Context - Historical/geographical context (2-3 lines) - MANDATORY
+  (ii) Key Points - 3-4 key points with details (4-5 lines) - MANDATORY
+  (iii) Explanation - Comprehensive explanation of relationships and causes (4-6 lines) - MANDATORY
+  (iv) Conclusion - Strong conclusion summarizing all points (2-3 lines) - MANDATORY
+  ❌ NEVER skip Background or Key Points - answer is INVALID without them
+  
+  FOR SCIENCE (10 marks):
+  (i) Definition - Clear definition of concepts
+  (ii) Explanation - Detailed scientific explanation
+  (iii) Example - Relevant examples or applications
+  (iv) Conclusion - Comprehensive conclusion
+  
+  FOR ENGLISH (10 marks):
+  (i) Introduction - Context and overview
+  (ii) Explanation - Detailed explanation
+  (iii) Analysis - In-depth analysis
+  (iv) Conclusion - Comprehensive conclusion
+
+✓ For Social Science: ALL 4 sections (Background, Key Points, Explanation, Conclusion) MUST be present
+✓ Step numbering present (for Mathematics: Step 1, Step 2, Step 3, ...)
+✓ Final answer clearly stated: "Final Answer: ..." (for Mathematics) or strong conclusion (for other subjects)
 ✓ Treated as board-exam answer script with full working
 ✓ NO abbreviated answers - full working is mandatory
+✓ Total length: 12-15+ lines minimum for ALL subjects
 
 General Checks:
 ✓ Exam-friendly notation used (NO LaTeX commands like \\frac, \\sqrt, \\boxed)
@@ -2130,13 +2846,14 @@ For 1 mark questions: Use simple string format, but MUST provide an answer.
 Now generate the questions strictly within the allowed limit, ensuring answer lengths match the mark requirements exactly and follow the difficulty-based structure. REMEMBER: EVERY question MUST have a correct_answer field.
 
 🚨 FINAL VERIFICATION BEFORE OUTPUTTING JSON:
-1. Generate ALL {actual_num_questions} questions according to the distribution
-2. Count the questions: questions.length MUST equal {actual_num_questions}
-3. Verify distribution: Check each mark/type combination matches the required count
-4. If count is wrong, DO NOT output - regenerate until count is correct
-5. Only output JSON when you have verified questions.length === {actual_num_questions}
+1. Generate HIGH-QUALITY questions from the content (up to {actual_num_questions} if content supports)
+2. Verify all questions are UNIQUE (no repetition of patterns, equations, or ideas)
+3. Verify all questions are supported by the content (no invented or stretched content)
+4. Verify distribution as closely as possible (quality over exact matching)
+5. If you have fewer than {actual_num_questions} questions but they are all high-quality, that is ACCEPTABLE
+6. Only output JSON when you have verified quality and uniqueness
 
-CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, your response will be REJECTED and you will be asked to regenerate."""
+CRITICAL: Quality is MORE IMPORTANT than quantity. Generate only as many high-quality questions as the content clearly supports."""
 
     try:
         response = client.chat.completions.create(
@@ -2299,13 +3016,13 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
         
         # Check if count matches expected
         expected_count = sum(item.get("count", 0) for item in distribution_list)
-        print(f"📊 Question count check: Expected={expected_count}, Got={actual_count}, Remaining={remaining_questions}")
+        print(f"Question count check: Expected={expected_count}, Got={actual_count}, Remaining={remaining_questions}")
         
         if actual_count < expected_count:
-            print(f"❌ ERROR: AI generated only {actual_count} questions but {expected_count} were requested!")
-            print(f"   This is a critical issue - the AI should generate exactly {expected_count} questions.")
+            print(f"INFO: AI generated {actual_count} high-quality questions (requested {expected_count})")
+            print(f"   This is acceptable - quality over quantity. Content may not support more questions.")
             print(f"   Distribution requested: {distribution_list}")
-            print(f"   Total expected: {expected_count}, Got: {actual_count}, Missing: {expected_count - actual_count}")
+            print(f"   Total expected: {expected_count}, Got: {actual_count}, Difference: {expected_count - actual_count}")
             
             # Check distribution breakdown
             if distribution_list:
@@ -2315,23 +3032,19 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
                     count = dist_item.get('count', 0)
                     q_type = dist_item.get('type', 'unknown')
                     actual_for_this = len([q for q in questions if q.get('marks') == marks and q.get('type', '').lower() == q_type.lower()])
-                    print(f"     - {count} questions of {marks} marks ({q_type}): Expected {count}, Got {actual_for_this}, Missing {count - actual_for_this}")
+                    print(f"     - {count} questions of {marks} marks ({q_type}): Expected {count}, Got {actual_for_this}, Difference {count - actual_for_this}")
             
             print(f"   Questions received: {[q.get('question', 'N/A')[:50] for q in questions]}")
-            # Always raise error if we have fewer questions - retry logic will handle it
-            raise ValueError(
-                f"AI generated only {actual_count} questions but {expected_count} were requested. "
-                f"This violates the requirement to generate exactly {expected_count} questions. "
-                f"Missing {expected_count - actual_count} question(s). "
-                f"Distribution: {distribution_list}. "
-                f"Retrying generation with STRICTER instructions..."
-            )
+            # Accept the result - quality over quantity. Do not retry.
+            # Store the actual count for frontend notification
+            result["actual_question_count"] = actual_count
+            result["requested_question_count"] = expected_count
         
         if actual_count != expected_count and actual_count != remaining_questions:
-            print(f"⚠️  Question count mismatch: Expected {expected_count}, Got {actual_count}, Remaining: {remaining_questions}")
+            print(f"Question count mismatch: Expected {expected_count}, Got {actual_count}, Remaining: {remaining_questions}")
             # If we got more than allowed, truncate
             if actual_count > remaining_questions:
-                print(f"⚠️  Truncating questions from {actual_count} to {remaining_questions}")
+                print(f"Truncating questions from {actual_count} to {remaining_questions}")
                 questions = questions[:remaining_questions]
                 result["questions"] = questions
             # If we got fewer, log it but keep what we have
@@ -2339,12 +3052,12 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
         # Validate distribution matches
         distribution_validation = _validate_distribution(questions, distribution_list)
         if not distribution_validation["valid"]:
-            print(f"⚠️  Distribution mismatch: {distribution_validation['message']}")
+            print(f"Distribution mismatch: {distribution_validation['message']}")
             # Try to fix distribution, but ensure we don't lose questions
             fixed_questions = _fix_distribution(questions, distribution_list, remaining_questions)
             if len(fixed_questions) < len(questions) and len(fixed_questions) < remaining_questions:
                 # If fixing reduced the count, try to keep all questions and just reorder
-                print(f"⚠️  Fixing distribution reduced count from {len(questions)} to {len(fixed_questions)}. Attempting to preserve all questions...")
+                print(f"Fixing distribution reduced count from {len(questions)} to {len(fixed_questions)}. Attempting to preserve all questions...")
                 # Keep all questions, just ensure we don't exceed limit
                 questions = questions[:remaining_questions]
             else:
@@ -2425,60 +3138,38 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
         # Track question count at each step
         expected_count = sum(item.get("count", 0) for item in distribution_list)
         count_before_duplicate_check = len(questions)
-        print(f"📊 Step 1 - After parsing: {count_before_duplicate_check} questions")
+        print(f"Step 1 - After parsing: {count_before_duplicate_check} questions")
         
-        # Check for duplicate questions (applies to all languages)
+        # Check for duplicate questions (applies to all languages) - just log, don't remove yet
         _check_duplicate_questions(questions)
         count_after_duplicate_check = len(questions)
-        if count_after_duplicate_check != count_before_duplicate_check:
-            print(f"⚠️  WARNING: Duplicate check changed count from {count_before_duplicate_check} to {count_after_duplicate_check}")
         
         # Auto-check exam quality (strict validation)
         questions, has_format_repetition = _validate_exam_quality(questions, difficulty)
         count_after_validation = len(questions)
-        print(f"📊 Step 2 - After validation: {count_after_validation} questions")
+        print(f"Step 2 - After validation: {count_after_validation} questions")
         
-        # If format repetition detected, raise error to trigger retry
-        # But only if it's severe repetition (not just low variation)
+        # Remove duplicate questions (exact or very similar)
+        questions = _remove_duplicate_questions(questions)
+        count_after_dedup = len(questions)
+        if count_after_dedup < count_after_validation:
+            print(f"Removed {count_after_validation - count_after_dedup} duplicate question(s). Remaining: {count_after_dedup}")
+        
+        # Log format repetition but don't retry - accept the result
         if has_format_repetition:
-            # Extract starters from questions to check variation
-            question_starters_list = []
-            for q in questions:
-                question_text = q.get("question", "").strip()
-                if question_text:
-                    words = question_text.split()
-                    if words:
-                        question_starters_list.append(words[0].lower())
-            
-            unique_starters = len(set(question_starters_list)) if question_starters_list else 0
-            total_questions = len(questions)
-            
-            # If we have at least 50% unique starters, don't treat as critical repetition
-            # This allows some flexibility for small question sets
-            if unique_starters >= total_questions * 0.5:
-                print(f"⚠️  Format variation is acceptable ({unique_starters}/{total_questions} unique starters). Continuing...")
-                has_format_repetition = False
-            
-            if has_format_repetition:
-                print(f"🚨 FORMAT REPETITION DETECTED - Regenerating questions to ensure unique formats...")
-                raise ValueError(
-                    "Format repetition detected in generated questions. "
-                    "Questions must have unique formats, openers, and structures. "
-                    "Regenerating to ensure variation."
-                )
+            print(f"INFO: Format repetition detected but accepting questions. Quality over quantity.")
         
         if count_after_validation != count_before_duplicate_check:
-            print(f"⚠️  WARNING: Validation changed count from {count_before_duplicate_check} to {count_after_validation}")
-            print(f"   This should not happen - validation should not remove questions!")
+            print(f"INFO: Validation changed count from {count_before_duplicate_check} to {count_after_validation}")
+            print(f"   This is acceptable - quality over quantity. Some questions may have been removed for quality.")
         
-        # Ensure we have the exact number requested
+        # Accept quality questions - don't enforce exact count
         if count_after_validation < expected_count:
-            print(f"❌ CRITICAL: After validation, we have {count_after_validation} questions but need {expected_count}")
-            print(f"   Missing {expected_count - count_after_validation} question(s)")
-            print(f"   This is a critical error - questions should not be removed during validation")
+            print(f"INFO: After validation, we have {count_after_validation} quality questions (requested {expected_count})")
+            print(f"   Accepting result - quality over quantity. Content may not support more questions.")
         elif count_after_validation > expected_count:
             # If we have more than expected, keep exactly the expected number
-            print(f"📊 Trimming to exactly {expected_count} questions (had {count_after_validation})")
+            print(f"INFO: Trimming to exactly {expected_count} questions (had {count_after_validation})")
             questions = questions[:expected_count]
         
         # Post-process 10-mark math questions: convert LaTeX to board-style format
@@ -2490,25 +3181,19 @@ CRITICAL: If you output JSON with fewer than {actual_num_questions} questions, y
         if count_after_postprocess != count_before_postprocess:
             print(f"⚠️  WARNING: Post-processing changed count from {count_before_postprocess} to {count_after_postprocess}")
         
-        # Final count check
+        # Final count check - accept quality questions, don't raise errors
         final_count = len(questions)
         if final_count != expected_count:
-            print(f"❌ FINAL COUNT MISMATCH: Expected {expected_count}, Got {final_count}")
-            print(f"   Missing {expected_count - final_count} question(s)")
-            # If we're missing questions, try to identify which ones
             if final_count < expected_count:
-                print(f"   Current questions:")
-                for i, q in enumerate(questions, 1):
-                    print(f"     Q{i}: {q.get('marks', '?')} marks, type={q.get('type', '?')}")
+                print(f"INFO: Final count: Generated {final_count} quality questions (requested {expected_count})")
+                print(f"   Accepting result - quality over quantity. Content may not support more questions.")
+            else:
+                print(f"INFO: Final count: Generated {final_count} questions (requested {expected_count})")
+                # Truncate to expected count if we got more
+                questions = questions[:expected_count]
+                final_count = len(questions)
         else:
-            print(f"✅ FINAL COUNT: Exactly {final_count} questions (as requested)")
-        
-        # Final count check
-        final_count = len(questions)
-        if final_count != expected_count:
-            print(f"⚠️  FINAL COUNT: Expected {expected_count}, Got {final_count}")
-        else:
-            print(f"✅ FINAL COUNT: Exactly {final_count} questions (as requested)")
+            print(f"INFO: Final count: Exactly {final_count} questions (as requested)")
         
         # Store usage log ID for later linking
         if usage_log_id:
@@ -2577,15 +3262,71 @@ def _check_duplicate_questions(questions: List[Dict[str, Any]]) -> None:
         seen_questions[i] = normalized_q1
     
     if duplicates_found:
-        print(f"⚠️  WARNING: Found {len(duplicates_found)} potential duplicate question(s):")
+        print(f"WARNING: Found {len(duplicates_found)} potential duplicate question(s):")
         for dup in duplicates_found:
             print(f"   - Question {dup['index1']} and Question {dup['index2']} are very similar "
                   f"(similarity: {dup['similarity']:.1%})")
             print(f"     Q{dup['index1']}: {dup['question1']}...")
             print(f"     Q{dup['index2']}: {dup['question2']}...")
-        print("   ⚠️  The AI should generate unique questions covering different topics/concepts.")
+        print("   The AI should generate unique questions covering different topics/concepts.")
     else:
-        print("✅ No duplicate questions detected - all questions are unique")
+        print("No duplicate questions detected - all questions are unique")
+
+def _remove_duplicate_questions(questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Remove duplicate or very similar questions from the list.
+    Returns a list with duplicates removed, keeping the first occurrence.
+    """
+    if len(questions) < 2:
+        return questions
+    
+    # Normalize question text for comparison
+    def normalize_text(text: str) -> str:
+        if not text:
+            return ""
+        normalized = " ".join(text.lower().split())
+        normalized = re.sub(r'[^\w\s]', '', normalized)
+        return normalized
+    
+    unique_questions = []
+    seen_normalized = set()
+    removed_count = 0
+    
+    for q in questions:
+        question_text = q.get("question", "").strip()
+        if not question_text:
+            unique_questions.append(q)  # Keep questions without text
+            continue
+        
+        normalized = normalize_text(question_text)
+        
+        # Check if this is a duplicate
+        is_duplicate = False
+        for seen_norm in seen_normalized:
+            words1 = set(normalized.split())
+            words2 = set(seen_norm.split())
+            
+            if len(words1) == 0 or len(words2) == 0:
+                continue
+            
+            intersection = len(words1 & words2)
+            union = len(words1 | words2)
+            similarity = intersection / union if union > 0 else 0
+            
+            # If similarity is very high (>80%), it's a duplicate
+            if similarity > 0.8:
+                is_duplicate = True
+                removed_count += 1
+                break
+        
+        if not is_duplicate:
+            unique_questions.append(q)
+            seen_normalized.add(normalized)
+    
+    if removed_count > 0:
+        print(f"Removed {removed_count} duplicate question(s). Remaining: {len(unique_questions)}")
+    
+    return unique_questions
 
 def _build_distribution_list(marks_pattern: str, qna_type: str, num_questions: int) -> List[Dict[str, Any]]:
     """

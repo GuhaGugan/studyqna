@@ -24,8 +24,6 @@ const OnboardingTour = ({ activeTab, setActiveTab }) => {
 
     { title: 'Generate', content: 'Create exam-ready questions.', target: '[data-tour="generate-tab"]', action: () => setActiveTab('generate') },
 
-    { title: 'Marks Pattern', content: 'Control marks distribution.', target: '[data-tour="distribution-mode"]', action: () => setActiveTab('generate') },
-
     { title: 'Saved Sets', content: 'Reuse generated questions.', target: '[data-tour="saved-tab"]', action: () => setActiveTab('saved') },
 
     { title: 'Reviews', content: 'Share your feedback.', target: '[data-tour="review-tab"]', action: () => setActiveTab('review') },

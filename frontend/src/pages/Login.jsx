@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
@@ -9,8 +9,42 @@ const Login = () => {
   const [step, setStep] = useState('email') // 'email' or 'otp'
   const [loading, setLoading] = useState(false)
   const [emailError, setEmailError] = useState('')
-  const { requestOTP, login, isAdmin } = useAuth()
+  const { requestOTP, login, deviceLogin, isAdmin } = useAuth()
   const navigate = useNavigate()
+
+  // Check for device token on component mount
+  useEffect(() => {
+    const deviceToken = localStorage.getItem('device_token')
+    const deviceEmail = localStorage.getItem('device_email')
+    
+    if (deviceToken && deviceEmail) {
+      // Try device login automatically
+      setEmail(deviceEmail)
+      handleDeviceLogin(deviceEmail, deviceToken)
+    }
+  }, [])
+
+  const handleDeviceLogin = async (email, deviceToken) => {
+    setLoading(true)
+    try {
+      const role = await deviceLogin(email, deviceToken)
+      toast.success('Welcome back!')
+      
+      // Redirect based on role
+      if (role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (error) {
+      // Device login failed - user needs to login with OTP
+      // Clear invalid device token
+      localStorage.removeItem('device_token')
+      localStorage.removeItem('device_email')
+      setLoading(false)
+      // Continue with normal login flow
+    }
+  }
 
   // Email validation function
   const validateEmailFormat = (email) => {
@@ -98,9 +132,21 @@ const Login = () => {
     setEmailError('')
     
     try {
-      await requestOTP(email.trim().toLowerCase())
+      const result = await requestOTP(email.trim().toLowerCase())
+      
+      // Check if device login was successful (no OTP required)
+      if (result && !result.requiresOTP) {
+        // Device login successful - redirect
+        if (result.role === 'admin') {
+          navigate('/admin')
+        } else {
+          navigate('/dashboard')
+        }
+        return
+      }
+      
+      // OTP required - show OTP input
       setStep('otp')
-      toast.success('OTP sent to your email!')
     } catch (error) {
       // Error message from backend will be shown via toast
       const errorMsg = error.response?.data?.detail || 'Failed to send OTP'

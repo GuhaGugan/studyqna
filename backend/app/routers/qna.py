@@ -5,11 +5,14 @@ from app.routers.dependencies import get_current_user, get_premium_user
 from app.models import User, QnASet, Upload
 from app.schemas import QnAGenerateRequest, QnASetResponse
 from app.ocr_service import extract_text_from_image, extract_text_from_pdf
-from app.ai_service import generate_qna
+from app.ai_service import generate_qna  # Keep for backward compatibility
+from app.ai_pipeline import generate_qna_pipeline
 from app.download_service import generate_pdf, generate_docx, generate_txt, _generate_pdf_playwright_async
 from app.download_service import PLAYWRIGHT_AVAILABLE
 from app.generation_tracker import check_daily_generation_limit, increment_daily_generation_count
 from app.error_logger import log_api_error
+from app.font_manager import detect_language
+from app.models import PdfSplitPart
 import asyncio
 from app.config import settings
 from typing import Optional
@@ -73,13 +76,22 @@ async def generate_qna_endpoint(
                 detail="One or more split parts not found"
             )
         
-        # Combine text from all selected parts
+        # Combine text from all selected parts and store part info for source tracking
         combined_text = []
+        part_info_map = {}  # Map to store part info by part_number
         for part in sorted(parts, key=lambda p: p.part_number):
             part_text = extract_text_from_pdf(part.file_path)
             if part_text:
-                combined_text.append(f"\n\n--- Part {part.part_number} (Pages {part.start_page}-{part.end_page}) ---\n\n")
+                part_marker = f"--- Part {part.part_number} (Pages {part.start_page}-{part.end_page}) ---"
+                combined_text.append(f"\n\n{part_marker}\n\n")
                 combined_text.append(part_text)
+                # Store part info for source tracking
+                part_info_map[part.part_number] = {
+                    "part_number": part.part_number,
+                    "start_page": part.start_page,
+                    "end_page": part.end_page,
+                    "marker": part_marker
+                }
         
         text_content = "".join(combined_text)
         
@@ -147,32 +159,32 @@ async def generate_qna_endpoint(
         current_user.premium_valid_until > datetime.utcnow()
     )
     
-    # Check total questions limit for premium users (based on upload quotas)
-    # Formula: (PDF uploads remaining × 20) + (Image uploads remaining × 20) = Total questions available
-    if is_premium:
-        from app.config import settings
-        
-        questions_per_upload = 20  # Each upload allows up to 20 questions
-        pdf_questions_available = current_user.upload_quota_remaining * questions_per_upload
-        image_questions_available = current_user.image_quota_remaining * questions_per_upload
-        total_questions_available = pdf_questions_available + image_questions_available
-        
-        # Check if user has any questions available
-        if total_questions_available <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"You have no questions remaining. You need upload quota to generate questions. Please renew your premium subscription to continue."
-            )
-        
-        # Check if this generation would exceed available questions
-        if request.num_questions > total_questions_available:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"You can only generate {total_questions_available} more question(s) based on your remaining upload quota. Please reduce the number of questions or renew your premium subscription."
-            )
+    # Note: We now track by questions (700 total, 50 daily) instead of PDF/image quotas
+    # Upload quotas are no longer checked - users can upload unlimited files
+    # Limits are enforced by total_questions_limit and daily_questions_limit
     
     # Validate number of questions based on user plan (per generation)
-    max_questions = 15 if is_premium else 3  # Reduced from 20 to 15 for premium users
+    # For multi-part selections, allow higher limits based on marks pattern
+    if request.part_ids and len(request.part_ids) > 0:
+        # Multi-part mode: calculate max based on marks pattern
+        # Pattern per part: 1 mark (12), 2 marks (6), 3 marks (4), 5 marks (3), 10 marks (2), mixed (16)
+        part_count = len(request.part_ids)
+        if request.marks and request.marks != "mixed":
+            marks = int(request.marks) if isinstance(request.marks, str) else request.marks
+            questions_per_part = {
+                1: 12,
+                2: 6,
+                3: 4,
+                5: 3,
+                10: 2
+            }.get(marks, 16)
+        else:
+            questions_per_part = 16  # Mixed pattern
+        max_questions = part_count * questions_per_part if is_premium else min(part_count * questions_per_part, 3)
+    else:
+        # Single upload mode: standard limits
+        max_questions = 15 if is_premium else 3  # Reduced from 20 to 15 for premium users
+    
     if request.num_questions > max_questions:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -190,6 +202,88 @@ async def generate_qna_endpoint(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not extract sufficient text from file"
+        )
+    
+    # Check total and daily question limits BEFORE generation
+    from app.models import QnASet
+    from datetime import datetime
+    
+    # Refresh user from database to get latest reset timestamp (in case admin just reset it)
+    db.refresh(current_user)
+    
+    # Get user's question limits (admin-configurable, defaults: 700 total, 50 daily)
+    total_limit = current_user.total_questions_limit or 700
+    daily_limit = current_user.daily_questions_limit or 50
+    
+    # Count total questions (after reset timestamp if set)
+    if current_user.total_questions_reset_at:
+        reset_timestamp_total = current_user.total_questions_reset_at
+        total_qna_sets = db.query(QnASet).filter(
+            QnASet.user_id == current_user.id,
+            QnASet.created_at >= reset_timestamp_total
+        ).all()
+    else:
+        total_qna_sets = db.query(QnASet).filter(
+            QnASet.user_id == current_user.id
+        ).all()
+    
+    total_questions_used = 0
+    for qna_set in total_qna_sets:
+        if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+            questions = qna_set.qna_json.get("questions", [])
+            if isinstance(questions, list):
+                total_questions_used += len(questions)
+    
+    # Determine the reset timestamp - use daily_questions_reset_at if set, otherwise use today's start
+    today_start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+    # If reset timestamp is set and is today or later, use it
+    if current_user.daily_questions_reset_at:
+        if current_user.daily_questions_reset_at.date() >= datetime.utcnow().date():
+            reset_timestamp = current_user.daily_questions_reset_at
+        else:
+            # Reset timestamp is from a previous day, use today's start instead
+            reset_timestamp = today_start
+    else:
+        reset_timestamp = today_start
+    
+    # Count questions generated after reset timestamp
+    daily_qna_sets = db.query(QnASet).filter(
+        QnASet.user_id == current_user.id,
+        QnASet.created_at >= reset_timestamp
+    ).all()
+    
+    daily_questions_used = 0
+    for qna_set in daily_qna_sets:
+        if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+            questions = qna_set.qna_json.get("questions", [])
+            if isinstance(questions, list):
+                daily_questions_used += len(questions)
+    
+    print(f"🔍 Total questions check: used={total_questions_used}, limit={total_limit}")
+    print(f"🔍 Daily questions check: used={daily_questions_used}, limit={daily_limit}, reset_timestamp={reset_timestamp}")
+    
+    # Calculate how many questions will be generated
+    if request.custom_distribution and len(request.custom_distribution) > 0:
+        questions_to_generate = sum(item.count for item in request.custom_distribution)
+    else:
+        questions_to_generate = request.num_questions
+    
+    # Check if generating these questions would exceed total limit
+    if total_questions_used + questions_to_generate > total_limit:
+        remaining = max(0, total_limit - total_questions_used)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Total question limit exceeded. You have used {total_questions_used} of {total_limit} questions. "
+                  f"You can generate {remaining} more questions. Please contact admin to increase your limit."
+        )
+    
+    # Check if generating these questions would exceed daily limit
+    if daily_questions_used + questions_to_generate > daily_limit:
+        remaining = max(0, daily_limit - daily_questions_used)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Daily question limit exceeded. You have used {daily_questions_used} of {daily_limit} questions today. "
+                  f"You can generate {remaining} more questions today. Please wait until tomorrow or contact admin to reset your daily limit."
         )
     
     # Generate Q/A with error handling
@@ -218,73 +312,48 @@ async def generate_qna_endpoint(
             
             remaining_questions = max_questions
             
-            # Generate with custom distribution (with retry logic for format repetition and insufficient questions)
-            max_retries = 3  # Increased retries for format repetition and insufficient questions
-            retry_count = 0
-            qna_data = None
+            # Generate with custom distribution - NO RETRIES, accept quality questions immediately
+            # Get number of parts for dynamic content limit
+            num_parts = len(request.part_ids) if request.part_ids else None
             
-            while retry_count <= max_retries:
-                try:
-                    qna_data = generate_qna(
-                        text_content=text_content,
-                        difficulty=request.difficulty.value,
-                        qna_type=request.qna_type.value,
-                        num_questions=total_custom,
-                        marks_pattern="custom",  # Special marker for custom
-                        target_language=request.target_language or "english",
-                        remaining_questions=remaining_questions,
-                        distribution_list=distribution_list,
-                        subject=selected_subject  # Pass selected subject
-                    )
+            try:
+                # Use pipeline for better accuracy and cost control
+                qna_data = generate_qna_pipeline(
+                    text_content=text_content,
+                    difficulty=request.difficulty.value,
+                    qna_type=request.qna_type.value,
+                    num_questions=total_custom,
+                    marks_pattern="custom",  # Special marker for custom
+                    target_language=request.target_language or "english",
+                    remaining_questions=remaining_questions,
+                    distribution_list=distribution_list,
+                    subject=selected_subject,  # Pass selected subject
+                    num_parts=num_parts,  # Pass number of parts for dynamic content limit
+                    use_pipeline=True  # Enable two-step pipeline
+                )
+                
+                # Accept whatever quality questions we got - no retries
+                questions_count = len(qna_data.get("questions", []))
+                if questions_count < total_custom:
+                    print(f"INFO: Generated {questions_count} quality questions (requested {total_custom}). Accepting result - quality over quantity.")
                     
-                    # Check if we got the right number of questions
-                    questions_count = len(qna_data.get("questions", []))
-                    if questions_count >= total_custom:
-                        break  # Success - we have enough questions
-                    elif retry_count < max_retries:
-                        retry_count += 1
-                        print(f"⚠️  Retry {retry_count}/{max_retries}: Got {questions_count} questions, need {total_custom}")
-                        # Continue to retry
-                    else:
-                        # Last retry failed, accept what we have
-                        print(f"⚠️  After {max_retries} retries, got {questions_count} questions (requested {total_custom})")
-                        break
-                        
-                except ValueError as e:
-                    error_msg = str(e)
-                    # Retry for format repetition OR insufficient questions
-                    if (("format repetition" in error_msg.lower() or "Format repetition" in error_msg or
-                         "AI generated only" in error_msg or "fewer questions" in error_msg.lower()) and 
-                        retry_count < max_retries):
-                        retry_count += 1
-                        if "format repetition" in error_msg.lower() or "Format repetition" in error_msg:
-                            print(f"🔄 Retry {retry_count}/{max_retries} due to format repetition detected...")
-                            print(f"   Error: {error_msg}")
-                            print(f"   ⚠️  CRITICAL: Previous attempt had repetitive question formats.")
-                            print(f"   ⚠️  This retry MUST use COMPLETELY DIFFERENT question openers and structures.")
-                        elif "AI generated only" in error_msg or "fewer questions" in error_msg.lower():
-                            print(f"🔄 Retry {retry_count}/{max_retries} due to insufficient questions...")
-                            print(f"   Error: {error_msg}")
-                            print(f"   ⚠️  CRITICAL: Previous attempt generated fewer questions than requested.")
-                            print(f"   ⚠️  This retry MUST generate EXACTLY {total_custom} questions.")
-                            print(f"   ⚠️  Distribution: {distribution_list}")
-                            print(f"   ⚠️  Count questions carefully before outputting - verify the count matches exactly.")
-                        # Add a small delay to avoid rate limiting
-                        import time
-                        time.sleep(0.5)
-                        continue
-                    elif retry_count >= max_retries and ("format repetition" in error_msg.lower() or "Format repetition" in error_msg):
-                        # After all retries exhausted, raise error
-                        print(f"⚠️  After {max_retries} retries, format repetition still detected.")
+            except ValueError as e:
+                error_msg = str(e)
+                # Accept format repetition and fewer questions - quality over quantity
+                if ("format repetition" in error_msg.lower() or "Format repetition" in error_msg or 
+                    "AI generated only" in error_msg or "fewer questions" in error_msg.lower()):
+                    print(f"INFO: {error_msg}. Accepting questions - quality over quantity.")
+                    # qna_data should already be set from generate_qna before the exception
+                    if not qna_data:
                         raise HTTPException(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"Unable to generate questions with sufficient format variation after {max_retries} retries. Please try again or reduce the number of questions."
+                            detail="Failed to generate Q/A. Please try again."
                         )
-                    else:
-                        raise  # Re-raise if it's a different error or we've exhausted retries
-                except Exception as e:
-                    # For any other error, don't retry
-                    raise
+                else:
+                    raise  # Re-raise if it's a different error
+            except Exception as e:
+                # For any other error, raise it
+                raise
             
             # Check if we have valid data after retries
             if not qna_data:
@@ -292,6 +361,14 @@ async def generate_qna_endpoint(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to generate Q/A after multiple retry attempts. Please try again."
                 )
+            
+            # Store actual vs requested counts for frontend notification
+            if qna_data and "questions" in qna_data:
+                actual_count = len(qna_data["questions"])
+                if "qna_json" not in qna_data:
+                    qna_data["qna_json"] = {}
+                qna_data["qna_json"]["actual_question_count"] = actual_count
+                qna_data["qna_json"]["requested_question_count"] = total_custom
         else:
             # Use standard marks pattern (existing logic)
             # Convert marks to string pattern if needed
@@ -333,8 +410,8 @@ async def generate_qna_endpoint(
             )
             
             # Debug: Print distribution list to verify it's correct
-            print(f"📊 Distribution List: {distribution_list}")
-            print(f"📊 Marks Pattern: {adjusted_marks_pattern}, Question Type: {request.qna_type.value}")
+            print(f"Distribution List: {distribution_list}")
+            print(f"Marks Pattern: {adjusted_marks_pattern}, Question Type: {request.qna_type.value}")
             
             # Ensure distribution doesn't exceed remaining questions
             total_distribution = sum(item.get("count", 0) for item in distribution_list)
@@ -348,78 +425,45 @@ async def generate_qna_endpoint(
                 if total_after_scale < remaining_questions and distribution_list:
                     distribution_list[0]["count"] += (remaining_questions - total_after_scale)
             
-            # Retry logic if AI generates fewer questions than requested or format repetition
-            max_retries = 3  # Increased retries for format repetition
-            retry_count = 0
-            qna_data = None
-            
-            while retry_count <= max_retries:
-                try:
-                    qna_data = generate_qna(
-                        text_content=text_content,
-                        difficulty=request.difficulty.value,
-                        qna_type=request.qna_type.value,
-                        num_questions=request.num_questions,
-                        marks_pattern=adjusted_marks_pattern,
-                        target_language=request.target_language or "english",
-                        remaining_questions=remaining_questions,
-                        distribution_list=distribution_list,
-                        subject=selected_subject  # Pass selected subject
-                    )
+            # Generate Q/A - NO RETRIES, accept quality questions immediately
+            try:
+                # Use pipeline for better accuracy and cost control
+                qna_data = generate_qna_pipeline(
+                    text_content=text_content,
+                    difficulty=request.difficulty.value,
+                    qna_type=request.qna_type.value,
+                    num_questions=request.num_questions,
+                    marks_pattern=adjusted_marks_pattern,
+                    target_language=request.target_language or "english",
+                    remaining_questions=remaining_questions,
+                    distribution_list=distribution_list,
+                    subject=selected_subject,  # Pass selected subject
+                    num_parts=num_parts,  # Pass number of parts for dynamic content limit
+                    use_pipeline=True  # Enable two-step pipeline
+                )
+                
+                # Accept whatever quality questions we got - no retries
+                questions_count = len(qna_data.get("questions", []))
+                if questions_count < request.num_questions:
+                    print(f"INFO: Generated {questions_count} quality questions (requested {request.num_questions}). Accepting result - quality over quantity.")
                     
-                    # Check if we got the right number of questions
-                    questions_count = len(qna_data.get("questions", []))
-                    if questions_count >= request.num_questions:
-                        break  # Success - we have enough questions
-                    elif retry_count < max_retries:
-                        retry_count += 1
-                        print(f"⚠️  Retry {retry_count}/{max_retries}: Got {questions_count} questions, need {request.num_questions}")
-                        # Continue to retry
-                    else:
-                        # Last retry failed, accept what we have
-                        print(f"⚠️  After {max_retries} retries, got {questions_count} questions (requested {request.num_questions})")
-                        break
-                        
-                except ValueError as e:
-                    error_msg = str(e)
-                    # Retry for insufficient questions OR format repetition
-                    if (("AI generated only" in error_msg or "fewer questions" in error_msg.lower() or 
-                         "format repetition" in error_msg.lower() or "Format repetition" in error_msg) and 
-                        retry_count < max_retries):
-                        retry_count += 1
-                        if "format repetition" in error_msg.lower() or "Format repetition" in error_msg:
-                            print(f"🔄 Retry {retry_count}/{max_retries} due to format repetition detected...")
-                            print(f"   Error: {error_msg}")
-                            print(f"   ⚠️  CRITICAL: Previous attempt had repetitive question formats.")
-                            print(f"   ⚠️  This retry MUST use COMPLETELY DIFFERENT question openers and structures.")
-                            print(f"   ⚠️  For function questions: Rotate through different formats, NEVER start all with 'f(x)'")
-                            # Add a small delay to help AI generate different questions
-                            import time
-                            time.sleep(0.5)
-                        elif "AI generated only" in error_msg or "fewer questions" in error_msg.lower():
-                            print(f"🔄 Retry {retry_count}/{max_retries} due to insufficient questions...")
-                            print(f"   Error: {error_msg}")
-                            print(f"   ⚠️  CRITICAL: Previous attempt generated fewer questions than requested.")
-                            print(f"   ⚠️  This retry MUST generate EXACTLY {request.num_questions} questions.")
-                            if hasattr(request, 'custom_distribution') and request.custom_distribution:
-                                print(f"   ⚠️  Distribution: {request.custom_distribution}")
-                            print(f"   ⚠️  Count questions carefully before outputting - verify the count matches exactly.")
-                            # Add a small delay
-                            import time
-                            time.sleep(0.5)
-                        continue
-                    elif retry_count >= max_retries and ("format repetition" in error_msg.lower() or "Format repetition" in error_msg):
-                        # After all retries exhausted, raise error
-                        print(f"⚠️  After {max_retries} retries, format repetition still detected.")
+            except ValueError as e:
+                error_msg = str(e)
+                # Accept format repetition and fewer questions - quality over quantity
+                if ("format repetition" in error_msg.lower() or "Format repetition" in error_msg or 
+                    "AI generated only" in error_msg or "fewer questions" in error_msg.lower()):
+                    print(f"INFO: {error_msg}. Accepting questions - quality over quantity.")
+                    # qna_data should already be set from generate_qna before the exception
+                    if not qna_data:
                         raise HTTPException(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"Unable to generate questions with sufficient format variation after {max_retries} retries. Please try again or reduce the number of questions."
+                            detail="Failed to generate Q/A. Please try again."
                         )
-                    else:
-                        raise  # Re-raise if it's a different error
-                except Exception as e:
-                    # For any other error, don't retry
-                    raise
+                else:
+                    raise  # Re-raise if it's a different error
+            except Exception as e:
+                # For any other error, raise it
+                raise
             
             # Check if we have valid data after retries
             if not qna_data:
@@ -427,6 +471,14 @@ async def generate_qna_endpoint(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to generate Q/A after multiple retry attempts. Please try again."
                 )
+            
+            # Store actual vs requested counts for frontend notification
+            if qna_data and "questions" in qna_data:
+                actual_count = len(qna_data["questions"])
+                if "qna_json" not in qna_data:
+                    qna_data["qna_json"] = {}
+                qna_data["qna_json"]["actual_question_count"] = actual_count
+                qna_data["qna_json"]["requested_question_count"] = request.num_questions
             
             # Post-process validation: Enforce exact marks from distribution list
             if qna_data and "questions" in qna_data:
@@ -531,6 +583,58 @@ async def generate_qna_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate Q/A: No data generated"
         )
+    
+    # Add source tracking for multi-part selections
+    if request.part_ids and len(request.part_ids) > 0 and 'part_info_map' in locals():
+        questions = qna_data.get("questions", [])
+        total_questions = len(questions)
+        total_parts = len(part_info_map)
+        
+        if total_parts > 0 and total_questions > 0:
+            # Distribute questions evenly across parts
+            questions_per_part = total_questions // total_parts
+            remainder = total_questions % total_parts
+            
+            part_numbers = sorted(part_info_map.keys())
+            question_idx = 0
+            
+            for part_idx, part_num in enumerate(part_numbers):
+                part_info = part_info_map[part_num]
+                # Calculate how many questions for this part
+                questions_for_this_part = questions_per_part + (1 if part_idx < remainder else 0)
+                
+                # Calculate page range for this part
+                start_page = part_info["start_page"]
+                end_page = part_info["end_page"]
+                total_pages_in_part = end_page - start_page + 1
+                
+                # Assign source info to questions with exact page numbers
+                for i in range(questions_for_this_part):
+                    if question_idx < total_questions:
+                        if "source" not in questions[question_idx]:
+                            questions[question_idx]["source"] = {}
+                        
+                        # Calculate exact page number by distributing questions across the page range
+                        if questions_for_this_part > 1:
+                            # Distribute evenly across pages
+                            page_offset = int((i * total_pages_in_part) / questions_for_this_part)
+                            exact_page = start_page + page_offset
+                        else:
+                            # Single question: use middle page of the range
+                            exact_page = start_page + (total_pages_in_part // 2)
+                        
+                        # Ensure page is within range
+                        exact_page = max(start_page, min(exact_page, end_page))
+                        
+                        questions[question_idx]["source"]["part_number"] = part_info["part_number"]
+                        questions[question_idx]["source"]["start_page"] = part_info["start_page"]
+                        questions[question_idx]["source"]["end_page"] = part_info["end_page"]
+                        questions[question_idx]["source"]["exact_page"] = exact_page
+                        questions[question_idx]["source"]["page_range"] = f"Pages {part_info['start_page']}-{part_info['end_page']}"
+                        question_idx += 1
+            
+            # Update qna_data with source-tracked questions
+            qna_data["questions"] = questions
     
     # Prepare settings JSON
     settings_json = {
@@ -638,6 +742,12 @@ async def generate_qna_endpoint(
     # Remove internal field from response
     if qna_data and "_usage_log_id" in qna_data:
         del qna_data["_usage_log_id"]
+    
+    # Add actual vs requested counts to qna_json for frontend notification (if not already added)
+    if qna_data and "qna_json" in qna_data:
+        if "actual_question_count" in qna_data["qna_json"]:
+            qna_set.qna_json["actual_question_count"] = qna_data["qna_json"]["actual_question_count"]
+            qna_set.qna_json["requested_question_count"] = qna_data["qna_json"].get("requested_question_count", request.num_questions)
     
     return qna_set
 
@@ -1376,4 +1486,81 @@ async def download_edited_qna_set(
         media_type=media_type,
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+@router.get("/detect-language")
+async def detect_content_language(
+    upload_id: Optional[int] = Query(None),
+    part_ids: Optional[str] = Query(None),  # Comma-separated part IDs
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Detect the content language from an upload or parts"""
+    try:
+        text_content = ""
+        
+        if part_ids:
+            # Multi-select mode: combine text from multiple parts
+            part_id_list = [int(pid.strip()) for pid in part_ids.split(',') if pid.strip()]
+            
+            parts = db.query(PdfSplitPart).filter(
+                PdfSplitPart.id.in_(part_id_list),
+                PdfSplitPart.user_id == current_user.id
+            ).all()
+            
+            if len(parts) != len(part_id_list):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="One or more split parts not found"
+                )
+            
+            # Combine text from all selected parts
+            combined_text = []
+            for part in sorted(parts, key=lambda p: p.part_number):
+                part_text = extract_text_from_pdf(part.file_path)
+                if part_text:
+                    combined_text.append(part_text)
+            
+            text_content = "".join(combined_text)
+        elif upload_id:
+            # Single upload mode
+            upload = db.query(Upload).filter(
+                Upload.id == upload_id,
+                Upload.user_id == current_user.id,
+                Upload.is_deleted == False
+            ).first()
+            
+            if not upload:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Upload not found"
+                )
+            
+            # Extract text sample
+            if upload.file_type.value == "pdf":
+                text_content = extract_text_from_pdf(upload.file_path)
+            else:
+                text_content = extract_text_from_image(upload.file_path)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Either upload_id or part_ids must be provided"
+            )
+        
+        if not text_content or not text_content.strip():
+            return {"detected_language": "english", "confidence": "low"}
+        
+        # Detect language from text
+        detected_language = detect_language(text_content, "english")
+        
+        return {"detected_language": detected_language}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log error but return default
+        try:
+            log_api_error(db, e, current_user.id, None, severity="warning")
+        except:
+            pass
+        return {"detected_language": "english", "error": "Could not detect language"}
 

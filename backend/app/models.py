@@ -53,6 +53,10 @@ class User(Base):
     premium_valid_until = Column(DateTime, nullable=True)
     upload_quota_remaining = Column(Integer, default=0)
     image_quota_remaining = Column(Integer, default=0)
+    total_questions_limit = Column(Integer, default=700)  # Admin-configurable total questions limit
+    daily_questions_limit = Column(Integer, default=50)  # Admin-configurable daily questions limit
+    total_questions_reset_at = Column(DateTime, nullable=True)  # Timestamp when total questions count was last reset by admin
+    daily_questions_reset_at = Column(DateTime, nullable=True)  # Timestamp when daily questions count was last reset by admin
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
@@ -177,6 +181,24 @@ class LoginLog(Base):
     
     # Relationships
     user = relationship("User", backref="login_logs")
+
+class DeviceSession(Base):
+    """Track trusted devices for 30-day 'remember me' functionality"""
+    __tablename__ = "device_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    device_fingerprint = Column(String, nullable=False, index=True)  # Hash of IP + User-Agent
+    device_token = Column(String, unique=True, nullable=False, index=True)  # Unique token for device
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    device_type = Column(String, nullable=True)
+    last_used_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, server_default=func.now())
+    expires_at = Column(DateTime, nullable=False)  # 30 days from creation
+    
+    # Relationships
+    user = relationship("User", backref="device_sessions")
 
 class PdfSplitPart(Base):
     """Represents a split part of a large PDF book"""

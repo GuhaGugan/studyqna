@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../utils/api'
 import toast from 'react-hot-toast'
+import { getRotatingMessages } from '../utils/rotatingLoader'
 
 const PdfSplitParts = ({ uploadId, onPartSelected, onMultiSelect }) => {
   const [parts, setParts] = useState([])
@@ -34,12 +35,27 @@ const PdfSplitParts = ({ uploadId, onPartSelected, onMultiSelect }) => {
 
   const handleSplit = async () => {
     setSplitting(true)
-    const splitToast = toast.loading('📚 Splitting PDF into parts... This may take a moment', {
-      duration: Infinity
+    const splitMessages = getRotatingMessages('splitting')
+    let splitMessageIndex = 0
+    const splitToastId = 'split-toast'
+    
+    const splitToast = toast.loading(splitMessages[splitMessageIndex], {
+      duration: Infinity,
+      id: splitToastId
     })
+    
+    // Start rotating messages every 20 seconds
+    const splitRotateInterval = setInterval(() => {
+      splitMessageIndex = (splitMessageIndex + 1) % splitMessages.length
+      toast.loading(splitMessages[splitMessageIndex], {
+        id: splitToastId,
+        duration: Infinity
+      })
+    }, 20000)
 
     try {
       const response = await api.splitPdf(uploadId, 6.0)
+      clearInterval(splitRotateInterval)
       toast.dismiss(splitToast)
       
       if (response.data && response.data.parts) {
@@ -50,6 +66,10 @@ const PdfSplitParts = ({ uploadId, onPartSelected, onMultiSelect }) => {
         )
       }
     } catch (error) {
+      if (window.splitRotateInterval) {
+        clearInterval(window.splitRotateInterval)
+        window.splitRotateInterval = null
+      }
       toast.dismiss(splitToast)
       const errorMsg = error.response?.data?.detail || 'Failed to split PDF'
       toast.error(errorMsg, { duration: 5000 })

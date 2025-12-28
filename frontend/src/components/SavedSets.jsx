@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { api } from '../utils/api'
 import toast from 'react-hot-toast'
 import axios from 'axios'
+import { getRotatingMessages } from '../utils/rotatingLoader'
 
 const SavedSets = ({ isPremium }) => {
   const [sets, setSets] = useState([])
@@ -11,10 +12,25 @@ const SavedSets = ({ isPremium }) => {
   const [downloading, setDownloading] = useState(false)
   const [downloadAbortController, setDownloadAbortController] = useState(null)
   const [downloadToastId, setDownloadToastId] = useState(null)
+  const [downloadDropdownOpen, setDownloadDropdownOpen] = useState({}) // Track which dropdown is open
+  const [editingSet, setEditingSet] = useState(null) // Track which set is being edited
+  const [editedDataMap, setEditedDataMap] = useState({}) // Store edited data per set ID
   const viewRefs = useRef({})
 
   useEffect(() => {
     fetchSets()
+  }, [])
+
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.download-dropdown')) {
+        setDownloadDropdownOpen({})
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const fetchSets = async () => {
@@ -64,6 +80,11 @@ const SavedSets = ({ isPremium }) => {
 
   // Cancel download handler
   const cancelDownload = () => {
+    // Clear rotating interval
+    if (window.downloadRotateInterval) {
+      clearInterval(window.downloadRotateInterval)
+      window.downloadRotateInterval = null
+    }
     if (downloadAbortController) {
       downloadAbortController.abort()
       setDownloadAbortController(null)
@@ -76,7 +97,7 @@ const SavedSets = ({ isPremium }) => {
     toast.error('❌ Download cancelled', { duration: 2000 })
   }
 
-  const downloadSet = async (setId, format, outputFormat) => {
+  const downloadSet = async (setId, format, outputFormat, editedData = null) => {
     // Prevent multiple simultaneous downloads
     if (downloading) {
       toast.error('⏳ A download is already in progress. Please wait...', { duration: 2000 })
@@ -95,11 +116,12 @@ const SavedSets = ({ isPremium }) => {
     // Set downloading state to prevent multiple clicks
     setDownloading(true)
 
+    const formatName = format.toUpperCase()
     // Show preparing message with cancel button
     const preparingToast = toast.loading(
       (t) => (
         <div className="flex items-center gap-3">
-          <span>📄 Preparing download... Please wait</span>
+          <span>📄 Preparing {formatName} download... Please wait</span>
           <button
             onClick={() => {
               toast.dismiss(t.id)
@@ -124,7 +146,7 @@ const SavedSets = ({ isPremium }) => {
       const generatingToast = toast.loading(
         (t) => (
           <div className="flex items-center gap-3">
-            <span>⚙️ Generating PDF... This may take a moment</span>
+            <span>⚙️ Generating {formatName}... This may take a moment</span>
             <button
               onClick={() => {
                 toast.dismiss(t.id)
@@ -143,11 +165,27 @@ const SavedSets = ({ isPremium }) => {
       )
       setDownloadToastId(generatingToast)
       
-      const response = await axios.get(`/api/qna/sets/${setId}/download`, {
-        params: { format, output_format: outputFormat },
-        responseType: 'blob',
-        signal: abortController.signal
-      })
+      // Check if there's edited data for this set
+      const editedDataForSet = editedDataMap[setId]
+      let response
+      if (editedDataForSet) {
+        // Use POST endpoint with edited data
+        response = await axios.post(
+          `/api/qna/sets/${setId}/download?format=${format}&output_format=${outputFormat}`,
+          { questions: editedDataForSet },
+          {
+            responseType: 'blob',
+            signal: abortController.signal
+          }
+        )
+      } else {
+        // Use GET endpoint for original data
+        response = await axios.get(`/api/qna/sets/${setId}/download`, {
+          params: { format, output_format: outputFormat },
+          responseType: 'blob',
+          signal: abortController.signal
+        })
+      }
       
       // Check if cancelled before proceeding
       if (abortController.signal.aborted) {
@@ -188,6 +226,126 @@ const SavedSets = ({ isPremium }) => {
     }
   }
 
+  // Helper function to convert answer object to string
+  const formatAnswer = (answer) => {
+    if (!answer) return ''
+    if (typeof answer === 'string') return answer
+    if (typeof answer === 'object') {
+      // Handle structured answer objects
+      const parts = []
+      if (answer.background || answer.context) {
+        parts.push(`Background/Context: ${answer.background || answer.context}`)
+      }
+      if (answer.key_points && Array.isArray(answer.key_points)) {
+        parts.push(`Key Points:\n${answer.key_points.map((kp, i) => `${i + 1}. ${kp}`).join('\n')}`)
+      } else if (answer.key_points) {
+        parts.push(`Key Points: ${answer.key_points}`)
+      }
+      if (answer.explanation) {
+        parts.push(`Explanation: ${answer.explanation}`)
+      }
+      if (answer.analysis) {
+        parts.push(`Analysis: ${answer.analysis}`)
+      }
+      if (answer.introduction) {
+        parts.push(`Introduction: ${answer.introduction}`)
+      }
+      if (answer.definition) {
+        parts.push(`Definition: ${answer.definition}`)
+      }
+      if (answer.example) {
+        parts.push(`Example: ${answer.example}`)
+      }
+      if (answer.given) {
+        parts.push(`Given: ${answer.given}`)
+      }
+      if (answer.formula) {
+        parts.push(`Formula: ${answer.formula}`)
+      }
+      if (answer.steps && Array.isArray(answer.steps)) {
+        parts.push(`Steps:\n${answer.steps.map((step, i) => `Step ${i + 1}: ${step}`).join('\n')}`)
+      } else if (answer.steps) {
+        parts.push(`Steps: ${answer.steps}`)
+      }
+      if (answer.final || answer.final_answer) {
+        parts.push(`Final Answer: ${answer.final || answer.final_answer}`)
+      }
+      if (answer.conclusion) {
+        parts.push(`Conclusion: ${answer.conclusion}`)
+      }
+      return parts.length > 0 ? parts.join('\n\n') : JSON.stringify(answer, null, 2)
+    }
+    return String(answer)
+  }
+
+  const handleEdit = (setId) => {
+    setEditingSet(setId)
+    // If there's already edited data, it will be used automatically
+  }
+
+  const handleCancelEdit = (setId) => {
+    setEditingSet(null)
+  }
+
+  const handleSaveEdit = (setId, questions) => {
+    setEditedDataMap(prev => ({
+      ...prev,
+      [setId]: JSON.parse(JSON.stringify(questions))
+    }))
+    setEditingSet(null)
+    toast.success('✅ Changes saved. Your edits will be included in downloads.')
+  }
+
+  const updateQuestion = (setId, questionIndex, field, value) => {
+    const currentSet = sets.find(s => s.id === setId)
+    if (!currentSet) return
+
+    const existingEdited = editedDataMap[setId]
+    const questions = existingEdited || JSON.parse(JSON.stringify(currentSet.qna_json.questions))
+    
+    const updated = [...questions]
+    updated[questionIndex] = { ...updated[questionIndex], [field]: value }
+    
+    setEditedDataMap(prev => ({
+      ...prev,
+      [setId]: updated
+    }))
+  }
+
+  const updateAnswer = (setId, questionIndex, value) => {
+    const currentSet = sets.find(s => s.id === setId)
+    if (!currentSet) return
+
+    const existingEdited = editedDataMap[setId]
+    const questions = existingEdited || JSON.parse(JSON.stringify(currentSet.qna_json.questions))
+    
+    const updated = [...questions]
+    updated[questionIndex] = { ...updated[questionIndex], correct_answer: value }
+    
+    setEditedDataMap(prev => ({
+      ...prev,
+      [setId]: updated
+    }))
+  }
+
+  const updateOption = (setId, questionIndex, optionIndex, value) => {
+    const currentSet = sets.find(s => s.id === setId)
+    if (!currentSet) return
+
+    const existingEdited = editedDataMap[setId]
+    const questions = existingEdited || JSON.parse(JSON.stringify(currentSet.qna_json.questions))
+    
+    const updated = [...questions]
+    const newOptions = [...updated[questionIndex].options]
+    newOptions[optionIndex] = value
+    updated[questionIndex] = { ...updated[questionIndex], options: newOptions }
+    
+    setEditedDataMap(prev => ({
+      ...prev,
+      [setId]: updated
+    }))
+  }
+
   const deleteSet = async (setId) => {
     const confirmed = window.confirm('Delete this Q/A set? This cannot be undone.')
     if (!confirmed) return
@@ -198,6 +356,15 @@ const SavedSets = ({ isPremium }) => {
       if (selectedSet === setId) {
         setSelectedSet(null)
       }
+      if (editingSet === setId) {
+        setEditingSet(null)
+      }
+      // Remove edited data for deleted set
+      setEditedDataMap(prev => {
+        const newMap = { ...prev }
+        delete newMap[setId]
+        return newMap
+      })
       toast.success('Set deleted')
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to delete set')
@@ -287,29 +454,151 @@ const SavedSets = ({ isPremium }) => {
                             </button>
                             
                             {isPremium && (
-                              <div className="flex flex-col gap-1">
+                              <>
                                 <button
-                                  onClick={() => downloadSet(set.id, 'pdf', 'questions_only')}
-                                  disabled={downloading}
-                                  className="px-3 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  onClick={() => {
+                                    handleEdit(set.id)
+                                    // Also open view if not already open
+                                    if (selectedSet !== set.id) {
+                                      setSelectedSet(set.id)
+                                    }
+                                  }}
+                                  className={`px-4 py-2 rounded-lg text-sm ${
+                                    editingSet === set.id
+                                      ? 'bg-green-600 text-white hover:bg-green-700'
+                                      : editedDataMap[set.id]
+                                      ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                      : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                                  }`}
+                                  title={editedDataMap[set.id] ? 'Edit saved changes' : 'Edit questions'}
                                 >
-                                  {downloading ? '...' : 'Q Only'}
+                                  {editingSet === set.id ? 'Editing...' : editedDataMap[set.id] ? '✓ Edit' : 'Edit'}
                                 </button>
-                                <button
-                                  onClick={() => downloadSet(set.id, 'pdf', 'questions_answers')}
-                                  disabled={downloading}
-                                  className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {downloading ? '...' : 'Q+A'}
-                                </button>
-                                <button
-                                  onClick={() => downloadSet(set.id, 'pdf', 'answers_only')}
-                                  disabled={downloading}
-                                  className="px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {downloading ? '...' : 'Answers'}
-                                </button>
-                              </div>
+                                
+                                {/* Download Dropdown */}
+                                <div className="relative download-dropdown">
+                                  <button
+                                    onClick={() => setDownloadDropdownOpen(prev => ({
+                                      ...prev,
+                                      [set.id]: !prev[set.id]
+                                    }))}
+                                    disabled={downloading}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 w-full"
+                                  >
+                                    <span>Download</span>
+                                    <svg 
+                                      className={`w-4 h-4 transition-transform ${downloadDropdownOpen[set.id] ? 'rotate-180' : ''}`}
+                                      fill="none" 
+                                      stroke="currentColor" 
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </button>
+                                  
+                                  {downloadDropdownOpen[set.id] && (
+                                    <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                      <div className="py-1">
+                                        <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-b">PDF</div>
+                                        <button
+                                          onClick={() => {
+                                            downloadSet(set.id, 'pdf', 'questions_only')
+                                            setDownloadDropdownOpen(prev => ({ ...prev, [set.id]: false }))
+                                          }}
+                                          disabled={downloading}
+                                          className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                          Q Only
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            downloadSet(set.id, 'pdf', 'questions_answers')
+                                            setDownloadDropdownOpen(prev => ({ ...prev, [set.id]: false }))
+                                          }}
+                                          disabled={downloading}
+                                          className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                          Q+A
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            downloadSet(set.id, 'pdf', 'answers_only')
+                                            setDownloadDropdownOpen(prev => ({ ...prev, [set.id]: false }))
+                                          }}
+                                          disabled={downloading}
+                                          className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                          Answers
+                                        </button>
+                                        
+                                        <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-t border-b">DOCX</div>
+                                        <button
+                                          onClick={() => {
+                                            downloadSet(set.id, 'docx', 'questions_only')
+                                            setDownloadDropdownOpen(prev => ({ ...prev, [set.id]: false }))
+                                          }}
+                                          disabled={downloading}
+                                          className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                          Q Only
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            downloadSet(set.id, 'docx', 'questions_answers')
+                                            setDownloadDropdownOpen(prev => ({ ...prev, [set.id]: false }))
+                                          }}
+                                          disabled={downloading}
+                                          className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                          Q+A
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            downloadSet(set.id, 'docx', 'answers_only')
+                                            setDownloadDropdownOpen(prev => ({ ...prev, [set.id]: false }))
+                                          }}
+                                          disabled={downloading}
+                                          className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                          Answers
+                                        </button>
+                                        
+                                        <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-t border-b">TXT</div>
+                                        <button
+                                          onClick={() => {
+                                            downloadSet(set.id, 'txt', 'questions_only')
+                                            setDownloadDropdownOpen(prev => ({ ...prev, [set.id]: false }))
+                                          }}
+                                          disabled={downloading}
+                                          className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                          Q Only
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            downloadSet(set.id, 'txt', 'questions_answers')
+                                            setDownloadDropdownOpen(prev => ({ ...prev, [set.id]: false }))
+                                          }}
+                                          disabled={downloading}
+                                          className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                          Q+A
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            downloadSet(set.id, 'txt', 'answers_only')
+                                            setDownloadDropdownOpen(prev => ({ ...prev, [set.id]: false }))
+                                          }}
+                                          disabled={downloading}
+                                          className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                          Answers
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </>
                             )}
                             
                             <button
@@ -327,54 +616,153 @@ const SavedSets = ({ isPremium }) => {
                             ref={el => viewRefs.current[set.id] = el}
                             className="mt-4 pt-4 border-t"
                           >
-                            <div className="space-y-3">
-                              {set.qna_json?.questions?.slice(0, isPremium ? undefined : 3).map((q, idx) => (
-                                <div key={idx} className="bg-white border-2 border-gray-300 rounded-lg p-4 shadow-sm mb-3">
-                                  <div className="flex items-start gap-3">
-                                    <span className="font-bold text-blue-600">Q{idx + 1}.</span>
-                                    <div className="flex-1">
-                                      <p className="font-medium mb-3 text-gray-900">{q.question}</p>
-                                      {q.type === 'mcq' && q.options && (
-                                        <div className="mt-2 space-y-2">
-                                          {q.options.map((opt, i) => {
-                                            const optionLabel = String.fromCharCode(65 + i) // A, B, C, D
-                                            return (
-                                              <div 
-                                                key={i} 
-                                                className="flex items-start gap-3 p-2 border border-gray-200 rounded-md bg-gray-50"
-                                              >
-                                                <span className="font-bold text-blue-600 min-w-[24px]">{optionLabel}.</span>
-                                                <span className="text-gray-700 flex-1">{opt}</span>
-                                              </div>
-                                            )
-                                          })}
+                            {editingSet === set.id ? (
+                              // Edit Mode
+                              <div className="space-y-3">
+                                {(() => {
+                                  const existingEdited = editedDataMap[set.id]
+                                  const questionsToEdit = existingEdited || set.qna_json?.questions || []
+                                  return questionsToEdit.slice(0, isPremium ? undefined : 3).map((q, idx) => (
+                                    <div key={idx} className="bg-white border-2 border-gray-300 rounded-lg p-4 shadow-sm mb-3">
+                                      <div className="flex items-start gap-3">
+                                        <span className="font-bold text-blue-600">Q{idx + 1}.</span>
+                                        <div className="flex-1">
+                                          {/* Editable Question */}
+                                          <textarea
+                                            value={q.question || ''}
+                                            onChange={(e) => updateQuestion(set.id, idx, 'question', e.target.value)}
+                                            className="w-full px-3 py-2 mb-3 font-medium text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                                            rows={3}
+                                            placeholder="Enter question text..."
+                                          />
+                                          
+                                          {/* Editable MCQ Options */}
+                                          {q.type === 'mcq' && q.options && (
+                                            <div className="mt-2 space-y-2 mb-3">
+                                              {q.options.map((opt, i) => {
+                                                const optionLabel = String.fromCharCode(65 + i) // A, B, C, D
+                                                return (
+                                                  <div 
+                                                    key={i} 
+                                                    className="flex items-start gap-3 p-2 border border-gray-200 rounded-md bg-gray-50"
+                                                  >
+                                                    <span className="font-bold text-blue-600 min-w-[24px]">{optionLabel}.</span>
+                                                    <input
+                                                      type="text"
+                                                      value={opt}
+                                                      onChange={(e) => updateOption(set.id, idx, i, e.target.value)}
+                                                      className="flex-1 text-gray-700 bg-transparent border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                      placeholder={`Option ${optionLabel}`}
+                                                    />
+                                                  </div>
+                                                )
+                                              })}
+                                            </div>
+                                          )}
+                                          
+                                          {/* Marks Badge */}
+                                          {q.marks && (
+                                            <div className="mt-2 mb-3">
+                                              <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded">
+                                                {q.marks} mark{q.marks !== 1 ? 's' : ''}
+                                              </span>
+                                              {q.type && (
+                                                <span className="ml-2 inline-block px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded">
+                                                  Type: {q.type}
+                                                </span>
+                                              )}
+                                            </div>
+                                          )}
+                                          
+                                          {/* Editable Answer */}
+                                          {isPremium && (
+                                            <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                                              <p className="text-sm font-semibold text-green-800 mb-2">✓ Answer:</p>
+                                              <textarea
+                                                value={formatAnswer(q.correct_answer || q.answer)}
+                                                onChange={(e) => updateAnswer(set.id, idx, e.target.value)}
+                                                className="w-full px-3 py-2 text-green-700 bg-transparent border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-y whitespace-pre-wrap"
+                                                rows={q.type === 'mcq' ? 3 : 8}
+                                                placeholder="Enter answer text..."
+                                              />
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
-                                      {q.marks && (
-                                        <div className="mt-2">
-                                          <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded">
-                                            {q.marks} mark{q.marks !== 1 ? 's' : ''}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {isPremium && (
-                                        <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                                          <p className="text-sm font-semibold text-green-800 mb-1">✓ Answer:</p>
-                                          <p className="text-green-700">
-                                            {q.correct_answer || q.answer || 'Answer not available'}
-                                          </p>
-                                        </div>
-                                      )}
+                                      </div>
+                                    </div>
+                                  ))
+                                })()}
+                                
+                                {/* Save/Cancel Buttons */}
+                                <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t">
+                                  <button
+                                    onClick={() => handleCancelEdit(set.id)}
+                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const questionsToSave = editedDataMap[set.id] || set.qna_json?.questions || []
+                                      handleSaveEdit(set.id, questionsToSave)
+                                    }}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                  >
+                                    Save Changes
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              // View Mode
+                              <div className="space-y-3">
+                                {set.qna_json?.questions?.slice(0, isPremium ? undefined : 3).map((q, idx) => (
+                                  <div key={idx} className="bg-white border-2 border-gray-300 rounded-lg p-4 shadow-sm mb-3">
+                                    <div className="flex items-start gap-3">
+                                      <span className="font-bold text-blue-600">Q{idx + 1}.</span>
+                                      <div className="flex-1">
+                                        <p className="font-medium mb-3 text-gray-900">{q.question}</p>
+                                        {q.type === 'mcq' && q.options && (
+                                          <div className="mt-2 space-y-2">
+                                            {q.options.map((opt, i) => {
+                                              const optionLabel = String.fromCharCode(65 + i) // A, B, C, D
+                                              return (
+                                                <div 
+                                                  key={i} 
+                                                  className="flex items-start gap-3 p-2 border border-gray-200 rounded-md bg-gray-50"
+                                                >
+                                                  <span className="font-bold text-blue-600 min-w-[24px]">{optionLabel}.</span>
+                                                  <span className="text-gray-700 flex-1">{opt}</span>
+                                                </div>
+                                              )
+                                            })}
+                                          </div>
+                                        )}
+                                        {q.marks && (
+                                          <div className="mt-2">
+                                            <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded">
+                                              {q.marks} mark{q.marks !== 1 ? 's' : ''}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {isPremium && (
+                                          <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                                            <p className="text-sm font-semibold text-green-800 mb-1">✓ Answer:</p>
+                                            <div className="text-green-700 whitespace-pre-wrap">
+                                              {formatAnswer(q.correct_answer || q.answer) || 'Answer not available'}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
-                              {!isPremium && set.qna_json?.questions?.length > 3 && (
-                                <p className="text-sm text-yellow-600 text-center">
-                                  Upgrade to see all questions and answers
-                                </p>
-                              )}
-                            </div>
+                                ))}
+                                {!isPremium && set.qna_json?.questions?.length > 3 && (
+                                  <p className="text-sm text-yellow-600 text-center">
+                                    Upgrade to see all questions and answers
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -391,6 +779,7 @@ const SavedSets = ({ isPremium }) => {
           <p className="text-sm text-gray-400 mt-2">Generate some Q/A to see them here</p>
         </div>
       )}
+
     </div>
   )
 }

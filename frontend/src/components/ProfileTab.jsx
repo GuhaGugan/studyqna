@@ -143,16 +143,16 @@ const ProfileTab = () => {
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm md:text-base font-medium text-gray-800">Daily Questions</h4>
             <span className="text-sm md:text-sm font-medium text-gray-700">
-              {profile.usage_stats.generations?.used || 0} / {profile.usage_stats.generations?.limit || 50}
+              {profile.usage_stats.daily_questions?.used || 0} / {profile.usage_stats.daily_questions?.limit || 50}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3 md:h-3 mb-2">
             <div
               className="bg-green-600 h-3 rounded-full transition-all"
               style={{
-                width: `${profile.usage_stats.generations?.limit > 0
+                width: `${profile.usage_stats.daily_questions?.limit > 0
                   ? Math.min(
-                      ((profile.usage_stats.generations?.used || 0) / (profile.usage_stats.generations?.limit || 50)) * 100,
+                      ((profile.usage_stats.daily_questions?.used || 0) / (profile.usage_stats.daily_questions?.limit || 50)) * 100,
                       100
                     )
                   : 0}%`
@@ -160,7 +160,7 @@ const ProfileTab = () => {
             ></div>
           </div>
           <p className="text-xs md:text-sm text-gray-600">
-            Remaining: {profile.usage_stats.generations?.remaining || 0}
+            Remaining: {profile.usage_stats.daily_questions?.remaining || 0}
           </p>
         </div>
 

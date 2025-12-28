@@ -42,42 +42,42 @@ const Dashboard = () => {
     }
   }
   
-  // Check if user is premium on initial load and hasn't seen welcome
+  // Check for premium activation (only show once when user FIRST becomes premium)
   useEffect(() => {
-    if (isPremium && user) {
-      const welcomeShown = sessionStorage.getItem(`premiumWelcomeShown_${user.id}`)
-      if (!welcomeShown) {
-        // Small delay to ensure page is loaded
-        setTimeout(() => {
-          console.log('🎉 User is premium on initial load!')
-          setShowPremiumWelcome(true)
-          setHasShownWelcome(true)
-          sessionStorage.setItem(`premiumWelcomeShown_${user.id}`, 'true')
-        }, 1000)
-      }
-    }
-  }, [isPremium, user])
-
-  // Check for premium activation
-  useEffect(() => {
-    if (!previousPremiumStatus && isPremium && !hasShownWelcome && user) {
-      // User just became premium
-      console.log('🎉 Premium status changed to active!')
+    if (!user) return
+    
+    // Check if welcome has already been shown (persists across sessions)
+    const welcomeShown = localStorage.getItem(`premiumWelcomeShown_${user.id}`)
+    
+    // Only show if:
+    // 1. User is currently premium
+    // 2. User was NOT premium before (just became premium)
+    // 3. Welcome hasn't been shown yet
+    if (isPremium && !previousPremiumStatus && !welcomeShown && !hasShownWelcome) {
+      // User just became premium - show welcome
+      console.log('🎉 User just became premium!')
       setShowPremiumWelcome(true)
       setHasShownWelcome(true)
-      sessionStorage.setItem(`premiumWelcomeShown_${user.id}`, 'true')
+      localStorage.setItem(`premiumWelcomeShown_${user.id}`, 'true')
     }
+    
+    // Update previous status for next comparison
     setPreviousPremiumStatus(isPremium)
   }, [isPremium, previousPremiumStatus, hasShownWelcome, user])
 
-  // Listen for premium activation event
+  // Listen for premium activation event (from AuthContext)
   useEffect(() => {
+    if (!user) return
+    
     const handlePremiumActivated = () => {
       console.log('🎉 Premium activation event received!')
-      if (!hasShownWelcome && user) {
+      const welcomeShown = localStorage.getItem(`premiumWelcomeShown_${user.id}`)
+      
+      // Only show if welcome hasn't been shown yet
+      if (!welcomeShown && !hasShownWelcome) {
         setShowPremiumWelcome(true)
         setHasShownWelcome(true)
-        sessionStorage.setItem(`premiumWelcomeShown_${user.id}`, 'true')
+        localStorage.setItem(`premiumWelcomeShown_${user.id}`, 'true')
       }
     }
     
@@ -186,21 +186,49 @@ const Dashboard = () => {
     
     // If large PDF (>6MB), prompt to split and stay on Upload tab
     if (upload.file_type === 'pdf' && upload.file_size > 6 * 1024 * 1024) {
-      toast.success('📚 Large PDF uploaded! Please use "Split PDF into Parts" below to proceed.', {
-        duration: 5000
+      toast.success('📚 Large PDF uploaded! Scrolling to split option...', {
+        duration: 3000
       })
       setActiveTab('upload')
       setLargePdfName(upload.file_name || 'PDF')
       setShowLargePdfModal(true)
+      
+      // Expand the date section and scroll to the split PDF component
+      setTimeout(() => {
+        // Expand the date section for the uploaded file
+        // Find which date group this upload belongs to
+        const uploadDate = upload.created_at ? new Date(upload.created_at).toDateString() : new Date().toDateString()
+        setExpandedDates(prev => new Set([...prev, uploadDate]))
+        
+        // Scroll to the split PDF component for this upload
+        const splitComponentId = `split-pdf-${upload.id}`
+        setTimeout(() => {
+          const splitElement = document.getElementById(splitComponentId)
+          if (splitElement) {
+            splitElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            // Highlight the component briefly
+            splitElement.style.transition = 'box-shadow 0.3s ease'
+            splitElement.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.5)'
+            setTimeout(() => {
+              splitElement.style.boxShadow = ''
+            }, 2000)
+          } else {
+            // Fallback: scroll to uploads section
+            const uploadSection = document.getElementById('upload-section')
+            if (uploadSection) {
+              uploadSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }
+        }, 300)
+      }, 100)
     } else {
       // Small PDFs (<=6MB) go directly to Generate tab
       setActiveTab('generate')
+      // Scroll to top on mobile to show the generate tab
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }, 100)
     }
-    
-    // Scroll to top on mobile to show the generate tab
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }, 100)
     
     console.log('Navigated to generate tab, selected upload:', upload.id)
   }
@@ -370,7 +398,7 @@ const Dashboard = () => {
         <div className="glass-card hover-lift p-4 md:p-6 w-full">
           {activeTab === 'upload' && (
             <div>
-              <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Upload PDF or Image</h2>
+              <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Upload PDF</h2>
               
               {/* Quota Display Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" data-tour="quota-cards">
@@ -405,22 +433,22 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-gray-800">Daily Questions</h3>
                     <span className="text-sm font-medium text-gray-600">
-                      {profileData?.usage_stats?.generations?.remaining || 0} remaining
+                      {profileData?.usage_stats?.daily_questions?.remaining || 0} remaining
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
                     <div
                       className={`h-3 rounded-full transition-all ${
-                        profileData?.usage_stats?.generations?.percentage >= 80
-                          ? profileData?.usage_stats?.generations?.percentage >= 100
+                        profileData?.usage_stats?.daily_questions?.used >= (profileData?.usage_stats?.daily_questions?.limit * 0.8)
+                          ? profileData?.usage_stats?.daily_questions?.used >= (profileData?.usage_stats?.daily_questions?.limit || 50)
                             ? 'bg-red-600'
                             : 'bg-yellow-600'
                           : 'bg-green-600'
                       }`}
                       style={{
-                        width: `${isPremium && profileData?.usage_stats?.generations?.limit
+                        width: `${isPremium && profileData?.usage_stats?.daily_questions?.limit
                           ? Math.min(
-                              ((profileData?.usage_stats?.generations?.used || 0) / (profileData?.usage_stats?.generations?.limit || 50)) * 100,
+                              ((profileData?.usage_stats?.daily_questions?.used || 0) / (profileData?.usage_stats?.daily_questions?.limit || 50)) * 100,
                               100
                             )
                           : 0}%`
@@ -428,7 +456,7 @@ const Dashboard = () => {
                     ></div>
                   </div>
                   <p className="text-xs text-gray-600">
-                    {isPremium ? `${profileData?.usage_stats?.generations?.used || 0} / ${profileData?.usage_stats?.generations?.limit || 50} per day` : 'Premium feature'}
+                    {isPremium ? `${profileData?.usage_stats?.daily_questions?.used || 0} / ${profileData?.usage_stats?.daily_questions?.limit || 50} per day` : 'Premium feature'}
                   </p>
                   {profileData?.usage_stats?.generations?.reset_time && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -477,7 +505,7 @@ const Dashboard = () => {
                                 <div key={upload.id} className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow">
                                   {/* Show split parts component for large PDFs */}
                                   {upload.file_type === 'pdf' && upload.file_size > 6 * 1024 * 1024 && (
-                                    <div className="mb-4">
+                                    <div id={`split-pdf-${upload.id}`} className="mb-4">
                                       <PdfSplitParts 
                                         uploadId={upload.id} 
                                         onPartSelected={(partUpload) => {
@@ -582,7 +610,8 @@ const Dashboard = () => {
           onClose={() => {
             setShowPremiumWelcome(false)
             if (user) {
-              sessionStorage.setItem(`premiumWelcomeShown_${user.id}`, 'true')
+              // Mark as shown in localStorage (persists across sessions)
+              localStorage.setItem(`premiumWelcomeShown_${user.id}`, 'true')
             }
           }} 
         />

@@ -12,7 +12,7 @@ import logging
 # Configure logging to suppress Windows-specific asyncio network errors
 # These are non-critical errors that occur when clients disconnect abruptly
 if sys.platform == 'win32':
-    # Create a custom filter for Windows network errors
+    # Create a custom filter for Windows network errors and shutdown cancellation errors
     class WindowsNetworkErrorFilter(logging.Filter):
         def filter(self, record):
             # Suppress "The specified network name is no longer available" errors
@@ -23,6 +23,9 @@ if sys.platform == 'win32':
                     return False
             if hasattr(record, 'exc_info') and record.exc_info:
                 exc_type, exc_value, exc_traceback = record.exc_info
+                # Suppress CancelledError during shutdown (normal asyncio behavior)
+                if exc_type is asyncio.CancelledError:
+                    return False
                 if isinstance(exc_value, OSError):
                     if hasattr(exc_value, 'winerror') and exc_value.winerror == 64:
                         return False
@@ -30,9 +33,11 @@ if sys.platform == 'win32':
                         return False
             return True
     
-    # Apply filter to asyncio logger
+    # Apply filter to asyncio logger and uvicorn logger
     asyncio_logger = logging.getLogger('asyncio')
     asyncio_logger.addFilter(WindowsNetworkErrorFilter())
+    uvicorn_logger = logging.getLogger('uvicorn')
+    uvicorn_logger.addFilter(WindowsNetworkErrorFilter())
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -69,8 +74,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️  Error closing database connections: {e}")
     
-    # Note: Let asyncio handle task cancellation automatically during shutdown
-    # Attempting to manually cancel tasks can cause recursion issues
+    # Gracefully handle shutdown - suppress cancellation errors
+    try:
+        # Give tasks a moment to complete
+        await asyncio.sleep(0.1)
+    except asyncio.CancelledError:
+        # This is expected during shutdown - ignore it
+        pass
+    except Exception:
+        # Ignore any other shutdown-related errors
+        pass
+    
     print("✅ Application shutdown complete")
 
 app = FastAPI(

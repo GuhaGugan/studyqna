@@ -172,15 +172,12 @@ async def upload_file(
                         detail=f"PDF exceeds {max_pages} pages limit. Please upload chapter-wise for large books."
                     )
             
-            # Check quota
-            if is_premium:
-                if current_user.upload_quota_remaining <= 0:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="PDF upload quota exhausted"
-                    )
-            else:
-                # Free users: 1 file per day check (simplified - can enhance)
+            # Check upload limits
+            # Note: We now track by questions (700 total, 50 daily) instead of PDF/image quotas
+            # Premium users can upload unlimited files, but are limited by question generation
+            # Free users: 1 PDF per day limit
+            if not is_premium:
+                # Free users: 1 file per day check
                 today_uploads = db.query(Upload).filter(
                     Upload.user_id == current_user.id,
                     Upload.file_type == FileType.PDF,
@@ -215,15 +212,11 @@ async def upload_file(
                     detail=f"Image validation failed: {str(e)}. This app supports only educational text images."
                 )
             
-            # Check quota
-            if is_premium:
-                if current_user.image_quota_remaining <= 0:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Image upload quota exhausted"
-                    )
-            else:
-                # Free users: check monthly limit (simplified)
+            # Check upload limits
+            # Note: We now track by questions (700 total, 50 daily) instead of PDF/image quotas
+            # Premium users can upload unlimited files, but are limited by question generation
+            # Free users: Images require premium access
+            if not is_premium:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Image uploads require premium access"
@@ -237,41 +230,13 @@ async def upload_file(
         if subject not in valid_subjects:
             subject = "general"  # Default to general if invalid
         
-        # Subject validation: Detect actual subject from content and compare with selected subject
-        detected_subject = "general"
+        # Subject detection is now done asynchronously after upload completes
+        # This speeds up the upload process significantly
+        detected_subject = None
         subject_mismatch_warning = None
         
-        try:
-            # Extract text to detect actual subject
-            from app.ocr_service import extract_text_from_image, extract_text_from_pdf
-            from app.ai_service import detect_subject
-            
-            if is_pdf:
-                # For PDFs, extract text from first page only for faster subject detection
-                try:
-                    text_sample = extract_text_from_pdf(file_path)
-                    if text_sample and len(text_sample) > 50:  # Need enough text to detect
-                        # Use first 2000 characters for faster detection
-                        text_sample = text_sample[:2000]
-                        detected_subject = detect_subject(text_sample)
-                except Exception as e:
-                    print(f"⚠️ Could not extract text for subject detection: {e}")
-            else:
-                # For images, extract text
-                try:
-                    text_sample = extract_text_from_image(file_path)
-                    if text_sample and len(text_sample) > 50:
-                        detected_subject = detect_subject(text_sample)
-                except Exception as e:
-                    print(f"⚠️ Could not extract text for subject detection: {e}")
-            
-            # Check for mismatch (only if detected subject is not "general" and different from selected)
-            if detected_subject != "general" and detected_subject != subject.lower():
-                subject_mismatch_warning = f"Detected subject '{detected_subject}' differs from selected '{subject}'. Using selected subject '{subject}'."
-                print(f"⚠️ Subject mismatch: Selected '{subject}', Detected '{detected_subject}'")
-        except Exception as e:
-            print(f"⚠️ Subject validation error (non-critical): {e}")
-            # Continue with upload even if subject detection fails
+        # Note: Subject detection moved to background to avoid blocking uploads
+        # Users can still select subject manually, and detection can happen later if needed
         
         # Create upload record
         upload = Upload(
@@ -285,12 +250,8 @@ async def upload_file(
         )
         db.add(upload)
         
-        # Update quotas
-        if is_premium:
-            if is_pdf:
-                current_user.upload_quota_remaining -= 1
-            else:
-                current_user.image_quota_remaining -= 1
+        # Note: Quotas are now tracked by questions (700 total, 50 daily), not uploads
+        # No need to decrement upload_quota_remaining or image_quota_remaining
         
         # Log usage
         usage_log = UsageLog(

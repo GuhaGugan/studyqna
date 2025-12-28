@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Body
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -24,16 +24,32 @@ router = APIRouter()
 
 # Helpers
 def _get_period_start(period: str) -> Optional[datetime]:
-    """Return the datetime start for the given period."""
+    """Return the datetime start (UTC midnight boundaries) for the given period."""
     now = datetime.utcnow()
     period = (period or "all").lower()
+    # normalize to start-of-period in UTC
     if period == "daily":
-        return now - timedelta(days=1)
+        return datetime(now.year, now.month, now.day)
     if period == "monthly":
-        return now - timedelta(days=30)
+        return datetime(now.year, now.month, 1)
     if period == "yearly":
-        return now - timedelta(days=365)
+        return datetime(now.year, 1, 1)
     return None  # all
+
+def _get_period_end(period: str, start: Optional[datetime]) -> Optional[datetime]:
+    """Return the exclusive end datetime for the given period (UTC)."""
+    if not start:
+        return None
+    if period == "daily":
+        return start + timedelta(days=1)
+    if period == "monthly":
+        # next month start
+        year = start.year + (1 if start.month == 12 else 0)
+        month = 1 if start.month == 12 else start.month + 1
+        return datetime(year, month, 1)
+    if period == "yearly":
+        return datetime(start.year + 1, 1, 1)
+    return None
 
 @router.get("/premium-requests", response_model=List[PremiumRequestResponse])
 async def list_premium_requests(
@@ -311,36 +327,170 @@ async def delete_user(
 
 @router.get("/users")
 async def list_users(
+    period: str = "all",
     admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
 ):
-    """List all users with their quotas"""
-    users = db.query(User).filter(User.role == UserRole.USER).all()
+    """List all users with their quotas (optional period filter on created_at)"""
+    allowed = {"all", "daily", "monthly", "yearly"}
+    period = (period or "all").lower()
+    if period not in allowed:
+        period = "all"
+
+    query = db.query(User).filter(User.role == UserRole.USER)
+    start = _get_period_start(period)
+    end = _get_period_end(period, start)
+    if start:
+        query = query.filter(User.created_at >= start)
+    if end:
+        query = query.filter(User.created_at < end)
+
+    users = query.all()
+    
+    # Calculate question counts for each user
+    from app.models import QnASet
+    # datetime is already imported at the top of the file
     
     result = []
     for user in users:
+        # Count total questions from QnASets (after reset timestamp if set)
+        # Use reset timestamp if set, otherwise count all
+        if user.total_questions_reset_at:
+            reset_timestamp_total = user.total_questions_reset_at
+            qna_sets = db.query(QnASet).filter(
+                QnASet.user_id == user.id,
+                QnASet.created_at >= reset_timestamp_total
+            ).all()
+        else:
+            qna_sets = db.query(QnASet).filter(
+                QnASet.user_id == user.id
+            ).all()
+        
+        total_questions_used = 0
+        for qna_set in qna_sets:
+            if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+                questions = qna_set.qna_json.get("questions", [])
+                if isinstance(questions, list):
+                    total_questions_used += len(questions)
+        
+        # Count daily questions (questions generated after reset timestamp)
+        today_start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+        # If reset timestamp is set and is today or later, use it
+        if user.daily_questions_reset_at:
+            if user.daily_questions_reset_at.date() >= datetime.utcnow().date():
+                reset_timestamp = user.daily_questions_reset_at
+            else:
+                # Reset timestamp is from a previous day, use today's start instead
+                reset_timestamp = today_start
+        else:
+            reset_timestamp = today_start
+        
+        daily_qna_sets = db.query(QnASet).filter(
+            QnASet.user_id == user.id,
+            QnASet.created_at >= reset_timestamp
+        ).all()
+        
+        daily_questions_used = 0
+        for qna_set in daily_qna_sets:
+            if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+                questions = qna_set.qna_json.get("questions", [])
+                if isinstance(questions, list):
+                    daily_questions_used += len(questions)
+        
         result.append({
             "id": user.id,
             "email": user.email,
             "premium_status": user.premium_status.value,
             "premium_valid_until": user.premium_valid_until,
-            "upload_quota_remaining": user.upload_quota_remaining,
-            "image_quota_remaining": user.image_quota_remaining,
+            "total_questions_limit": user.total_questions_limit or 700,
+            "total_questions_used": total_questions_used,
+            "daily_questions_limit": user.daily_questions_limit or 50,
+            "daily_questions_used": daily_questions_used,
             "is_active": user.is_active,
             "created_at": user.created_at
         })
     
     return result
 
-@router.get("/uploads")
-async def list_all_uploads(
+@router.get("/users/export")
+async def export_users(
+    period: str = "all",
     admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
 ):
-    """List all uploads for admin"""
-    uploads = db.query(Upload).filter(
-        Upload.is_deleted == False
-    ).order_by(Upload.created_at.desc()).all()
+    """Export users as CSV"""
+    allowed = {"all", "daily", "monthly", "yearly"}
+    period = (period or "all").lower()
+    if period not in allowed:
+        period = "all"
+
+    query = db.query(User).filter(User.role == UserRole.USER)
+    start = _get_period_start(period)
+    end = _get_period_end(period, start)
+    if start:
+        query = query.filter(User.created_at >= start)
+    if end:
+        query = query.filter(User.created_at < end)
+
+    users = query.order_by(User.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Email", "Premium Status", "Premium Valid Until", "Upload Quota", "Image Quota", "Is Active", "Created At"])
+    for user in users:
+        writer.writerow([
+            user.id,
+            user.email,
+            user.premium_status.value if user.premium_status else "",
+            user.premium_valid_until.isoformat() if user.premium_valid_until else "",
+            user.upload_quota_remaining,
+            user.image_quota_remaining,
+            user.is_active,
+            user.created_at.isoformat() if user.created_at else ""
+        ])
+
+    output.seek(0)
+    filename = f"users_{period}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename=\"{filename}\"'}
+    )
+
+@router.delete("/users")
+async def delete_users(
+    ids: List[int] = Body(..., embed=True),
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Bulk delete users (dangerous)"""
+    if not ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No user IDs provided")
+    deleted = db.query(User).filter(User.id.in_(ids), User.role == UserRole.USER).delete(synchronize_session=False)
+    db.commit()
+    return {"deleted": deleted, "ids": ids}
+
+@router.get("/uploads")
+async def list_all_uploads(
+    period: str = "all",
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """List all uploads for admin (optional period filter)"""
+    allowed = {"all", "daily", "monthly", "yearly"}
+    period = (period or "all").lower()
+    if period not in allowed:
+        period = "all"
+
+    query = db.query(Upload).filter(Upload.is_deleted == False)
+    start = _get_period_start(period)
+    end = _get_period_end(period, start)
+    if start:
+        query = query.filter(Upload.created_at >= start)
+    if end:
+        query = query.filter(Upload.created_at < end)
+
+    uploads = query.order_by(Upload.created_at.desc()).all()
     
     result = []
     for upload in uploads:
@@ -357,6 +507,64 @@ async def list_all_uploads(
         })
     
     return result
+
+@router.get("/uploads/export")
+async def export_uploads(
+    period: str = "all",
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Export uploads as CSV"""
+    allowed = {"all", "daily", "monthly", "yearly"}
+    period = (period or "all").lower()
+    if period not in allowed:
+        period = "all"
+
+    query = db.query(Upload).filter(Upload.is_deleted == False)
+    start = _get_period_start(period)
+    end = _get_period_end(period, start)
+    if start:
+        query = query.filter(Upload.created_at >= start)
+    if end:
+        query = query.filter(Upload.created_at < end)
+
+    uploads = query.order_by(Upload.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "User Email", "File Name", "File Type", "File Size", "Pages", "Created At"])
+    for upload in uploads:
+        user = db.query(User).filter(User.id == upload.user_id).first()
+        writer.writerow([
+            upload.id,
+            user.email if user else "Unknown",
+            upload.file_name,
+            upload.file_type.value if upload.file_type else "",
+            upload.file_size,
+            upload.pages or "",
+            upload.created_at.isoformat() if upload.created_at else ""
+        ])
+
+    output.seek(0)
+    filename = f"uploads_{period}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename=\"{filename}\"'}
+    )
+
+@router.delete("/uploads")
+async def delete_uploads(
+    ids: List[int] = Body(..., embed=True),
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Bulk delete uploads (marks as deleted)"""
+    if not ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No upload IDs provided")
+    delete_count = db.query(Upload).filter(Upload.id.in_(ids)).update({"is_deleted": True}, synchronize_session=False)
+    db.commit()
+    return {"deleted": delete_count, "ids": ids}
 
 @router.get("/uploads/{upload_id}/view")
 async def view_upload(
@@ -414,7 +622,7 @@ async def adjust_user_quota(
     admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
 ):
-    """Adjust user quota"""
+    """Adjust user quota and question limits"""
     user = db.query(User).filter(User.id == adjustment.user_id).first()
     
     if not user:
@@ -423,7 +631,36 @@ async def adjust_user_quota(
             detail="User not found"
         )
     
-    # Adjust quotas (support both new and old field names)
+    # Adjust question limits
+    if adjustment.total_questions_limit is not None:
+        user.total_questions_limit = adjustment.total_questions_limit
+    
+    if adjustment.daily_questions_limit is not None:
+        user.daily_questions_limit = adjustment.daily_questions_limit
+    
+    # Reset functionality - Reset limits to default values
+    # Reset takes priority over manual limit adjustments
+    if adjustment.reset_total_questions_limit:
+        user.total_questions_limit = 700  # Default total questions limit
+        print(f"✅ Reset total questions limit to 700 for user {user.id} ({user.email})")
+    
+    if adjustment.reset_daily_questions_limit:
+        user.daily_questions_limit = 50  # Default daily questions limit
+        print(f"✅ Reset daily questions limit to 50 for user {user.id} ({user.email})")
+    
+    # Reset total questions count - sets reset timestamp to now, effectively resetting the count
+    if adjustment.reset_total_questions_count:
+        reset_time = datetime.utcnow()
+        user.total_questions_reset_at = reset_time
+        print(f"🔄 RESET TOTAL COUNT: Setting total_questions_reset_at to {reset_time} for user {user.id} ({user.email})")
+    
+    # Reset daily questions count - sets reset timestamp to now, effectively resetting the count
+    if adjustment.reset_daily_questions_count:
+        reset_time = datetime.utcnow()
+        user.daily_questions_reset_at = reset_time
+        print(f"🔄 RESET DAILY COUNT: Setting daily_questions_reset_at to {reset_time} for user {user.id} ({user.email})")
+    
+    # Keep backward compatibility for PDF/Image quotas
     pdf_limit = adjustment.pdf_limit if adjustment.pdf_limit is not None else adjustment.upload_quota
     image_limit = adjustment.image_limit if adjustment.image_limit is not None else adjustment.image_quota
     
@@ -445,6 +682,12 @@ async def adjust_user_quota(
         action="adjust_quota",
         target_user_id=user.id,
         details={
+            "total_questions_limit": adjustment.total_questions_limit,
+            "daily_questions_limit": adjustment.daily_questions_limit,
+            "reset_total_questions_limit": adjustment.reset_total_questions_limit,
+            "reset_daily_questions_limit": adjustment.reset_daily_questions_limit,
+            "reset_total_questions_count": adjustment.reset_total_questions_count,
+            "reset_daily_questions_count": adjustment.reset_daily_questions_count,
             "pdf_limit": pdf_limit,
             "image_limit": image_limit,
             "upload_quota": adjustment.upload_quota,
@@ -455,10 +698,68 @@ async def adjust_user_quota(
     db.add(audit_log)
     
     db.commit()
+    db.refresh(user)  # Refresh user object to get latest values including reset timestamp
+    
+    print(f"📝 After commit and refresh: daily_questions_reset_at = {user.daily_questions_reset_at}")
+    
+    # Calculate current question counts for response
+    from app.models import QnASet
+    
+    # Count total questions (load and count in Python for compatibility)
+    qna_sets = db.query(QnASet).filter(
+        QnASet.user_id == user.id
+    ).all()
+    
+    total_questions_used = 0
+    for qna_set in qna_sets:
+        if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+            questions = qna_set.qna_json.get("questions", [])
+            if isinstance(questions, list):
+                total_questions_used += len(questions)
+    
+    # Use reset timestamp if set, otherwise use today's start
+    today_start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+    # If reset timestamp is set and is today or later, use it
+    if user.daily_questions_reset_at:
+        reset_date = user.daily_questions_reset_at.date()
+        today_date = datetime.utcnow().date()
+        print(f"📅 Reset date: {reset_date}, Today: {today_date}")
+        if reset_date >= today_date:
+            reset_timestamp = user.daily_questions_reset_at
+            print(f"✅ Using reset timestamp: {reset_timestamp}")
+        else:
+            # Reset timestamp is from a previous day, use today's start instead
+            reset_timestamp = today_start
+            print(f"⚠️  Reset timestamp is from previous day, using today's start: {reset_timestamp}")
+    else:
+        reset_timestamp = today_start
+        print(f"ℹ️  No reset timestamp set, using today's start: {reset_timestamp}")
+    
+    print(f"🔍 Counting daily questions for user {user.id} after reset: reset_timestamp={reset_timestamp}")
+    
+    daily_qna_sets = db.query(QnASet).filter(
+        QnASet.user_id == user.id,
+        QnASet.created_at >= reset_timestamp
+    ).all()
+    
+    daily_questions_used = 0
+    for qna_set in daily_qna_sets:
+        if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+            questions = qna_set.qna_json.get("questions", [])
+            if isinstance(questions, list):
+                daily_questions_used += len(questions)
+    
+    print(f"📊 Daily questions used after reset: {daily_questions_used}")
+    print(f"📅 Reset timestamp: {user.daily_questions_reset_at}")
     
     return {
         "message": "Quota adjusted",
         "user_id": user.id,
+        "total_questions_limit": user.total_questions_limit,
+        "total_questions_used": total_questions_used,
+        "daily_questions_limit": user.daily_questions_limit,
+        "daily_questions_used": daily_questions_used,
+        "daily_questions_reset_at": user.daily_questions_reset_at.isoformat() if user.daily_questions_reset_at else None,
         "pdf_limit": user.upload_quota_remaining,
         "image_limit": user.image_quota_remaining
     }
@@ -532,16 +833,29 @@ async def enable_user(
 @router.get("/usage-logs", response_model=List[UsageLogResponse])
 async def get_usage_logs(
     user_id: int = None,
+    period: str = "all",
     admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
 ):
-    """Get usage logs (optionally filtered by user)"""
+    """Get usage logs (optionally filtered by user and period)"""
+    allowed_periods = {"all", "daily", "monthly", "yearly"}
+    norm_period = (period or "all").lower()
+    if norm_period not in allowed_periods:
+        norm_period = "all"
+    
     query = db.query(UsageLog)
     
     if user_id:
         query = query.filter(UsageLog.user_id == user_id)
     
-    logs = query.order_by(UsageLog.created_at.desc()).limit(100).all()
+    start = _get_period_start(norm_period)
+    end = _get_period_end(norm_period, start)
+    if start:
+        query = query.filter(UsageLog.created_at >= start)
+    if end:
+        query = query.filter(UsageLog.created_at < end)
+    
+    logs = query.order_by(UsageLog.created_at.desc()).limit(200).all()
     
     # Add user email to each log
     result = []
@@ -562,6 +876,66 @@ async def get_usage_logs(
         })
     
     return result
+
+@router.get("/usage-logs/export")
+async def export_usage_logs(
+    period: str = "all",
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Export usage logs as CSV (all, daily, monthly, yearly)"""
+    allowed_periods = {"all", "daily", "monthly", "yearly"}
+    norm_period = (period or "all").lower()
+    if norm_period not in allowed_periods:
+        norm_period = "all"
+    
+    query = db.query(UsageLog)
+    start = _get_period_start(norm_period)
+    end = _get_period_end(norm_period, start)
+    if start:
+        query = query.filter(UsageLog.created_at >= start)
+    if end:
+        query = query.filter(UsageLog.created_at < end)
+    
+    logs = query.order_by(UsageLog.created_at.desc()).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "User Email", "Action", "Pages", "File Size", "Created At"])
+    
+    for log in logs:
+        user = db.query(User).filter(User.id == log.user_id).first() if log.user_id else None
+        writer.writerow([
+            log.id,
+            user.email if user else "Unknown",
+            log.action or "",
+            log.pages or "",
+            log.file_size or "",
+            log.created_at.isoformat() if log.created_at else ""
+        ])
+    
+    output.seek(0)
+    filename = f"usage_logs_{norm_period}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@router.delete("/usage-logs")
+async def delete_usage_logs(
+    ids: List[int] = Body(..., embed=True, description="List of usage log IDs to delete"),
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Bulk delete usage logs"""
+    if not ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No log IDs provided")
+    
+    delete_count = db.query(UsageLog).filter(UsageLog.id.in_(ids)).delete(synchronize_session=False)
+    db.commit()
+    
+    return {"deleted": delete_count, "ids": ids}
 
 @router.get("/usage-logs/export")
 async def export_usage_logs(
@@ -630,14 +1004,27 @@ async def get_audit_logs(
 @router.get("/login-logs", response_model=List[LoginLogResponse])
 async def get_login_logs(
     user_id: int = None,
+    period: str = "all",
     admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
 ):
-    """Get login logs with IP addresses and device types"""
+    """Get login logs with optional user filter and time period (all/daily/monthly/yearly)"""
+    allowed_periods = {"all", "daily", "monthly", "yearly"}
+    norm_period = (period or "all").lower()
+    if norm_period not in allowed_periods:
+        norm_period = "all"
+
     query = db.query(LoginLog)
     
     if user_id:
         query = query.filter(LoginLog.user_id == user_id)
+    
+    start = _get_period_start(norm_period)
+    end = _get_period_end(norm_period, start)
+    if start:
+        query = query.filter(LoginLog.login_at >= start)
+    if end:
+        query = query.filter(LoginLog.login_at < end)
     
     logs = query.order_by(LoginLog.login_at.desc()).limit(200).all()
     
@@ -657,6 +1044,27 @@ async def get_login_logs(
     
     return result
 
+@router.delete("/login-logs")
+async def delete_login_logs(
+    ids: List[int] = Body(..., embed=True, description="List of login log IDs to delete"),
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Bulk delete login logs by IDs"""
+    if not ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No log IDs provided"
+        )
+    
+    delete_count = db.query(LoginLog).filter(LoginLog.id.in_(ids)).delete(synchronize_session=False)
+    db.commit()
+    
+    return {
+        "deleted": delete_count,
+        "ids": ids
+    }
+
 @router.get("/login-logs/export")
 async def export_login_logs(
     period: str = "all",
@@ -664,10 +1072,18 @@ async def export_login_logs(
     db: Session = Depends(get_db)
 ):
     """Export login logs as CSV (all, daily, monthly, yearly)"""
+    allowed_periods = {"all", "daily", "monthly", "yearly"}
+    norm_period = (period or "all").lower()
+    if norm_period not in allowed_periods:
+        norm_period = "all"
+
     query = db.query(LoginLog)
-    start = _get_period_start(period)
+    start = _get_period_start(norm_period)
+    end = _get_period_end(norm_period, start)
     if start:
         query = query.filter(LoginLog.login_at >= start)
+    if end:
+        query = query.filter(LoginLog.login_at < end)
 
     logs = query.order_by(LoginLog.login_at.desc()).all()
 

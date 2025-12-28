@@ -40,12 +40,16 @@ export const AuthProvider = ({ children }) => {
                           new Date(newUser.premium_valid_until) > new Date()
       
       // If user just became premium (wasn't premium before, but is now), trigger welcome animation
+      // Only trigger if welcome hasn't been shown yet (check localStorage)
       if (user && !wasPremium && isNowPremium) {
-        // Dispatch custom event for premium activation
-        console.log('🎉 Premium activated! Dispatching event...')
-        window.dispatchEvent(new CustomEvent('premiumActivated', { 
-          detail: { userId: newUser.id } 
-        }))
+        const welcomeShown = localStorage.getItem(`premiumWelcomeShown_${newUser.id}`)
+        if (!welcomeShown) {
+          // Dispatch custom event for premium activation
+          console.log('🎉 Premium activated! Dispatching event...')
+          window.dispatchEvent(new CustomEvent('premiumActivated', { 
+            detail: { userId: newUser.id } 
+          }))
+        }
       }
       
       setUser(newUser)
@@ -90,9 +94,15 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, otp) => {
     try {
       const response = await axios.post('/api/auth/otp/verify', { email, otp })
-      const { access_token, role } = response.data
+      const { access_token, role, device_token } = response.data
       
       localStorage.setItem('token', access_token)
+      // Store device token for 30-day remember me
+      if (device_token) {
+        localStorage.setItem('device_token', device_token)
+        localStorage.setItem('device_email', email.toLowerCase())
+      }
+      
       setToken(access_token)
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
       
@@ -106,10 +116,55 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const deviceLogin = async (email, deviceToken) => {
+    try {
+      const response = await axios.post('/api/auth/device/login', { 
+        email: email.toLowerCase(), 
+        device_token: deviceToken 
+      })
+      const { access_token, role, device_token } = response.data
+      
+      localStorage.setItem('token', access_token)
+      // Update device token if new one is provided
+      if (device_token) {
+        localStorage.setItem('device_token', device_token)
+        localStorage.setItem('device_email', email.toLowerCase())
+      }
+      
+      setToken(access_token)
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+      
+      await fetchUser()
+      
+      return role
+    } catch (error) {
+      // Device login failed - remove invalid device token
+      localStorage.removeItem('device_token')
+      localStorage.removeItem('device_email')
+      throw error
+    }
+  }
+
   const requestOTP = async (email) => {
     try {
-      await axios.post('/api/auth/otp/request', { email })
+      const response = await axios.post('/api/auth/otp/request', { email })
+      const data = response.data
+      
+      // Check if device is trusted (no OTP required)
+      if (data.device_token && !data.requires_otp) {
+        // Device is trusted - try device login
+        try {
+          const role = await deviceLogin(email, data.device_token)
+          return { requiresOTP: false, role }
+        } catch (deviceError) {
+          // Device login failed - fall back to OTP
+          console.log('Device login failed, requiring OTP')
+        }
+      }
+      
+      // OTP required
       toast.success('OTP sent to your email')
+      return { requiresOTP: true }
     } catch (error) {
       const errorMsg = getErrorMessage(error)
       toast.error(errorMsg)
@@ -126,6 +181,8 @@ export const AuthProvider = ({ children }) => {
       console.error('Failed to log logout time:', error)
     } finally {
       localStorage.removeItem('token')
+      // Keep device token for next login (30-day remember me)
+      // Only remove if user explicitly wants to logout from all devices
       setToken(null)
       setUser(null)
       delete axios.defaults.headers.common['Authorization']
@@ -136,6 +193,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     login,
+    deviceLogin,
     requestOTP,
     logout,
     fetchUser,

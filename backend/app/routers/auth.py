@@ -1,20 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.schemas import OTPRequest, OTPVerify, Token
-from app.security import verify_otp, create_access_token, is_admin_email
+from app.schemas import OTPRequest, OTPVerify, Token, DeviceLoginRequest
+from app.security import verify_otp, create_access_token, is_admin_email, generate_device_fingerprint, generate_device_token
 from app.email_service import send_otp_email
 from app.email_validation import validate_email_address
-from app.models import User, UserRole, LoginLog
-from datetime import timedelta
+from app.models import User, UserRole, LoginLog, DeviceSession
+from datetime import timedelta, datetime
 from app.config import settings
 import re
 
 router = APIRouter()
 
 @router.post("/otp/request")
-async def request_otp(request: OTPRequest, db: Session = Depends(get_db)):
-    """Request OTP for login"""
+async def request_otp(
+    request: OTPRequest,
+    http_request: Request,
+    db: Session = Depends(get_db)
+):
+    """Request OTP for login - checks if device is known first"""
     email = request.email.lower()
     
     # Validate email address (RFC + DNS MX)
@@ -42,11 +46,40 @@ async def request_otp(request: OTPRequest, db: Session = Depends(get_db)):
             detail="Account is disabled"
         )
     
-    # Send OTP (email service handles errors gracefully)
+    # Check if device is known (trusted device)
+    ip_address = get_client_ip(http_request)
+    user_agent = http_request.headers.get("User-Agent", "")
+    device_fingerprint = generate_device_fingerprint(ip_address, user_agent)
+    
+    # Clean up expired device sessions for this user
+    db.query(DeviceSession).filter(
+        DeviceSession.user_id == user.id,
+        DeviceSession.expires_at <= datetime.utcnow()
+    ).delete()
+    db.commit()
+    
+    # Check for existing valid device session
+    device_session = db.query(DeviceSession).filter(
+        DeviceSession.user_id == user.id,
+        DeviceSession.device_fingerprint == device_fingerprint,
+        DeviceSession.expires_at > datetime.utcnow()
+    ).first()
+    
+    if device_session:
+        # Device is known - return device token for direct login
+        return {
+            "message": "Trusted device detected",
+            "device_token": device_session.device_token,
+            "requires_otp": False
+        }
+    
+    # Device is new or expired - require OTP
     await send_otp_email(email)
     
-    # Always return success - OTP is either sent via email or printed to console
-    return {"message": "OTP sent to your email (check server console if email not configured)"}
+    return {
+        "message": "OTP sent to your email (check server console if email not configured)",
+        "requires_otp": True
+    }
 
 def get_client_ip(request: Request) -> str:
     """Extract client IP address from request"""
@@ -180,13 +213,48 @@ async def verify_otp_endpoint(
     db.commit()
     db.refresh(login_log)
     
-    # Create access token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    # Create device fingerprint and check for existing session
+    device_fingerprint = generate_device_fingerprint(ip_address, user_agent)
+    
+    # Check if device session exists
+    device_session = db.query(DeviceSession).filter(
+        DeviceSession.user_id == user.id,
+        DeviceSession.device_fingerprint == device_fingerprint
+    ).first()
+    
+    # Create or update device session (30 days)
+    if device_session:
+        # Update existing session
+        device_session.last_used_at = datetime.utcnow()
+        device_session.expires_at = datetime.utcnow() + timedelta(days=30)
+        device_session.ip_address = ip_address
+        device_session.user_agent = user_agent[:500] if user_agent else None
+        device_session.device_type = device_type
+    else:
+        # Create new device session
+        device_token = generate_device_token()
+        device_session = DeviceSession(
+            user_id=user.id,
+            device_fingerprint=device_fingerprint,
+            device_token=device_token,
+            ip_address=ip_address,
+            user_agent=user_agent[:500] if user_agent else None,
+            device_type=device_type,
+            expires_at=datetime.utcnow() + timedelta(days=30)
+        )
+        db.add(device_session)
+    
+    db.commit()
+    db.refresh(device_session)
+    
+    # Create access token (30 days for trusted devices)
+    access_token_expires = timedelta(days=30)  # 30 days for device-based login
     access_token = create_access_token(
         data={
             "sub": user.email, 
             "user_id": user.id, 
-            "role": user.role.value
+            "role": user.role.value,
+            "device_token": device_session.device_token  # Include device token in JWT
         },
         expires_delta=access_token_expires
     )
@@ -194,6 +262,98 @@ async def verify_otp_endpoint(
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "role": user.role.value
+        "role": user.role.value,
+        "device_token": device_session.device_token  # Return device token for frontend storage
+    }
+
+@router.post("/device/login", response_model=Token)
+async def device_login_endpoint(
+    request: DeviceLoginRequest,
+    http_request: Request,
+    db: Session = Depends(get_db)
+):
+    """Login using device token (no OTP required for trusted devices)"""
+    email = request.email.lower()
+    
+    # Get user
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is disabled"
+        )
+    
+    # Clean up expired device sessions for this user
+    db.query(DeviceSession).filter(
+        DeviceSession.user_id == user.id,
+        DeviceSession.expires_at <= datetime.utcnow()
+    ).delete()
+    db.commit()
+    
+    # Verify device token
+    device_session = db.query(DeviceSession).filter(
+        DeviceSession.user_id == user.id,
+        DeviceSession.device_token == request.device_token,
+        DeviceSession.expires_at > datetime.utcnow()
+    ).first()
+    
+    if not device_session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired device token. Please login with OTP."
+        )
+    
+    # Verify device fingerprint matches (security check)
+    ip_address = get_client_ip(http_request)
+    user_agent = http_request.headers.get("User-Agent", "")
+    device_fingerprint = generate_device_fingerprint(ip_address, user_agent)
+    
+    if device_session.device_fingerprint != device_fingerprint:
+        # Device fingerprint changed - require OTP for security
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Device changed. Please login with OTP."
+        )
+    
+    # Update last used timestamp
+    device_session.last_used_at = datetime.utcnow()
+    db.commit()
+    
+    # Capture login information
+    device_type = detect_device_type(user_agent)
+    
+    # Log login
+    login_log = LoginLog(
+        user_id=user.id,
+        ip_address=ip_address,
+        user_agent=user_agent[:500] if user_agent else None,
+        device_type=device_type
+    )
+    db.add(login_log)
+    db.commit()
+    
+    # Create access token (30 days)
+    access_token_expires = timedelta(days=30)
+    access_token = create_access_token(
+        data={
+            "sub": user.email, 
+            "user_id": user.id, 
+            "role": user.role.value,
+            "device_token": device_session.device_token
+        },
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": user.role.value,
+        "device_token": device_session.device_token
     }
 

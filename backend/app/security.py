@@ -63,4 +63,16 @@ def is_admin_email(email: str) -> bool:
     """Check if email is admin email"""
     return email.lower() == settings.ADMIN_EMAIL.lower()
 
+def generate_device_fingerprint(ip_address: str, user_agent: str) -> str:
+    """Generate a unique device fingerprint from IP and User-Agent"""
+    # Combine IP and User-Agent for device identification
+    device_string = f"{ip_address}|{user_agent}"
+    # Create hash for consistent fingerprint
+    device_hash = hashlib.sha256(device_string.encode()).hexdigest()
+    return device_hash
+
+def generate_device_token() -> str:
+    """Generate a unique device token"""
+    return secrets.token_urlsafe(32)  # 32-byte token, URL-safe
+
 
