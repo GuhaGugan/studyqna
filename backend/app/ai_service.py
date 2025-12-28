@@ -115,7 +115,7 @@ Your output MUST look like a student's PERFECT answer script.
 CRITICAL RULE: SUBJECT-WISE ANSWER STRUCTURE
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨 IMPORTANT: Answer structure MUST depend on the SUBJECT, not only on marks.
+[CRITICAL] IMPORTANT: Answer structure MUST depend on the SUBJECT, not only on marks.
 
 Answer FORMAT is controlled by SUBJECT.
 Answer LENGTH is controlled by MARKS.
@@ -124,7 +124,7 @@ Answer LENGTH is controlled by MARKS.
 STRICT ANSWER RULES BY MARKS AND SUBJECT (MANDATORY)
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨 CRITICAL: Follow board-exam writing standards. Answer format MUST match marks AND subject.
+[CRITICAL] CRITICAL: Follow board-exam writing standards. Answer format MUST match marks AND subject.
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🧮 MATHEMATICS - STRICT RULES
@@ -157,7 +157,7 @@ STRICT ANSWER RULES BY MARKS AND SUBJECT (MANDATORY)
       Final Answer: [boxed result]"
 
 • 10 MARKS:
-  🚨🚨🚨 CRITICAL: MANDATORY STRUCTURE - ALL SECTIONS REQUIRED - NO EXCEPTIONS 🚨🚨🚨
+  [CRITICAL][CRITICAL][CRITICAL] CRITICAL: MANDATORY STRUCTURE - ALL SECTIONS REQUIRED - NO EXCEPTIONS [CRITICAL][CRITICAL][CRITICAL]
     1. Given (MANDATORY - 2-3 lines) - State the problem clearly
     2. Formula/Theorem (MANDATORY - 1-2 lines) - State the formula or theorem used
     3. Step-by-step Working (MANDATORY - 6-8 lines) - Show all calculation steps
@@ -194,7 +194,7 @@ STRICT ANSWER RULES BY MARKS AND SUBJECT (MANDATORY)
   ✅ Include relevant examples or applications
 
 • 10 MARKS:
-  🚨🚨🚨 CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS 🚨🚨🚨
+  [CRITICAL][CRITICAL][CRITICAL] CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS [CRITICAL][CRITICAL][CRITICAL]
     1. Definition (MANDATORY - 2-3 lines) - Clear definition of the concept
     2. Explanation (MANDATORY - 4-6 lines) - Comprehensive explanation of principles
     3. Example (MANDATORY - 2-3 lines) - Practical example or application
@@ -211,7 +211,7 @@ STRICT ANSWER RULES BY MARKS AND SUBJECT (MANDATORY)
 🏛 SOCIAL SCIENCE - STRICT RULES
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨🚨🚨 CRITICAL WARNING FOR 10-MARK SOCIAL SCIENCE ANSWERS 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] CRITICAL WARNING FOR 10-MARK SOCIAL SCIENCE ANSWERS [CRITICAL][CRITICAL][CRITICAL]
 ALL 10-MARK SOCIAL SCIENCE ANSWERS MUST INCLUDE ALL 4 SECTIONS:
 1. Background/Context (MANDATORY - 2-3 lines)
 2. Key Points (MANDATORY - 4-5 lines with 3-4 points)
@@ -244,7 +244,7 @@ TOTAL: 12-15+ lines MINIMUM
   ✅ Each point clearly explained
 
 • 10 MARKS:
-  🚨🚨🚨 CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS 🚨🚨🚨
+  [CRITICAL][CRITICAL][CRITICAL] CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS [CRITICAL][CRITICAL][CRITICAL]
     1. Background/Context (2-3 lines) - Historical/geographical context - ABSOLUTELY MANDATORY
     2. Key Points (4-5 lines) - 3-4 key points with details - ABSOLUTELY MANDATORY
     3. Explanation (4-6 lines) - Comprehensive explanation of relationships and causes - ABSOLUTELY MANDATORY
@@ -282,7 +282,7 @@ TOTAL: 12-15+ lines MINIMUM
   ✅ Well-structured explanation
 
 • 10 MARKS:
-  🚨🚨🚨 CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS 🚨🚨🚨
+  [CRITICAL][CRITICAL][CRITICAL] CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS [CRITICAL][CRITICAL][CRITICAL]
     1. Introduction (MANDATORY - 2-3 lines) - Context and overview
     2. Explanation (MANDATORY - 4-6 lines) - Detailed explanation of the topic
     3. Analysis (MANDATORY - 4-6 lines) - Critical analysis with examples
@@ -431,7 +431,7 @@ STRICT EXAM RULES (MANDATORY)
 MATHEMATICAL RULES (VERY STRICT - MANDATORY)
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨 ALL mathematical expressions MUST be written in LaTeX. NO EXCEPTIONS. 🚨
+[CRITICAL] ALL mathematical expressions MUST be written in LaTeX. NO EXCEPTIONS. [CRITICAL]
 Frontend rendering is assumed - ALL math will be rendered using KaTeX.
 
 2. ALL mathematical expressions MUST be in LaTeX format:
@@ -550,7 +550,7 @@ If any rule is violated, REWRITE the answer silently.
 📝 QUESTION FRAMING RULES (CRITICAL FOR QUALITY)
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨 MANDATORY: All questions MUST be clear, unambiguous, and well-framed
+[CRITICAL] MANDATORY: All questions MUST be clear, unambiguous, and well-framed
 
 1. QUESTION CLARITY REQUIREMENTS:
    ✅ Questions MUST be grammatically correct
@@ -632,8 +632,8 @@ If any rule is violated, REWRITE the answer silently.
      * "X இன் தன்மையை பகுப்பாய்வு செய்க" (Analyze the nature of X)
      * "X ஐ விவரிக்கவும்" (Describe X)
      * "X இன் பண்புகளை எழுதுக" (Write the properties of X)
-     🚨 ABSOLUTELY FORBIDDEN: NEVER use "f(x) = ... என்றால், f(...) என்றால் என்ன?" pattern more than ONCE
-     🚨 Each question MUST use a DIFFERENT Tamil question format - NO repetition allowed
+     [CRITICAL] ABSOLUTELY FORBIDDEN: NEVER use "f(x) = ... என்றால், f(...) என்றால் என்ன?" pattern more than ONCE
+     [CRITICAL] Each question MUST use a DIFFERENT Tamil question format - NO repetition allowed
    
    - English (en): Use formal academic tone. Use patterns like: "Define …", "Explain …", "Describe …", "Write short notes on …", "Differentiate between …"
    
@@ -720,7 +720,7 @@ If any rule is violated, REWRITE the answer silently.
    - All questions must be educational and appropriate
    - Never include questions about humans, body parts, or inappropriate content
    
-   🚨 CRITICAL: QUESTION COMPLEXITY REQUIREMENT 🚨
+   [CRITICAL] CRITICAL: QUESTION COMPLEXITY REQUIREMENT [CRITICAL]
    - ❌ NEVER generate simple arithmetic questions like "What is 3 + 4?" or "What is 5 × 2?"
    - ❌ NEVER generate trivial questions that can be answered without formulas or equations
    - ✅ Questions MUST involve formulas, equations, or require problem-solving steps
@@ -739,7 +739,7 @@ If any rule is violated, REWRITE the answer silently.
      * "What is the value of 10 - 3?" (simple subtraction)
 
 6A. QUESTION FORMAT VARIATION (ABSOLUTELY MANDATORY - ZERO TOLERANCE FOR REPETITION):
-   🚨🚨🚨 STRICTLY FORBIDDEN: NO REPETITION OF QUESTION FORMATS, OPENERS, STRUCTURES, OR FRAMES 🚨🚨🚨
+   [CRITICAL][CRITICAL][CRITICAL] STRICTLY FORBIDDEN: NO REPETITION OF QUESTION FORMATS, OPENERS, STRUCTURES, OR FRAMES [CRITICAL][CRITICAL][CRITICAL]
    
    ABSOLUTE PROHIBITION:
    - ❌ NEVER repeat the same question opener in ANY two questions
@@ -1348,7 +1348,7 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
     # CRITICAL: Check for Tamil repetitive pattern "f(x) = ... என்றால், f(...) என்றால் என்ன?"
     tamil_pattern_count = question_phrases.count("TAMIL_FUNCTION_PATTERN")
     if tamil_pattern_count >= 2:
-        print(f"🚨 CRITICAL: Detected {tamil_pattern_count} questions with repetitive Tamil pattern 'f(x) = ... என்றால், f(...) என்றால் என்ன?'")
+        print(f"[CRITICAL] CRITICAL: Detected {tamil_pattern_count} questions with repetitive Tamil pattern 'f(x) = ... என்றால், f(...) என்றால் என்ன?'")
         print(f"   This pattern MUST NOT be repeated. Each question must use a DIFFERENT format.")
         return validated_questions, True  # Return True to trigger regeneration
     
@@ -1403,7 +1403,7 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
                 has_repetition = True
         
         if repeated_starters:
-            print(f"🚨 CRITICAL WARNING: Found {len(repeated_starters)} question opener(s) repeated across the set. Each question MUST have a UNIQUE opener!")
+            print(f"[CRITICAL] CRITICAL WARNING: Found {len(repeated_starters)} question opener(s) repeated across the set. Each question MUST have a UNIQUE opener!")
         elif consecutive_same > 0:
             print(f"⚠️  WARNING: Found {consecutive_same} consecutive question(s) with same opener. Questions should vary in format/phrasing.")
     
@@ -1438,7 +1438,7 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
                 has_repetition = True
         
         if repeated_structures:
-            print(f"🚨 CRITICAL WARNING: Found {len(repeated_structures)} question structure(s) repeated across the set. Each question MUST have a UNIQUE structure!")
+            print(f"[CRITICAL] CRITICAL WARNING: Found {len(repeated_structures)} question structure(s) repeated across the set. Each question MUST have a UNIQUE structure!")
         elif consecutive_same_structure > 0:
             print(f"⚠️  WARNING: Found {consecutive_same_structure} consecutive question(s) with same structure. Questions should vary in structure.")
     
@@ -1457,12 +1457,12 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
     
     # CRITICAL: If hard mode violations detected, trigger regeneration
     if has_hard_mode_violation:
-        print(f"🚨 CRITICAL: HARD MODE VIOLATIONS DETECTED - Regenerating questions to ensure complexity...")
+        print(f"[CRITICAL] CRITICAL: HARD MODE VIOLATIONS DETECTED - Regenerating questions to ensure complexity...")
         return validated_questions, True  # Return True to trigger regeneration
     
     # CRITICAL: If 10-mark answers are invalid (missing parts or too short) for ANY subject, trigger regeneration
     if has_invalid_10mark_answer:
-        print(f"🚨 CRITICAL: 10-MARK ANSWERS ARE INVALID - Missing mandatory sections or too short (<12 lines). Regenerating to ensure all required sections and 12-15+ lines...")
+        print(f"[CRITICAL] CRITICAL: 10-MARK ANSWERS ARE INVALID - Missing mandatory sections or too short (<12 lines). Regenerating to ensure all required sections and 12-15+ lines...")
         return validated_questions, True  # Return True to trigger regeneration
     
     return validated_questions, has_repetition
@@ -1594,7 +1594,7 @@ def generate_qna(
 SUBJECT: MATHEMATICS - ANSWER STRUCTURE (MANDATORY)
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨 CRITICAL: This is MATHEMATICS - Follow these rules STRICTLY:
+[CRITICAL] CRITICAL: This is MATHEMATICS - Follow these rules STRICTLY:
 
 1. ANSWER FORMAT (MANDATORY):
    ✅ USE these headings ONLY:
@@ -1874,7 +1874,7 @@ x = (-b)/(2a) = (-6)/(2(1)) = -3
     if subject_lower in ["social_science", "social science"]:
         subject_warning = """
 ━━━━━━━━━━━━━━━━━━━━━━
-🚨🚨🚨 CRITICAL REMINDER FOR 10-MARK SOCIAL SCIENCE ANSWERS 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] CRITICAL REMINDER FOR 10-MARK SOCIAL SCIENCE ANSWERS [CRITICAL][CRITICAL][CRITICAL]
 ━━━━━━━━━━━━━━━━━━━━━━
 ALL 10-MARK SOCIAL SCIENCE ANSWERS MUST INCLUDE ALL 4 SECTIONS:
 1. Background/Context: (MANDATORY - 2-3 lines)
@@ -1891,7 +1891,7 @@ TOTAL: 12-15+ lines MINIMUM
     elif subject_lower in ["science", "physics", "chemistry", "biology"]:
         subject_warning = """
 ━━━━━━━━━━━━━━━━━━━━━━
-🚨🚨🚨 CRITICAL REMINDER FOR 10-MARK SCIENCE ANSWERS 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] CRITICAL REMINDER FOR 10-MARK SCIENCE ANSWERS [CRITICAL][CRITICAL][CRITICAL]
 ━━━━━━━━━━━━━━━━━━━━━━
 ALL 10-MARK SCIENCE ANSWERS MUST INCLUDE ALL 4 SECTIONS:
 1. Definition: (MANDATORY - 2-3 lines)
@@ -1908,7 +1908,7 @@ TOTAL: 12-15+ lines MINIMUM
     elif subject_lower in ["english", "literature"]:
         subject_warning = """
 ━━━━━━━━━━━━━━━━━━━━━━
-🚨🚨🚨 CRITICAL REMINDER FOR 10-MARK ENGLISH ANSWERS 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] CRITICAL REMINDER FOR 10-MARK ENGLISH ANSWERS [CRITICAL][CRITICAL][CRITICAL]
 ━━━━━━━━━━━━━━━━━━━━━━
 ALL 10-MARK ENGLISH ANSWERS MUST INCLUDE ALL 4 SECTIONS:
 1. Introduction: (MANDATORY - 2-3 lines)
@@ -1925,7 +1925,7 @@ TOTAL: 12-15+ lines MINIMUM
     elif subject_lower in ["mathematics", "math", "maths"]:
         subject_warning = """
 ━━━━━━━━━━━━━━━━━━━━━━
-🚨🚨🚨 CRITICAL REMINDER FOR 10-MARK MATHEMATICS ANSWERS 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] CRITICAL REMINDER FOR 10-MARK MATHEMATICS ANSWERS [CRITICAL][CRITICAL][CRITICAL]
 ━━━━━━━━━━━━━━━━━━━━━━
 ALL 10-MARK MATHEMATICS ANSWERS MUST INCLUDE ALL SECTIONS:
 1. Given: (MANDATORY - 2-3 lines)
@@ -1956,7 +1956,7 @@ Question Distribution (Strict):
 {subject_instruction}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-🚨 CRITICAL: QUESTION COMPLEXITY REQUIREMENT 🚨
+[CRITICAL] CRITICAL: QUESTION COMPLEXITY REQUIREMENT [CRITICAL]
 ━━━━━━━━━━━━━━━━━━━━━━
 
 ❌ STRICTLY FORBIDDEN - DO NOT GENERATE SIMPLE QUESTIONS:
@@ -1989,7 +1989,7 @@ EXAMPLES OF BAD QUESTIONS (DO NOT GENERATE):
 CRITICAL RULE: SUBJECT-BASED ANSWER FORMAT
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨 DETECTED SUBJECT: {detected_subject.upper()}
+[CRITICAL] DETECTED SUBJECT: {detected_subject.upper()}
 {subject_warning}
 
 IMPORTANT: Answer structure MUST depend on the SUBJECT, not only on marks.
@@ -2009,7 +2009,7 @@ If subject IS Mathematics:
 FORMAT VARIATION RULE (ABSOLUTELY MANDATORY - ZERO TOLERANCE)
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨🚨🚨 CRITICAL: STRICTLY FORBIDDEN - NO REPETITION OF QUESTION FORMATS OR FRAMES 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] CRITICAL: STRICTLY FORBIDDEN - NO REPETITION OF QUESTION FORMATS OR FRAMES [CRITICAL][CRITICAL][CRITICAL]
 
 ABSOLUTE PROHIBITION RULES (VIOLATION = INVALID OUTPUT):
 1. ❌ NEVER repeat the same sentence structure in ANY two questions
@@ -2106,7 +2106,7 @@ Difficulty Level: {difficulty}
 - Medium: Application of concepts, step-wise solutions
 - Hard: Deep understanding, full derivations
 
-🚨🚨🚨 CRITICAL: HARD MODE RESTRICTIONS 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] CRITICAL: HARD MODE RESTRICTIONS [CRITICAL][CRITICAL][CRITICAL]
 If difficulty is "hard", you MUST follow these ABSOLUTE PROHIBITIONS:
 
 ❌ ABSOLUTELY FORBIDDEN in HARD mode:
@@ -2152,7 +2152,7 @@ If you generate ANY simple arithmetic or basic symbol identification question in
 
 {f"=== MATHEMATICS FORMATTING RULES (CRITICAL - MANDATORY - ONLY FOR MATHEMATICS) ===" if detected_subject == "mathematics" else "=== FORMATTING RULES (SUBJECT-SPECIFIC) ==="}
 {f"""
-🚨 USE EXAM-FRIENDLY STUDENT-WRITTEN NOTATION. NO LaTeX COMMANDS. 🚨
+CRITICAL: USE EXAM-FRIENDLY STUDENT-WRITTEN NOTATION. NO LaTeX COMMANDS.
 
 STRICT RULES FOR 10-MARK ANSWERS:
 1. Use ONLY exam-friendly mathematical notation (NO LaTeX commands like \\frac, \\sqrt, \\times, \\boxed)
@@ -2230,7 +2230,7 @@ FOR 10-MARK QUESTIONS (MATHEMATICS - STRICT EXAM FORMAT):
 """ if detected_subject == "mathematics" else ""}
 
 === QUESTION FORMAT VARIATION (ABSOLUTELY MANDATORY - ZERO TOLERANCE) ===
-🚨🚨🚨 STRICTLY FORBIDDEN: NO REPETITION OF QUESTION FORMATS, OPENERS, STRUCTURES, OR FRAMES 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] STRICTLY FORBIDDEN: NO REPETITION OF QUESTION FORMATS, OPENERS, STRUCTURES, OR FRAMES [CRITICAL][CRITICAL][CRITICAL]
 
 ABSOLUTE PROHIBITION RULES:
 - ❌ NEVER use the same opener for ANY two questions (even non-consecutive)
@@ -2353,7 +2353,7 @@ CRITICAL ENFORCEMENT:
 📝 QUESTION FRAMING QUALITY (MANDATORY)
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨 CRITICAL: All questions MUST be well-framed, clear, and unambiguous
+[CRITICAL] CRITICAL: All questions MUST be well-framed, clear, and unambiguous
 
 QUESTION CLARITY RULES:
 ✅ Questions MUST be complete, grammatically correct sentences
@@ -2536,7 +2536,7 @@ Include answers: true
 Difficulty level: {difficulty}
 
 LANGUAGE-SPECIFIC EXAM STYLE (MANDATORY):
-🚨 TARGET LANGUAGE: {target_language_name.upper()} 🚨
+[CRITICAL] TARGET LANGUAGE: {target_language_name.upper()} [CRITICAL]
 You MUST generate ALL content (questions, answers, options) EXCLUSIVELY in {target_language_name}. NO EXCEPTIONS.
 
 You MUST use formal exam-style phrasing appropriate for {target_language_name}:
@@ -2557,7 +2557,7 @@ CRITICAL LANGUAGE ENFORCEMENT:
 - DO NOT use casual or spoken language - ONLY formal exam-style phrasing
 - DO NOT mix languages - if you see English content in the study material but target is {target_language_name}, translate and generate in {target_language_name}
 
-🚨🚨🚨 CRITICAL REQUIREMENTS - READ CAREFULLY 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] CRITICAL REQUIREMENTS - READ CAREFULLY [CRITICAL][CRITICAL][CRITICAL]
 
 QUALITY OVER QUANTITY (HIGHEST PRIORITY):
 - ✅ Generate questions ONLY if the content clearly supports them
@@ -2595,7 +2595,7 @@ VERIFICATION BEFORE OUTPUT:
   * Science: Use object with definition, explanation, example, conclusion (OR string with embedded headings)
   * Social Science: Use object with background, key_points, explanation, conclusion (OR string with embedded headings)
 - For 1-3 marks: Can use simple string format, but MUST provide an answer
-🚨 CRITICAL LANGUAGE REQUIREMENT 🚨
+[CRITICAL] CRITICAL LANGUAGE REQUIREMENT [CRITICAL]
 - All questions, options, and answers MUST be in {target_language_name} ONLY
 - DO NOT mix languages - if target language is {target_language_name}, generate EVERYTHING in {target_language_name}
 - Question text: {target_language_name} ONLY
@@ -2611,7 +2611,7 @@ VERIFICATION BEFORE OUTPUT:
 📝 QUESTION FRAMING QUALITY (MANDATORY - READ CAREFULLY)
 ━━━━━━━━━━━━━━━━━━━━━━
 
-🚨 CRITICAL: All questions MUST be well-framed, clear, grammatically correct, and unambiguous
+[CRITICAL] CRITICAL: All questions MUST be well-framed, clear, grammatically correct, and unambiguous
 
 1. QUESTION CLARITY REQUIREMENTS:
    ✅ Questions MUST be complete, grammatically correct sentences
@@ -2827,7 +2827,7 @@ FORMAT VARIATION CHECK (CRITICAL):
 
 If ANY rule fails (including format variation), regenerate silently to ensure 99% accuracy and natural variation.
 
-🚨🚨🚨 CRITICAL FINAL REMINDER 🚨🚨🚨
+[CRITICAL][CRITICAL][CRITICAL] CRITICAL FINAL REMINDER [CRITICAL][CRITICAL][CRITICAL]
 
 EVERY SINGLE QUESTION MUST HAVE A "correct_answer" FIELD - THIS IS MANDATORY FOR ALL MARK VALUES (1, 2, 3, 5, 10).
 
@@ -2845,7 +2845,7 @@ For 1 mark questions: Use simple string format, but MUST provide an answer.
 
 Now generate the questions strictly within the allowed limit, ensuring answer lengths match the mark requirements exactly and follow the difficulty-based structure. REMEMBER: EVERY question MUST have a correct_answer field.
 
-🚨 FINAL VERIFICATION BEFORE OUTPUTTING JSON:
+[CRITICAL] FINAL VERIFICATION BEFORE OUTPUTTING JSON:
 1. Generate HIGH-QUALITY questions from the content (up to {actual_num_questions} if content supports)
 2. Verify all questions are UNIQUE (no repetition of patterns, equations, or ideas)
 3. Verify all questions are supported by the content (no invented or stretched content)
