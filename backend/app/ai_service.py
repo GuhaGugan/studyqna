@@ -1987,6 +1987,193 @@ For {detected_subject.upper()} subjects:
 - Variation 7+: Continue with NEW variations, NEVER reuse
 """
     
+    # Build JSON example string (to avoid nested f-string issues)
+    json_example = """
+{{
+  "questions": [
+    {{
+      "marks": 5,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Given the function f(x) = 2x² + 3x + 1, find the roots using the quadratic formula.",
+      "correct_answer": {{
+        "given": "f(x) = 2x² + 3x + 1",
+        "formula": "x = (-b ± √(b² - 4ac)) / (2a), where D = b² - 4ac",
+        "coefficients": "a = 2, b = 3, c = 1",
+        "steps": [
+          "D = b² - 4ac = 3² - 4(2)(1) = 9 - 8 = 1",
+          "x = (-3 ± √1) / 4 = (-3 ± 1) / 4",
+          "x = (-3 + 1) / 4 = -1/2 and x = (-3 - 1) / 4 = -1"
+        ],
+        "final": "Final Answer: x = -1/2, -1"
+      }}
+    }},
+    {{
+      "marks": 10,
+      "type": "descriptive",
+      "difficulty": "hard",
+      "question": "Analyze the function f(x) = 3x³ - 6x² + 2. Find the critical points and determine their nature.",
+      "correct_answer": {{
+        "given": "f(x) = 3x³ - 6x² + 2",
+        "definition": "Critical points occur where the first derivative is zero or undefined.",
+        "formula": "First derivative: f'(x) = 9x² - 12x\\nSecond derivative: f''(x) = 18x - 12",
+        "steps": [
+          "Step 1: Calculate first derivative: f'(x) = 9x² - 12x",
+          "Step 2: Set first derivative to zero: f'(x) = 9x² - 12x = 0",
+          "Step 3: Factor the equation: x(9x - 12) = 0",
+          "Step 4: Find critical points: x = 0 or x = 12/9 = 4/3",
+          "Step 5: Calculate second derivative: f''(x) = 18x - 12",
+          "Step 6: Apply second derivative test: f''(0) = -12 < 0 (local maximum), f''(4/3) = 12 > 0 (local minimum)"
+        ],
+        "function_values": [
+          "f(0) = 3(0)³ - 6(0)² + 2 = 2",
+          "f(4/3) = 3(4/3)³ - 6(4/3)² + 2 = -14/9"
+        ],
+        "final": "Final Answer: Local maximum at (0, 2), Local minimum at (4/3, -14/9)"
+      }}
+    }},
+    {{
+      "marks": 1,
+      "type": "mcq",
+      "difficulty": "easy",
+      "question": "What is the value of 2 + 3?",
+      "options": ["4", "5", "6", "7"],
+      "correct_answer": "5"
+    }},
+    {{
+      "marks": 2,
+      "type": "short",
+      "difficulty": "easy",
+      "question": "Solve for \\( x \\): \\( 2x + 5 = 15 \\)",
+      "correct_answer": "\\( x = 5 \\)"
+    }},
+    {{
+      "marks": 1,
+      "type": "mcq",
+      "difficulty": "easy",
+      "question": "Which symbol represents equality?",
+      "options": ["\\( = \\)", "\\( \\neq \\)", "\\( < \\)", "\\( > \\)"],
+      "correct_answer": "\\( = \\)"
+    }},
+    {{
+      "marks": 2,
+      "type": "short",
+      "difficulty": "easy",
+      "question": "What is the value of 2 + 3?",
+      "correct_answer": "The value of 2 + 3 is 5."
+    }}
+  ]
+}}
+""" if detected_subject == "mathematics" else """
+{{
+  "questions": [
+    {{
+      "marks": 3,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Describe the main character's development in the story.",
+      "correct_answer": "The main character undergoes significant growth throughout the narrative. Initially, they are portrayed as naive and inexperienced. As the story progresses, they face various challenges that test their resolve. These experiences shape their personality and worldview. By the end, they emerge as a more mature and understanding individual."
+    }},
+    {{
+      "marks": 5,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Explain the theme of the poem and analyze its literary devices.",
+      "correct_answer": {{
+        "introduction": "The poem explores themes of nature and human connection, using vivid imagery to create emotional resonance.",
+        "explanation": "The poet uses vivid imagery to depict natural scenes, creating a sense of harmony between humans and the environment. The language choices emphasize the interconnectedness of all living things.",
+        "analysis": "Literary devices such as metaphor and personification enhance the emotional impact. The metaphor of nature as a teacher allows readers to connect deeply with the poet's message about learning from the natural world.",
+        "conclusion": "The poem effectively conveys the relationship between humans and nature through its masterful use of language and imagery, leaving readers with a profound appreciation for the natural world."
+      }}
+    }},
+    {{
+      "marks": 10,
+      "type": "descriptive",
+      "difficulty": "hard",
+      "question": "Comprehensively analyze the historical significance of the event and its impact.",
+      "correct_answer": {{
+        "background": "The event occurred during a period of significant change in society, marking a transition from traditional to modern approaches.",
+        "key_points": ["First, the event marked a turning point in political structures", "Second, it influenced subsequent economic developments", "Third, it changed social relationships and cultural norms"],
+        "explanation": "The event's significance lies in its transformative nature. It challenged existing power structures and created new opportunities for different social groups. The immediate consequences were felt across multiple sectors of society.",
+        "conclusion": "The event had lasting impact on society, shaping the course of history for generations to come. Its legacy continues to influence contemporary discussions and policies."
+      }}
+    }},
+    {{
+      "marks": 1,
+      "type": "mcq",
+      "difficulty": "easy",
+      "question": "What is the value of 2 + 3?",
+      "options": ["4", "5", "6", "7"],
+      "correct_answer": "5"
+    }},
+    {{
+      "marks": 2,
+      "type": "short",
+      "difficulty": "easy",
+      "question": "Solve for \\( x \\): \\( 2x + 5 = 15 \\)",
+      "correct_answer": "\\( x = 5 \\)"
+    }},
+    {{
+      "marks": 1,
+      "type": "mcq",
+      "difficulty": "easy",
+      "question": "Which symbol represents equality?",
+      "options": ["\\( = \\)", "\\( \\neq \\)", "\\( < \\)", "\\( > \\)"],
+      "correct_answer": "\\( = \\)"
+    }},
+    {{
+      "marks": 2,
+      "type": "short",
+      "difficulty": "easy",
+      "question": "What is the value of 2 + 3?",
+      "correct_answer": "The value of 2 + 3 is 5."
+    }}
+  ]
+}}
+""" if detected_subject in ["english", "science", "social_science"] else """
+{{
+  "questions": [
+    {{
+      "marks": 5,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Explain the concept and provide examples.",
+      "correct_answer": "Definition: The concept is defined as... Explanation: It involves several key aspects... Example: For instance... Conclusion: In summary..."
+    }},
+    {{
+      "marks": 1,
+      "type": "mcq",
+      "difficulty": "easy",
+      "question": "What is the value of 2 + 3?",
+      "options": ["4", "5", "6", "7"],
+      "correct_answer": "5"
+    }},
+    {{
+      "marks": 2,
+      "type": "short",
+      "difficulty": "easy",
+      "question": "Solve for \\( x \\): \\( 2x + 5 = 15 \\)",
+      "correct_answer": "\\( x = 5 \\)"
+    }},
+    {{
+      "marks": 1,
+      "type": "mcq",
+      "difficulty": "easy",
+      "question": "Which symbol represents equality?",
+      "options": ["\\( = \\)", "\\( \\neq \\)", "\\( < \\)", "\\( > \\)"],
+      "correct_answer": "\\( = \\)"
+    }},
+    {{
+      "marks": 2,
+      "type": "short",
+      "difficulty": "easy",
+      "question": "What is the value of 2 + 3?",
+      "correct_answer": "The value of 2 + 3 is 5."
+    }}
+  ]
+}}
+"""
+    
     math_notation_examples = """
 EXAM-FRIENDLY NOTATION EXAMPLES (MATHEMATICS ONLY):
    ❌ LaTeX: \\( \\frac{{a}}{{b}} \\) → ✅ Exam: a/b or (a)/(b)
@@ -2413,127 +2600,7 @@ Options: ["Germany", "Italy", "Russia", "France"]
 (Not a complete sentence, too casual)
 9. Output must ALWAYS follow this exact JSON format (STRUCTURED - NO \\n, NO paragraphs):
 
-{"""
-{{
-  "questions": [
-    {{
-      "marks": 5,
-      "type": "descriptive",
-      "difficulty": "medium",
-      "question": "Given the function f(x) = 2x² + 3x + 1, find the roots using the quadratic formula.",
-      "correct_answer": {{
-        "given": "f(x) = 2x² + 3x + 1",
-        "formula": "x = (-b ± √(b² - 4ac)) / (2a), where D = b² - 4ac",
-        "coefficients": "a = 2, b = 3, c = 1",
-        "steps": [
-          "D = b² - 4ac = 3² - 4(2)(1) = 9 - 8 = 1",
-          "x = (-3 ± √1) / 4 = (-3 ± 1) / 4",
-          "x = (-3 + 1) / 4 = -1/2 and x = (-3 - 1) / 4 = -1"
-        ],
-        "final": "Final Answer: x = -1/2, -1"
-      }}
-    }},
-    {{
-      "marks": 10,
-      "type": "descriptive",
-      "difficulty": "hard",
-      "question": "Analyze the function f(x) = 3x³ - 6x² + 2. Find the critical points and determine their nature.",
-      "correct_answer": {{
-        "given": "f(x) = 3x³ - 6x² + 2",
-        "definition": "Critical points occur where the first derivative is zero or undefined.",
-        "formula": "First derivative: f'(x) = 9x² - 12x\\nSecond derivative: f''(x) = 18x - 12",
-        "steps": [
-          "Step 1: Calculate first derivative: f'(x) = 9x² - 12x",
-          "Step 2: Set first derivative to zero: f'(x) = 9x² - 12x = 0",
-          "Step 3: Factor the equation: x(9x - 12) = 0",
-          "Step 4: Find critical points: x = 0 or x = 12/9 = 4/3",
-          "Step 5: Calculate second derivative: f''(x) = 18x - 12",
-          "Step 6: Apply second derivative test: f''(0) = -12 < 0 (local maximum), f''(4/3) = 12 > 0 (local minimum)"
-        ],
-        "function_values": [
-          "f(0) = 3(0)³ - 6(0)² + 2 = 2",
-          "f(4/3) = 3(4/3)³ - 6(4/3)² + 2 = -14/9"
-        ],
-        "final": "Final Answer: Local maximum at (0, 2), Local minimum at (4/3, -14/9)"
-      }}
-    }},
-""" if detected_subject == "mathematics" else """
-{{
-  "questions": [
-    {{
-      "marks": 3,
-      "type": "descriptive",
-      "difficulty": "medium",
-      "question": "Describe the main character's development in the story.",
-      "correct_answer": "The main character undergoes significant growth throughout the narrative. Initially, they are portrayed as naive and inexperienced. As the story progresses, they face various challenges that test their resolve. These experiences shape their personality and worldview. By the end, they emerge as a more mature and understanding individual."
-    }},
-    {{
-      "marks": 5,
-      "type": "descriptive",
-      "difficulty": "medium",
-      "question": "Explain the theme of the poem and analyze its literary devices.",
-      "correct_answer": {{
-        "introduction": "The poem explores themes of nature and human connection, using vivid imagery to create emotional resonance.",
-        "explanation": "The poet uses vivid imagery to depict natural scenes, creating a sense of harmony between humans and the environment. The language choices emphasize the interconnectedness of all living things.",
-        "analysis": "Literary devices such as metaphor and personification enhance the emotional impact. The metaphor of nature as a teacher allows readers to connect deeply with the poet's message about learning from the natural world.",
-        "conclusion": "The poem effectively conveys the relationship between humans and nature through its masterful use of language and imagery, leaving readers with a profound appreciation for the natural world."
-      }}
-    }},
-    {{
-      "marks": 10,
-      "type": "descriptive",
-      "difficulty": "hard",
-      "question": "Comprehensively analyze the historical significance of the event and its impact.",
-      "correct_answer": {{
-        "background": "The event occurred during a period of significant change in society, marking a transition from traditional to modern approaches.",
-        "key_points": ["First, the event marked a turning point in political structures", "Second, it influenced subsequent economic developments", "Third, it changed social relationships and cultural norms"],
-        "explanation": "The event's significance lies in its transformative nature. It challenged existing power structures and created new opportunities for different social groups. The immediate consequences were felt across multiple sectors of society.",
-        "conclusion": "The event had lasting impact on society, shaping the course of history for generations to come. Its legacy continues to influence contemporary discussions and policies."
-      }}
-    }},
-""" if detected_subject in ["english", "science", "social_science"] else """
-{{
-  "questions": [
-    {{
-      "marks": 5,
-      "type": "descriptive",
-      "difficulty": "medium",
-      "question": "Explain the concept and provide examples.",
-      "correct_answer": "Definition: The concept is defined as... Explanation: It involves several key aspects... Example: For instance... Conclusion: In summary..."
-    }},
-"""}
-    {{
-      "marks": 1,
-      "type": "mcq",
-      "difficulty": "easy",
-      "question": "What is the value of 2 + 3?",
-      "options": ["4", "5", "6", "7"],
-      "correct_answer": "5"
-    }},
-    {{
-      "marks": 2,
-      "type": "short",
-      "difficulty": "easy",
-      "question": "Solve for \\( x \\): \\( 2x + 5 = 15 \\)",
-      "correct_answer": "\\( x = 5 \\)"
-    }},
-    {{
-      "marks": 1,
-      "type": "mcq",
-      "difficulty": "easy",
-      "question": "Which symbol represents equality?",
-      "options": ["\\( = \\)", "\\( \\neq \\)", "\\( < \\)", "\\( > \\)"],
-      "correct_answer": "\\( = \\)"
-    }},
-    {{
-      "marks": 2,
-      "type": "short",
-      "difficulty": "easy",
-      "question": "What is the value of 2 + 3?",
-      "correct_answer": "The value of 2 + 3 is 5."
-    }}
-  ]
-}}
+{json_example}
 
 IMPORTANT NOTES:
 - For mathematics questions, ALWAYS use exam-friendly notation (NO LaTeX commands)
