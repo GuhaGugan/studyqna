@@ -1941,6 +1941,107 @@ TOTAL: 12-15+ lines MINIMUM
 ━━━━━━━━━━━━━━━━━━━━━━
 """
     
+    # Build conditional formatting rules strings (to avoid nested f-string issues)
+    math_formatting_header = "=== MATHEMATICS FORMATTING RULES (CRITICAL - MANDATORY - ONLY FOR MATHEMATICS) ===" if detected_subject == "mathematics" else "=== FORMATTING RULES (SUBJECT-SPECIFIC) ==="
+    
+    math_formatting_rules = """
+CRITICAL: USE EXAM-FRIENDLY STUDENT-WRITTEN NOTATION. NO LaTeX COMMANDS.
+
+STRICT RULES FOR 10-MARK ANSWERS:
+1. Use ONLY exam-friendly mathematical notation (NO LaTeX commands like \\frac, \\sqrt, \\times, \\boxed)
+2. Use simple symbols written normally: +, −, ×, ÷, √
+3. Write exactly as a student would write in an exam for 10 marks
+4. Structure the answer clearly under these headings:
+   - Given
+   - Formula
+   - Calculation / Steps
+   - Nature of roots (if applicable)
+   - Final Answer
+5. Show every intermediate step clearly
+6. Do NOT skip substitution steps
+7. The final answer must be fully numerical and clearly stated
+""" if detected_subject == "mathematics" else f"""
+For {detected_subject.upper()} subjects:
+- Follow the subject-specific answer structure as specified above
+- Use appropriate terminology and formatting for the subject
+- Write in exam-appropriate style for {detected_subject}
+"""
+    
+    math_variation_header = "MATH-SPECIFIC VARIATION (EACH MUST BE UNIQUE - ONLY FOR MATHEMATICS):" if detected_subject == "mathematics" else "SUBJECT-SPECIFIC VARIATION (EACH MUST BE UNIQUE):"
+    
+    math_variation_rules = """
+- Variation 1: Direct calculation
+- Variation 2: Word problem
+- Variation 3: Proof/derivation
+- Variation 4: Application
+- Variation 5: Comparison
+- Variation 6: Analysis (e.g., nature of roots)
+- Variation 7+: Continue with NEW variations, NEVER reuse
+""" if detected_subject == "mathematics" else """
+- Variation 1: Definition-based questions
+- Variation 2: Explanation-based questions
+- Variation 3: Analysis-based questions
+- Variation 4: Application-based questions
+- Variation 5: Comparison-based questions
+- Variation 6: Evaluation-based questions
+- Variation 7+: Continue with NEW variations, NEVER reuse
+"""
+    
+    math_notation_examples = """
+EXAM-FRIENDLY NOTATION EXAMPLES (MATHEMATICS ONLY):
+   ❌ LaTeX: \\( \\frac{{a}}{{b}} \\) → ✅ Exam: a/b or (a)/(b)
+   ❌ LaTeX: \\( \\sqrt{{x}} \\) → ✅ Exam: √x or sqrt(x)
+   ❌ LaTeX: \\( x^2 \\) → ✅ Exam: x² or x^2
+   ❌ LaTeX: \\( \\times \\) → ✅ Exam: ×
+   ❌ LaTeX: \\( \\boxed{{x = 5}} \\) → ✅ Exam: [x = 5] or Final Answer: x = 5
+   ❌ LaTeX: \\( D = b^2 - 4ac \\) → ✅ Exam: D = b² - 4ac or D = b^2 - 4ac
+
+FOR 1-5 MARK QUESTIONS (MATHEMATICS):
+- Can use simple notation: x = 5, f(x) = 2x² + 3x + 1
+- Fractions: a/b or (a)/(b)
+- Powers: x² or x^2
+- Roots: √x or sqrt(x)
+
+FOR 10-MARK QUESTIONS (MATHEMATICS - STRICT EXAM FORMAT):
+- MUST use student-written notation (NO LaTeX)
+- MUST have clear headings: Given, Formula, Calculation/Steps, Nature of roots, Final Answer
+- MUST show every step with substitution
+- Example format:
+  Given: f(x) = 3x³ - 6x² + 2
+  
+  Formula: 
+  First derivative: f'(x) = 9x² - 12x
+  Second derivative: f''(x) = 18x - 12
+  
+  Calculation / Steps:
+  Step 1: f'(x) = 9x² - 12x
+  Step 2: Set f'(x) = 0
+          9x² - 12x = 0
+          x(9x - 12) = 0
+          x = 0 or x = 12/9 = 4/3
+  Step 3: f''(x) = 18x - 12
+  Step 4: f''(0) = 18(0) - 12 = -12 < 0 (local maximum)
+          f''(4/3) = 18(4/3) - 12 = 24 - 12 = 12 > 0 (local minimum)
+  
+  Function Values:
+  f(0) = 3(0)³ - 6(0)² + 2 = 2
+  f(4/3) = 3(4/3)³ - 6(4/3)² + 2 = -14/9
+  
+  Final Answer:
+  Local maximum at (0, 2)
+  Local minimum at (4/3, -14/9)
+
+2. Answer structure for math questions:
+   - Easy: Direct answer with formula (1-2 lines)
+   - Medium: Show steps with formulas (3-6 lines)
+   - Hard: Complete derivation with step numbering and clear final answer (8-15 lines)
+
+3. For hard math questions (10 marks):
+   - MUST include step numbering: Step 1, Step 2, Step 3, ...
+   - MUST show logical reasoning
+   - MUST have clear final answer (NO \\boxed, use "Final Answer:" heading)
+""" if detected_subject == "mathematics" else ""
+    
     user_prompt = f"""Generate exam questions from the following study material:
 
 [STUDY_MATERIAL]
@@ -2150,84 +2251,10 @@ If difficulty is "hard", you MUST follow these ABSOLUTE PROHIBITIONS:
 
 If you generate ANY simple arithmetic or basic symbol identification question in HARD mode, your output is INVALID and will be rejected.
 
-{f"=== MATHEMATICS FORMATTING RULES (CRITICAL - MANDATORY - ONLY FOR MATHEMATICS) ===" if detected_subject == "mathematics" else "=== FORMATTING RULES (SUBJECT-SPECIFIC) ==="}
-{"""
-CRITICAL: USE EXAM-FRIENDLY STUDENT-WRITTEN NOTATION. NO LaTeX COMMANDS.
+{math_formatting_header}
+{math_formatting_rules}
 
-STRICT RULES FOR 10-MARK ANSWERS:
-1. Use ONLY exam-friendly mathematical notation (NO LaTeX commands like \\frac, \\sqrt, \\times, \\boxed)
-2. Use simple symbols written normally: +, −, ×, ÷, √
-3. Write exactly as a student would write in an exam for 10 marks
-4. Structure the answer clearly under these headings:
-   - Given
-   - Formula
-   - Calculation / Steps
-   - Nature of roots (if applicable)
-   - Final Answer
-5. Show every intermediate step clearly
-6. Do NOT skip substitution steps
-7. The final answer must be fully numerical and clearly stated
-""" if detected_subject == "mathematics" else """
-For {detected_subject.upper()} subjects:
-- Follow the subject-specific answer structure as specified above
-- Use appropriate terminology and formatting for the subject
-- Write in exam-appropriate style for {detected_subject}
-"""}
-
-{"""
-EXAM-FRIENDLY NOTATION EXAMPLES (MATHEMATICS ONLY):
-   ❌ LaTeX: \\( \\frac{{a}}{{b}} \\) → ✅ Exam: a/b or (a)/(b)
-   ❌ LaTeX: \\( \\sqrt{{x}} \\) → ✅ Exam: √x or sqrt(x)
-   ❌ LaTeX: \\( x^2 \\) → ✅ Exam: x² or x^2
-   ❌ LaTeX: \\( \\times \\) → ✅ Exam: ×
-   ❌ LaTeX: \\( \\boxed{{x = 5}} \\) → ✅ Exam: [x = 5] or Final Answer: x = 5
-   ❌ LaTeX: \\( D = b^2 - 4ac \\) → ✅ Exam: D = b² - 4ac or D = b^2 - 4ac
-
-FOR 1-5 MARK QUESTIONS (MATHEMATICS):
-- Can use simple notation: x = 5, f(x) = 2x² + 3x + 1
-- Fractions: a/b or (a)/(b)
-- Powers: x² or x^2
-- Roots: √x or sqrt(x)
-
-FOR 10-MARK QUESTIONS (MATHEMATICS - STRICT EXAM FORMAT):
-- MUST use student-written notation (NO LaTeX)
-- MUST have clear headings: Given, Formula, Calculation/Steps, Nature of roots, Final Answer
-- MUST show every step with substitution
-- Example format:
-  Given: f(x) = 3x³ - 6x² + 2
-  
-  Formula: 
-  First derivative: f'(x) = 9x² - 12x
-  Second derivative: f''(x) = 18x - 12
-  
-  Calculation / Steps:
-  Step 1: f'(x) = 9x² - 12x
-  Step 2: Set f'(x) = 0
-          9x² - 12x = 0
-          x(9x - 12) = 0
-          x = 0 or x = 12/9 = 4/3
-  Step 3: f''(x) = 18x - 12
-  Step 4: f''(0) = 18(0) - 12 = -12 < 0 (local maximum)
-          f''(4/3) = 18(4/3) - 12 = 24 - 12 = 12 > 0 (local minimum)
-  
-  Function Values:
-  f(0) = 3(0)³ - 6(0)² + 2 = 2
-  f(4/3) = 3(4/3)³ - 6(4/3)² + 2 = -14/9
-  
-  Final Answer:
-  Local maximum at (0, 2)
-  Local minimum at (4/3, -14/9)
-
-2. Answer structure for math questions:
-   - Easy: Direct answer with formula (1-2 lines)
-   - Medium: Show steps with formulas (3-6 lines)
-   - Hard: Complete derivation with step numbering and clear final answer (8-15 lines)
-
-3. For hard math questions (10 marks):
-   - MUST include step numbering: Step 1, Step 2, Step 3, ...
-   - MUST show logical reasoning
-   - MUST have clear final answer (NO \\boxed, use "Final Answer:" heading)
-""" if detected_subject == "mathematics" else ""}
+{math_notation_examples}
 
 === QUESTION FORMAT VARIATION (ABSOLUTELY MANDATORY - ZERO TOLERANCE) ===
 [CRITICAL][CRITICAL][CRITICAL] STRICTLY FORBIDDEN: NO REPETITION OF QUESTION FORMATS, OPENERS, STRUCTURES, OR FRAMES [CRITICAL][CRITICAL][CRITICAL]
@@ -2259,24 +2286,8 @@ USE THESE STRUCTURES (EACH QUESTION MUST USE A DIFFERENT ONE - NO DUPLICATES):
 - Structure 8: Identification - "Identify the value of X when Y = Z"
 - Structure 9+: Continue with NEW structures, NEVER reuse any structure
 
-{f"MATH-SPECIFIC VARIATION (EACH MUST BE UNIQUE - ONLY FOR MATHEMATICS):" if detected_subject == "mathematics" else "SUBJECT-SPECIFIC VARIATION (EACH MUST BE UNIQUE):"}
-{"""
-- Variation 1: Direct calculation
-- Variation 2: Word problem
-- Variation 3: Proof/derivation
-- Variation 4: Application
-- Variation 5: Comparison
-- Variation 6: Analysis (e.g., nature of roots)
-- Variation 7+: Continue with NEW variations, NEVER reuse
-""" if detected_subject == "mathematics" else """
-- Variation 1: Definition-based questions
-- Variation 2: Explanation-based questions
-- Variation 3: Analysis-based questions
-- Variation 4: Comparison-based questions
-- Variation 5: Application-based questions
-- Variation 6: Context-based questions
-- Variation 7+: Continue with NEW variations, NEVER reuse
-"""}
+{math_variation_header}
+{math_variation_rules}
 
 ANSWER PRESENTATION (VARY - NO DUPLICATES):
 - Answer 1: Start with definition, then explanation
