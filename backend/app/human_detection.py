@@ -1,7 +1,13 @@
 import cv2
 import numpy as np
 from PIL import Image
-from ultralytics import YOLO
+try:
+    from ultralytics import YOLO
+    ULTRALYTICS_AVAILABLE = True
+except ImportError:
+    YOLO = None
+    ULTRALYTICS_AVAILABLE = False
+    print("⚠️ Warning: ultralytics not available. Human detection will be disabled.")
 import os
 from typing import Tuple, Optional
 

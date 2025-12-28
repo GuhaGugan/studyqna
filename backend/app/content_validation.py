@@ -5,7 +5,13 @@ Blocks inappropriate content and only allows study materials
 import cv2
 import numpy as np
 from PIL import Image
-from ultralytics import YOLO
+try:
+    from ultralytics import YOLO
+    ULTRALYTICS_AVAILABLE = True
+except ImportError:
+    YOLO = None
+    ULTRALYTICS_AVAILABLE = False
+    print("⚠️ Warning: ultralytics not available. Content validation will be limited.")
 import os
 import re
 from typing import Tuple, Optional, List, Dict
@@ -108,6 +114,8 @@ def get_model():
                     pass
             
             # Load model - YOLO should now work with safe globals
+            if YOLO is None:
+                raise ImportError("ultralytics not available")
             _model = YOLO("yolov8n.pt")  # nano model for speed
             print("✅ YOLO model loaded successfully")
         except Exception as e:
@@ -126,6 +134,8 @@ def get_model():
                     return original_load(*args, **kwargs)
                 
                 torch.load = patched_load
+                if YOLO is None:
+                    raise ImportError("ultralytics not available")
                 _model = YOLO("yolov8n.pt")
                 # Restore original
                 torch.load = original_load
