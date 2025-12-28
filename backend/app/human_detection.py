@@ -20,6 +20,8 @@ def get_model():
     global _model
     if _model is None:
         try:
+            if YOLO is None:
+                raise ImportError("ultralytics not available")
             _model = YOLO("yolov8n.pt")  # nano model for speed
         except Exception as e:
             print(f"Warning: Could not load YOLO model: {e}")
