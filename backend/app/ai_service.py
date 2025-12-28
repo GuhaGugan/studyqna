@@ -2151,7 +2151,7 @@ If difficulty is "hard", you MUST follow these ABSOLUTE PROHIBITIONS:
 If you generate ANY simple arithmetic or basic symbol identification question in HARD mode, your output is INVALID and will be rejected.
 
 {f"=== MATHEMATICS FORMATTING RULES (CRITICAL - MANDATORY - ONLY FOR MATHEMATICS) ===" if detected_subject == "mathematics" else "=== FORMATTING RULES (SUBJECT-SPECIFIC) ==="}
-{f"""
+{"""
 CRITICAL: USE EXAM-FRIENDLY STUDENT-WRITTEN NOTATION. NO LaTeX COMMANDS.
 
 STRICT RULES FOR 10-MARK ANSWERS:
@@ -2167,14 +2167,14 @@ STRICT RULES FOR 10-MARK ANSWERS:
 5. Show every intermediate step clearly
 6. Do NOT skip substitution steps
 7. The final answer must be fully numerical and clearly stated
-""" if detected_subject == "mathematics" else f"""
+""" if detected_subject == "mathematics" else """
 For {detected_subject.upper()} subjects:
 - Follow the subject-specific answer structure as specified above
 - Use appropriate terminology and formatting for the subject
 - Write in exam-appropriate style for {detected_subject}
 """}
 
-{f"""
+{"""
 EXAM-FRIENDLY NOTATION EXAMPLES (MATHEMATICS ONLY):
    ❌ LaTeX: \\( \\frac{{a}}{{b}} \\) → ✅ Exam: a/b or (a)/(b)
    ❌ LaTeX: \\( \\sqrt{{x}} \\) → ✅ Exam: √x or sqrt(x)
@@ -2260,7 +2260,7 @@ USE THESE STRUCTURES (EACH QUESTION MUST USE A DIFFERENT ONE - NO DUPLICATES):
 - Structure 9+: Continue with NEW structures, NEVER reuse any structure
 
 {f"MATH-SPECIFIC VARIATION (EACH MUST BE UNIQUE - ONLY FOR MATHEMATICS):" if detected_subject == "mathematics" else "SUBJECT-SPECIFIC VARIATION (EACH MUST BE UNIQUE):"}
-{f"""
+{"""
 - Variation 1: Direct calculation
 - Variation 2: Word problem
 - Variation 3: Proof/derivation
@@ -2268,7 +2268,7 @@ USE THESE STRUCTURES (EACH QUESTION MUST USE A DIFFERENT ONE - NO DUPLICATES):
 - Variation 5: Comparison
 - Variation 6: Analysis (e.g., nature of roots)
 - Variation 7+: Continue with NEW variations, NEVER reuse
-""" if detected_subject == "mathematics" else f"""
+""" if detected_subject == "mathematics" else """
 - Variation 1: Definition-based questions
 - Variation 2: Explanation-based questions
 - Variation 3: Analysis-based questions
@@ -2402,7 +2402,7 @@ Options: ["Germany", "Italy", "Russia", "France"]
 (Not a complete sentence, too casual)
 9. Output must ALWAYS follow this exact JSON format (STRUCTURED - NO \\n, NO paragraphs):
 
-{f"""
+{"""
 {{
   "questions": [
     {{
@@ -2446,7 +2446,7 @@ Options: ["Germany", "Italy", "Russia", "France"]
         "final": "Final Answer: Local maximum at (0, 2), Local minimum at (4/3, -14/9)"
       }}
     }},
-""" if detected_subject == "mathematics" else f"""
+""" if detected_subject == "mathematics" else """
 {{
   "questions": [
     {{
@@ -2480,7 +2480,7 @@ Options: ["Germany", "Italy", "Russia", "France"]
         "conclusion": "The event had lasting impact on society, shaping the course of history for generations to come. Its legacy continues to influence contemporary discussions and policies."
       }}
     }},
-""" if detected_subject in ["english", "science", "social_science"] else f"""
+""" if detected_subject in ["english", "science", "social_science"] else """
 {{
   "questions": [
     {{
