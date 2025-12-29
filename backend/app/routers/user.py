@@ -205,9 +205,10 @@ async def get_user_profile(
         daily_questions_limit = current_user.daily_questions_limit or settings.PREMIUM_DAILY_GENERATION_LIMIT
         questions_remaining = max(0, questions_limit - questions_used)
     else:
-        questions_limit = 0
-        daily_questions_limit = 0
-        questions_remaining = 0
+        # Free users: 10 total questions, 10 daily questions
+        questions_limit = 10  # Free users: 10 total questions limit
+        daily_questions_limit = 10  # Free users: 10 daily questions limit
+        questions_remaining = max(0, questions_limit - questions_used)
     
     usage_stats = {
         "pdf_uploads": {

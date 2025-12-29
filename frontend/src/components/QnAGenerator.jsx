@@ -30,7 +30,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
   // - 10 marks: 2 questions per part (desktop only, excluded on mobile)
   // - mixed: 16 questions per part (desktop) or 15 questions per part (mobile - no 10 marks)
   const calculateDefaultQuestions = (partCount, marksPattern, mobileMode = false) => {
-    if (!partCount || partCount === 0) return isPremium ? 10 : 3
+    if (!partCount || partCount === 0) return isPremium ? 10 : 10  // Free users: 10 questions per generation
     
     // For mixed pattern: 15 questions per part on mobile (no 10 marks), 16 on desktop
     let questionsPerPart = mobileMode ? 15 : 16 // Default for mixed
@@ -69,7 +69,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
     qna_type: 'mixed',
     num_questions: selectedPartIds && selectedPartIds.length > 0 
       ? calculateDefaultQuestions(selectedPartIds.length, 'mixed', false) // Will be updated when isMobile is set
-      : (isPremium ? 10 : 3),
+      : (isPremium ? 10 : 10),  // Free users: 10 questions per generation
     output_format: isPremium ? 'questions_answers' : 'questions_only',  // Free users get questions_only by default
     include_answers: isPremium,  // Free users can't include answers
     marks: 'mixed',
@@ -648,7 +648,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       num_questions: partCount > 0 
         ? calculateDefaultQuestions(partCount, prev.marks, isMobile)
         : (partCount === 0
-          ? (isPremium ? 10 : 3)
+          ? (isPremium ? 10 : 10)  // Free users: 10 questions per generation
           : prev.num_questions)
     }))
     // Always reset generation complete when selection changes (allows re-generation from same or different content)
@@ -1211,7 +1211,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
     const questions = (editedQuestions.length > 0 && editedQuestions.length === resultQuestions.length) 
       ? editedQuestions 
       : resultQuestions
-    const previewCount = isPremium ? questions.length : Math.min(3, questions.length)
+    const previewCount = isPremium ? questions.length : questions.length  // Free users can see all 10 questions (preview only, no downloads)
     
     // Debug: Log questions being rendered
     console.log('🎨 Rendering preview:', {
@@ -1432,13 +1432,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
           </div>
         ))}
 
-        {!isPremium && questions.length > 3 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-            <p className="text-yellow-800 font-semibold">
-              Upgrade to Premium to see all {questions.length} questions and answers
-            </p>
-          </div>
-        )}
+        {/* Free users can see all questions (up to 10), but cannot download */}
 
         {isPremium && (
           <div className="relative inline-flex mt-3 md:mt-4 w-full md:w-auto">
@@ -1829,7 +1823,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
               min="1"
               max={selectedPartIds && selectedPartIds.length > 0 
                 ? calculateDefaultQuestions(selectedPartIds.length, settings.marks) 
-                : (isPremium ? 15 : 3)}
+                : (isPremium ? 15 : 10)}  // Free users: max 10 per generation
               value={settings.num_questions}
               onChange={(e) => {
                 const inputValue = e.target.value
@@ -1898,14 +1892,14 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
               className="w-full px-4 py-2 pr-20 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder={selectedPartIds && selectedPartIds.length > 0 
                 ? `1-${calculateDefaultQuestions(selectedPartIds.length, settings.marks)}` 
-                : `1-${isPremium ? 15 : 3}`}
+                : `1-${isPremium ? 15 : 10}`}  // Free users: max 10
             />
             {/* Hover tooltip showing max limit */}
             <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-[100]">
               <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap relative">
                 Max: {selectedPartIds && selectedPartIds.length > 0 
                   ? calculateDefaultQuestions(selectedPartIds.length, settings.marks) 
-                  : (isPremium ? 15 : 3)} questions
+                  : (isPremium ? 15 : 10)}  // Free users: max 10 per generation questions
                 <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-gray-900 transform rotate-45"></div>
               </div>
             </div>
@@ -1920,7 +1914,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
                 )}
               </>
             ) : (
-              <>Type any number from 1 to {isPremium ? 15 : 3} (hover input to see limit)</>
+              <>Type any number from 1 to {isPremium ? 15 : 10} (hover input to see limit)</>
             )}
           </p>
         </div>
@@ -1977,7 +1971,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
                         "Questions + Answers" and "Answers Only" are exclusive to Premium users.
                       </p>
                       <p className="text-sm font-medium text-amber-900 mt-2">
-                        💳 Upgrade to Premium for just ₹599/month and unlock:
+                        💳 Upgrade to Premium for just ₹299/month and unlock:
                       </p>
                       <ul className="text-xs text-amber-800 list-disc list-inside mt-1 space-y-1">
                         <li>Generate questions with answers</li>

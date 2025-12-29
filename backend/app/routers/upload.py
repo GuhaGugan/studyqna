@@ -105,22 +105,10 @@ async def upload_file(
                 )
         
         # Check upload limits
-        # Note: We now track by questions (700 total, 50 daily) instead of PDF/image quotas
-        # Premium users can upload unlimited files, but are limited by question generation
-        # Free users: 1 PDF per day limit
-        if not is_premium:
-            # Free users: 1 file per day check
-            today_uploads = db.query(Upload).filter(
-                Upload.user_id == current_user.id,
-                Upload.file_type == FileType.PDF,
-                Upload.created_at >= datetime.utcnow().date()
-            ).count()
-            
-            if today_uploads >= 1:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Free users can upload 1 PDF per day"
-                )
+        # Note: We now track by questions (700 total, 50 daily for premium) instead of PDF/image quotas
+        # All users (free and premium) can upload unlimited PDFs
+        # Limits are enforced by question generation (10 questions/generation, 10 daily for free users)
+        # No upload quota check needed - unlimited uploads for everyone
         
         # Save file
         file_path = save_file(file_content, current_user.id, file_type.value, file.filename)

@@ -180,10 +180,10 @@ async def generate_qna_endpoint(
             }.get(marks, 16)
         else:
             questions_per_part = 16  # Mixed pattern
-        max_questions = part_count * questions_per_part if is_premium else min(part_count * questions_per_part, 3)
+        max_questions = part_count * questions_per_part if is_premium else min(part_count * questions_per_part, 10)  # Free: max 10 per generation
     else:
         # Single upload mode: standard limits
-        max_questions = 15 if is_premium else 3  # Reduced from 20 to 15 for premium users
+        max_questions = 15 if is_premium else 10  # Premium: 15, Free: 10 questions per generation
     
     if request.num_questions > max_questions:
         raise HTTPException(
@@ -211,9 +211,16 @@ async def generate_qna_endpoint(
     # Refresh user from database to get latest reset timestamp (in case admin just reset it)
     db.refresh(current_user)
     
-    # Get user's question limits (admin-configurable, defaults: 700 total, 50 daily)
-    total_limit = current_user.total_questions_limit or 700
-    daily_limit = current_user.daily_questions_limit or 50
+    # Get user's question limits (admin-configurable)
+    # Free users: 10 total questions, 10 daily questions
+    # Premium users: defaults to 700 total, 50 daily (can be customized by admin)
+    if is_premium:
+        total_limit = current_user.total_questions_limit or 700
+        daily_limit = current_user.daily_questions_limit or 50
+    else:
+        # Free users: 10 total questions, 10 daily questions
+        total_limit = 10  # Free users: 10 total questions limit
+        daily_limit = 10  # Free users: 10 daily questions limit
     
     # Count total questions (after reset timestamp if set)
     if current_user.total_questions_reset_at:
@@ -259,7 +266,7 @@ async def generate_qna_endpoint(
             if isinstance(questions, list):
                 daily_questions_used += len(questions)
     
-    print(f"🔍 Total questions check: used={total_questions_used}, limit={total_limit}")
+    print(f"🔍 Total questions check: used={total_questions_used}, limit={total_limit if total_limit else 'unlimited'}")
     print(f"🔍 Daily questions check: used={daily_questions_used}, limit={daily_limit}, reset_timestamp={reset_timestamp}")
     
     # Calculate how many questions will be generated
@@ -269,7 +276,7 @@ async def generate_qna_endpoint(
         questions_to_generate = request.num_questions
     
     # Check if generating these questions would exceed total limit
-    if total_questions_used + questions_to_generate > total_limit:
+    if total_limit and total_questions_used + questions_to_generate > total_limit:
         remaining = max(0, total_limit - total_questions_used)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

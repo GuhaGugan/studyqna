@@ -14,7 +14,7 @@ const PremiumBanner = () => {
   const GPAY_LINK = "YOUR_GPAY_PAYMENT_LINK_HERE" // e.g., "https://gpay.app.goo.gl/your-link-id" or UPI link
   
   // Option 2: Universal UPI Link (works with any UPI app)
-  // Format: upi://pay?pa=YOUR_UPI_ID@paytm&pn=StudyQnA&am=599&cu=INR&tn=Premium%20Subscription
+  // Format: upi://pay?pa=YOUR_UPI_ID@paytm&pn=StudyQnA&am=299&cu=INR&tn=Premium%20Subscription
   const UPI_PAYMENT_LINK = "YOUR_UPI_PAYMENT_LINK_HERE" // Replace with your UPI payment link
 
   const handleRequestPremium = async () => {
@@ -50,7 +50,7 @@ const PremiumBanner = () => {
                       size={120} 
                     />
                     <p className="text-xs text-gray-600 mt-2 text-center font-semibold">PhonePe</p>
-                    <p className="text-xs text-gray-500 mt-1">Scan & Pay ₹599</p>
+                    <p className="text-xs text-gray-500 mt-1">Scan & Pay ₹299</p>
                   </div>
                   
                   {/* Google Pay QR Code */}
@@ -60,7 +60,7 @@ const PremiumBanner = () => {
                       size={120} 
                     />
                     <p className="text-xs text-gray-600 mt-2 text-center font-semibold">Google Pay</p>
-                    <p className="text-xs text-gray-500 mt-1">Scan & Pay ₹599</p>
+                    <p className="text-xs text-gray-500 mt-1">Scan & Pay ₹299</p>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-3 text-center">
