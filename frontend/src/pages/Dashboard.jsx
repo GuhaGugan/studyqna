@@ -407,24 +407,30 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-gray-800">Total Questions</h3>
                     <span className="text-sm font-medium text-gray-600">
-                      {profileData?.usage_stats?.questions?.remaining || 0} remaining
+                      {profileData?.usage_stats?.questions?.remaining ?? 
+                        (profileData?.usage_stats?.questions?.limit 
+                          ? (profileData?.usage_stats?.questions?.limit - (profileData?.usage_stats?.questions?.used || 0))
+                          : (isPremium ? 700 : 10))} remaining
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
                     <div
                       className="bg-blue-600 h-3 rounded-full transition-all"
                       style={{
-                        width: `${isPremium && profileData?.usage_stats?.questions?.limit
-                          ? Math.min(
-                              ((profileData?.usage_stats?.questions?.used || 0) / (profileData?.usage_stats?.questions?.limit || 700)) * 100,
-                              100
-                            )
-                          : 0}%`
+                        width: `${(() => {
+                          const limit = profileData?.usage_stats?.questions?.limit || (isPremium ? 700 : 10)
+                          const used = profileData?.usage_stats?.questions?.used || 0
+                          return Math.min((used / limit) * 100, 100)
+                        })()}%`
                       }}
                     ></div>
                   </div>
                   <p className="text-xs text-gray-600">
-                    {isPremium ? `${profileData?.usage_stats?.questions?.used || 0} / ${profileData?.usage_stats?.questions?.limit || 700} questions` : 'Premium feature'}
+                    {profileData?.usage_stats?.questions?.limit 
+                      ? `${profileData?.usage_stats?.questions?.used || 0} / ${profileData?.usage_stats?.questions?.limit} questions`
+                      : (isPremium 
+                          ? `${profileData?.usage_stats?.questions?.used || 0} / 700 questions` 
+                          : `${profileData?.usage_stats?.questions?.used || 0} / 10 questions`)}
                   </p>
                 </div>
 
@@ -433,30 +439,36 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-gray-800">Daily Questions</h3>
                     <span className="text-sm font-medium text-gray-600">
-                      {profileData?.usage_stats?.daily_questions?.remaining || 0} remaining
+                      {profileData?.usage_stats?.daily_questions?.remaining ?? 
+                        (profileData?.usage_stats?.daily_questions?.limit 
+                          ? (profileData?.usage_stats?.daily_questions?.limit - (profileData?.usage_stats?.daily_questions?.used || 0))
+                          : (isPremium ? 50 : 10))} remaining
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
                     <div
                       className={`h-3 rounded-full transition-all ${
-                        profileData?.usage_stats?.daily_questions?.used >= (profileData?.usage_stats?.daily_questions?.limit * 0.8)
-                          ? profileData?.usage_stats?.daily_questions?.used >= (profileData?.usage_stats?.daily_questions?.limit || 50)
+                        profileData?.usage_stats?.daily_questions?.used >= ((profileData?.usage_stats?.daily_questions?.limit || (isPremium ? 50 : 10)) * 0.8)
+                          ? profileData?.usage_stats?.daily_questions?.used >= (profileData?.usage_stats?.daily_questions?.limit || (isPremium ? 50 : 10))
                             ? 'bg-red-600'
                             : 'bg-yellow-600'
                           : 'bg-green-600'
                       }`}
                       style={{
-                        width: `${isPremium && profileData?.usage_stats?.daily_questions?.limit
-                          ? Math.min(
-                              ((profileData?.usage_stats?.daily_questions?.used || 0) / (profileData?.usage_stats?.daily_questions?.limit || 50)) * 100,
-                              100
-                            )
-                          : 0}%`
+                        width: `${(() => {
+                          const limit = profileData?.usage_stats?.daily_questions?.limit || (isPremium ? 50 : 10)
+                          const used = profileData?.usage_stats?.daily_questions?.used || 0
+                          return Math.min((used / limit) * 100, 100)
+                        })()}%`
                       }}
                     ></div>
                   </div>
                   <p className="text-xs text-gray-600">
-                    {isPremium ? `${profileData?.usage_stats?.daily_questions?.used || 0} / ${profileData?.usage_stats?.daily_questions?.limit || 50} per day` : 'Premium feature'}
+                    {profileData?.usage_stats?.daily_questions?.limit 
+                      ? `${profileData?.usage_stats?.daily_questions?.used || 0} / ${profileData?.usage_stats?.daily_questions?.limit} per day`
+                      : (isPremium 
+                          ? `${profileData?.usage_stats?.daily_questions?.used || 0} / 50 per day` 
+                          : `${profileData?.usage_stats?.daily_questions?.used || 0} / 10 per day`)}
                   </p>
                   {profileData?.usage_stats?.generations?.reset_time && (
                     <p className="text-xs text-gray-500 mt-1">
