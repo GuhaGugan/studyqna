@@ -1844,7 +1844,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
                 if (!isNaN(numValue)) {
                   const max = selectedPartIds && selectedPartIds.length > 0 
                     ? calculateDefaultQuestions(selectedPartIds.length, settings.marks) 
-                    : (isPremium ? 15 : 3)
+                    : (isPremium ? 15 : 10)  // Free users: max 10 per generation
                   
                   // Allow typing even if temporarily exceeds max (validate on blur)
                   if (numValue > max) {
@@ -1875,7 +1875,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
                 const val = parseInt(inputValue, 10)
                 const max = selectedPartIds && selectedPartIds.length > 0 
                   ? calculateDefaultQuestions(selectedPartIds.length, settings.marks) 
-                  : (isPremium ? 15 : 3)
+                  : (isPremium ? 15 : 10)  // Free users: max 10 per generation
                 
                 if (val < 1) {
                   setSettings({ ...settings, num_questions: 1 })
