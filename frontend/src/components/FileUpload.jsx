@@ -24,38 +24,19 @@ const FileUpload = ({ onUploadSuccess }) => {
   const handleFile = async (file) => {
     if (!file) return
 
-    // Validate file type
+    // Validate file type - Only PDFs are supported
     const isPDF = file.type === 'application/pdf' || file.name.endsWith('.pdf')
-    const isImage = file.type.startsWith('image/') || 
-                   ['.jpg', '.jpeg', '.png', '.gif', '.bmp'].some(ext => 
-                     file.name.toLowerCase().endsWith(ext))
 
-    // On mobile, only allow PDFs
-    if (isMobile && !isPDF) {
-      toast.error('Only PDF files are allowed on mobile devices')
+    if (!isPDF) {
+      toast.error('Only PDF files are allowed')
       return
-    }
-
-    // On desktop, allow both PDFs and images
-    if (!isMobile && !isPDF && !isImage) {
-      toast.error('Only PDF and image files are allowed')
-      return
-    }
-
-    // Show helpful message for images (only on web, not mobile to avoid clutter)
-    if (isImage && !isMobile) {
-      toast.info('📚 Only study materials allowed: textbook pages, diagrams, charts, or clean text. Human photos, IDs, and inappropriate content are blocked.', {
-        duration: 4000
-      })
     }
 
     // Validate file size (client-side check)
     // PDFs can be up to 100MB for book splitting feature (will be split if >6MB)
-    // Images remain at 10MB
     const MAX_PDF_SIZE = 100 * 1024 * 1024  // 100MB (for book splitting)
-    const MAX_IMAGE_SIZE = 10 * 1024 * 1024  // 10MB (increased for mobile photos)
-    const maxSize = isPDF ? MAX_PDF_SIZE : MAX_IMAGE_SIZE
-    const maxSizeMB = isPDF ? 100 : 10
+    const maxSize = MAX_PDF_SIZE
+    const maxSizeMB = 100
 
     if (file.size > maxSize) {
       toast.error(`File size exceeds ${maxSizeMB}MB limit. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
@@ -254,7 +235,7 @@ const FileUpload = ({ onUploadSuccess }) => {
         <input
           ref={fileInputRef}
           type="file"
-          accept={isMobile ? ".pdf" : ".pdf,image/*"}
+          accept=".pdf"
           onChange={handleFileInput}
           className="hidden"
           disabled={uploading}
@@ -285,9 +266,7 @@ const FileUpload = ({ onUploadSuccess }) => {
               {isMobile ? 'Choose PDF file from your device' : 'or click to browse'}
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              {isMobile 
-                ? 'PDF only (max 100MB for books, 40 pages)'
-                : 'PDF (max 100MB for books, 40 pages) or Images (max 10MB)'}
+              PDF only (max 100MB for books, 40 pages)
             </p>
           </div>
           
@@ -295,7 +274,7 @@ const FileUpload = ({ onUploadSuccess }) => {
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="w-full md:w-auto bg-blue-600 text-white px-6 py-3 md:py-2 rounded-lg font-semibold active:bg-blue-700 hover:bg-blue-700 transition-colors disabled:opacity-50 text-base md:text-sm relative group"
-            title={uploading ? 'Uploading file... Please wait' : isMobile ? 'Click to select a PDF file' : 'Click to select a PDF or image file'}
+            title={uploading ? 'Uploading file... Please wait' : 'Click to select a PDF file'}
           >
             {uploading ? (
               <span className="flex items-center gap-2">

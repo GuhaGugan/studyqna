@@ -146,7 +146,8 @@ def generate_qa_from_concepts(
     marks_pattern: str = "mixed",
     target_language: str = "english",
     distribution_list: Optional[List[Dict[str, Any]]] = None,
-    subject: Optional[str] = None
+    subject: Optional[str] = None,
+    previous_questions: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     Step 2: Generate Q/A using validated concepts (controlled AI call)
@@ -184,7 +185,8 @@ def generate_qa_from_concepts(
             marks_pattern=marks_pattern,
             target_language=target_language,
             distribution_list=distribution_list,
-            subject=subject
+            subject=subject,
+            previous_questions=previous_questions
         )
     
     # Build concept summary for prompt
@@ -212,7 +214,8 @@ ORIGINAL TEXT:
         marks_pattern=marks_pattern,
         target_language=target_language,
         distribution_list=distribution_list,
-        subject=concepts_data.get("subject") or subject
+        subject=concepts_data.get("subject") or subject,
+        previous_questions=previous_questions
     )
     
     # Add concept metadata to result
@@ -233,6 +236,7 @@ def generate_qna_pipeline(
     distribution_list: Optional[List[Dict[str, Any]]] = None,
     subject: Optional[str] = None,
     num_parts: Optional[int] = None,
+    previous_questions: Optional[List[str]] = None,
     use_pipeline: bool = True
 ) -> Dict[str, Any]:
     """
@@ -270,7 +274,8 @@ def generate_qna_pipeline(
             remaining_questions=remaining_questions,
             distribution_list=distribution_list,
             subject=subject,
-            num_parts=num_parts
+            num_parts=num_parts,
+            previous_questions=previous_questions
         )
     
     print("🔄 Starting two-step AI pipeline...")
@@ -290,7 +295,8 @@ def generate_qna_pipeline(
         marks_pattern=marks_pattern,
         target_language=target_language,
         distribution_list=distribution_list,
-        subject=subject
+        subject=subject,
+        previous_questions=previous_questions
     )
     
     print("✅ Pipeline completed successfully")

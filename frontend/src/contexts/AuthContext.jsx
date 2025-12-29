@@ -150,16 +150,13 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post('/api/auth/otp/request', { email })
       const data = response.data
       
-      // Check if device is trusted (no OTP required)
-      if (data.device_token && !data.requires_otp) {
-        // Device is trusted - try device login
-        try {
-          const role = await deviceLogin(email, data.device_token)
-          return { requiresOTP: false, role }
-        } catch (deviceError) {
-          // Device login failed - fall back to OTP
-          console.log('Device login failed, requiring OTP')
-        }
+      // Return device_token if available (let Login component decide whether to use it)
+      if (data.device_token) {
+        // Store device token for potential use
+        localStorage.setItem('device_token', data.device_token)
+        localStorage.setItem('device_email', email.toLowerCase())
+        // Return device token - Login component will use it if "Remember me" is checked
+        return { requiresOTP: true, device_token: data.device_token }
       }
       
       // OTP required

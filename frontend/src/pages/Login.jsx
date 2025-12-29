@@ -9,18 +9,16 @@ const Login = () => {
   const [step, setStep] = useState('email') // 'email' or 'otp'
   const [loading, setLoading] = useState(false)
   const [emailError, setEmailError] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const { requestOTP, login, deviceLogin, isAdmin } = useAuth()
   const navigate = useNavigate()
 
-  // Check for device token on component mount
+  // Pre-fill email if device token exists (but don't auto-login)
   useEffect(() => {
-    const deviceToken = localStorage.getItem('device_token')
     const deviceEmail = localStorage.getItem('device_email')
-    
-    if (deviceToken && deviceEmail) {
-      // Try device login automatically
+    if (deviceEmail) {
       setEmail(deviceEmail)
-      handleDeviceLogin(deviceEmail, deviceToken)
+      setRememberMe(true) // Pre-check "Remember me" if device token exists
     }
   }, [])
 
@@ -28,7 +26,7 @@ const Login = () => {
     setLoading(true)
     try {
       const role = await deviceLogin(email, deviceToken)
-      toast.success('Welcome back!')
+      toast.success('Welcome back! Logged in automatically.')
       
       // Redirect based on role
       if (role === 'admin') {
@@ -132,17 +130,51 @@ const Login = () => {
     setEmailError('')
     
     try {
-      const result = await requestOTP(email.trim().toLowerCase())
+      const trimmedEmail = email.trim().toLowerCase()
       
-      // Check if device login was successful (no OTP required)
-      if (result && !result.requiresOTP) {
-        // Device login successful - redirect
-        if (result.role === 'admin') {
-          navigate('/admin')
-        } else {
-          navigate('/dashboard')
+      // Check if user has a device token and "Remember me" is checked
+      const deviceToken = localStorage.getItem('device_token')
+      const deviceEmail = localStorage.getItem('device_email')
+      
+      // If device token exists for this email and "Remember me" is checked, try device login first
+      if (rememberMe && deviceToken && deviceEmail === trimmedEmail) {
+        try {
+          const role = await deviceLogin(trimmedEmail, deviceToken)
+          toast.success('Welcome back! Logged in automatically.')
+          
+          // Redirect based on role
+          if (role === 'admin') {
+            navigate('/admin')
+          } else {
+            navigate('/dashboard')
+          }
+          return
+        } catch (deviceError) {
+          // Device login failed - continue with OTP flow
+          console.log('Device login failed, proceeding with OTP')
         }
-        return
+      }
+      
+      // Request OTP (this will also check for device token on backend)
+      const result = await requestOTP(trimmedEmail)
+      
+      // Check if backend returned a device token (device login available)
+      if (result && result.device_token && rememberMe) {
+        // Try device login with the token from backend
+        try {
+          const role = await deviceLogin(trimmedEmail, result.device_token)
+          toast.success('Welcome back! Logged in automatically.')
+          
+          if (role === 'admin') {
+            navigate('/admin')
+          } else {
+            navigate('/dashboard')
+          }
+          return
+        } catch (deviceError) {
+          // Device login failed - continue with OTP
+          console.log('Device login failed, proceeding with OTP')
+        }
       }
       
       // OTP required - show OTP input
@@ -219,6 +251,26 @@ const Login = () => {
               {!emailError && email && (
                 <p className="mt-1 text-sm text-green-600">✓ Valid email format</p>
               )}
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  setRememberMe(checked)
+                  // If user unchecks "Remember me", clear device token
+                  if (!checked) {
+                    localStorage.removeItem('device_token')
+                    localStorage.removeItem('device_email')
+                  }
+                }}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
+                Keep me logged in (30 days)
+              </label>
             </div>
             <button
               type="submit"

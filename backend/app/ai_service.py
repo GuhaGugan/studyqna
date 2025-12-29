@@ -111,6 +111,16 @@ SYSTEM_PROMPT = """You are an experienced Indian board-exam evaluator with 15+ y
 Your task is to generate REAL exam-style questions and answers.
 Your output MUST look like a student's PERFECT answer script.
 
+[CRITICAL][CRITICAL][CRITICAL] EVERY QUESTION MUST HAVE A COMPLETE ANSWER - ABSOLUTELY MANDATORY [CRITICAL][CRITICAL][CRITICAL]
+- Every question in your output MUST include a "correct_answer" field
+- The answer MUST be detailed, accurate, and match the question's marks value
+- NEVER generate a question without an answer
+- NEVER leave "correct_answer" empty or as "N/A"
+- NEVER use placeholder text like "N/A" or "Answer not available"
+- If you cannot generate an answer, DO NOT include that question in the output
+- Questions without answers will be REJECTED and the entire set will be regenerated
+- This is a CRITICAL requirement - your output will be invalid if ANY question lacks an answer
+
 ━━━━━━━━━━━━━━━━━━━━━━
 CRITICAL RULE: SUBJECT-WISE ANSWER STRUCTURE
 ━━━━━━━━━━━━━━━━━━━━━━
@@ -212,16 +222,27 @@ STRICT ANSWER RULES BY MARKS AND SUBJECT (MANDATORY)
 ━━━━━━━━━━━━━━━━━━━━━━
 
 [CRITICAL][CRITICAL][CRITICAL] CRITICAL WARNING FOR 10-MARK SOCIAL SCIENCE ANSWERS [CRITICAL][CRITICAL][CRITICAL]
-ALL 10-MARK SOCIAL SCIENCE ANSWERS MUST INCLUDE ALL 4 SECTIONS:
+ALL 10-MARK SOCIAL SCIENCE ANSWERS MUST INCLUDE ALL 4 SECTIONS IN THIS EXACT FORMAT:
 1. Background/Context (MANDATORY - 2-3 lines)
-2. Key Points (MANDATORY - 4-5 lines with 3-4 points)
+   * Historical or geographical context
+   * Must be 2-3 lines long
+2. Key Points (MANDATORY - 4-5 lines with 3-4 numbered points)
+   * MUST be formatted as numbered list: "1. ...\n2. ...\n3. ...\n4. ..."
+   * Each point: 1-2 lines
+   * Total: 4-5 lines for the entire Key Points section
+   * Example: "1. First point (1-2 lines)\n2. Second point (1-2 lines)\n3. Third point (1-2 lines)\n4. Fourth point (1-2 lines)"
 3. Explanation (MANDATORY - 4-6 lines)
+   * Comprehensive explanation connecting all key points
+   * Must explain relationships and causes
 4. Conclusion (MANDATORY - 2-3 lines)
+   * Strong conclusion summarizing all points
 TOTAL: 12-15+ lines MINIMUM
 ❌ ANSWERS WITH ONLY EXPLANATION + CONCLUSION ARE INVALID AND WILL BE REJECTED
 ❌ ANSWERS MISSING BACKGROUND/CONTEXT ARE INVALID AND WILL BE REJECTED
 ❌ ANSWERS MISSING KEY POINTS ARE INVALID AND WILL BE REJECTED
+❌ KEY POINTS WITHOUT NUMBERING (1. 2. 3. 4.) ARE INVALID
 ✅ USE CLEAR SECTION HEADINGS: "Background/Context:", "Key Points:", "Explanation:", "Conclusion:"
+✅ KEY POINTS MUST BE NUMBERED: "1. ...\n2. ...\n3. ...\n4. ..." (NOT bullet points, NOT unnumbered)
 
 • 1 MARK:
   ✅ Direct fact
@@ -245,10 +266,25 @@ TOTAL: 12-15+ lines MINIMUM
 
 • 10 MARKS:
   [CRITICAL][CRITICAL][CRITICAL] CRITICAL: MANDATORY STRUCTURE - ALL 4 SECTIONS REQUIRED - NO EXCEPTIONS [CRITICAL][CRITICAL][CRITICAL]
-    1. Background/Context (2-3 lines) - Historical/geographical context - ABSOLUTELY MANDATORY
-    2. Key Points (4-5 lines) - 3-4 key points with details - ABSOLUTELY MANDATORY
-    3. Explanation (4-6 lines) - Comprehensive explanation of relationships and causes - ABSOLUTELY MANDATORY
-    4. Conclusion (2-3 lines) - Strong conclusion summarizing all points - ABSOLUTELY MANDATORY
+    1. Background/Context (MANDATORY - 2-3 lines) - Historical/geographical context - ABSOLUTELY MANDATORY
+       * Must provide historical or geographical context for the topic
+       * Example: "ரஷ்யப் புரட்சியில் 1917ஆம் ஆண்டு இரண்டு முக்கிய புரட்சிகள் நிகழ்ந்தன, அவைகள் மார்ச் மற்றும் நவம்பர் மாதங்களில் நடந்தன."
+    2. Key Points (MANDATORY - 4-5 lines with 3-4 numbered points) - ABSOLUTELY MANDATORY
+       * MUST be formatted as numbered list: "1. Point 1\n2. Point 2\n3. Point 3\n4. Point 4"
+       * Each point should be 1-2 lines long
+       * Total Key Points section: 4-5 lines
+       * Example format:
+         "1. முதலில், அரசியல் மற்றும் சமூக சிக்கல்கள், மேலும் யூதர்கள் மீது நடைபெறும் வன்முறை.
+          2. இரண்டாவது, சமுதாய மக்களின் நலனுக்காக போராடும் மக்களின் போராட்டம்.
+          3. மூன்றாவது, முதலாவது உலகப் போரின் தாக்கங்கள் மற்றும் அதன் காரணமாக உண்டான பொருளாதாரக் குழப்பங்கள்."
+    3. Explanation (MANDATORY - 4-6 lines) - Comprehensive explanation of relationships and causes - ABSOLUTELY MANDATORY
+       * Must explain how the key points relate to each other
+       * Must provide comprehensive explanation of causes and effects
+       * Example: "இந்த காரணங்கள் மக்கள் எழுச்சிக்கு வழிவகுத்தன. மார்ச் புரட்சியில் சார் நிக் கல்லா விலகினார், மற்றும் நவம்பர் புரட்சியில் கம்யூயூனிஸ்ட் அரசு உருவானது."
+    4. Conclusion (MANDATORY - 2-3 lines) - Strong conclusion summarizing all points - ABSOLUTELY MANDATORY
+       * Must summarize all key points
+       * Must provide strong conclusion
+       * Example: "இந்த புரட்சிகள், ரஷ்யாவின் அரசியல் அமைப்பில் பெரிய மாற்றங்களை ஏற்படுத்தியது, மேலும் உலகளாவிய கம்யூனிச இயக்கத்திற்கு அப்பால் வழியனுப்பியது."
   ✅ Comprehensive answer (12-15+ lines MINIMUM - NO EXCEPTIONS)
   ❌❌❌ NEVER skip Background/Context section - answer is INVALID and will be REJECTED without it
   ❌❌❌ NEVER skip Key Points section - answer is INVALID and will be REJECTED without it
@@ -257,6 +293,7 @@ TOTAL: 12-15+ lines MINIMUM
   ❌❌❌ NEVER write only Explanation + Conclusion - this is INVALID and will be REJECTED
   ✅ Cover: historical/geographical context, multiple key points with details, comprehensive explanation, strong conclusion
   ✅ Format: Use clear section headings (Background/Context:, Key Points:, Explanation:, Conclusion:)
+  ✅ Key Points MUST be numbered (1. ... 2. ... 3. ... 4. ...) - NOT bullet points, NOT unnumbered list
 
 ━━━━━━━━━━━━━━━━━━━━━━
 📖 ENGLISH - STRICT RULES
@@ -542,9 +579,19 @@ If any rule is violated, REWRITE the answer silently.
    - Output ONLY the JSON object
 
 3. QUESTION TYPES:
-   - MCQ: Must have "options" array with exactly 4 options and "correct_answer" field
-   - Short Answer (1-2 marks): Type "short", very brief answer
-   - Descriptive (1-10 marks): Type "descriptive", answer length varies by marks (1 mark = 1-2 lines, 3 marks = 4-5 lines, etc.)
+   - MCQ: Must have "options" array with exactly 4 options and "correct_answer" field (REQUIRED)
+   - Short Answer (1-2 marks): Type "short", very brief answer with "correct_answer" field (REQUIRED)
+   - Descriptive (1-10 marks): Type "descriptive", answer length varies by marks (1 mark = 1-2 lines, 3 marks = 4-5 lines, etc.) with "correct_answer" field (REQUIRED)
+
+[CRITICAL][CRITICAL][CRITICAL] ANSWER REQUIREMENT - ABSOLUTELY MANDATORY [CRITICAL][CRITICAL][CRITICAL]
+- EVERY question MUST have a "correct_answer" field - NO EXCEPTIONS
+- The answer MUST be complete, accurate, and appropriate for the marks value
+- NEVER omit the answer field - this will cause the entire output to be rejected
+- NEVER use placeholder text like "N/A" or "Answer not available"
+- NEVER leave the answer field empty
+- If you cannot provide a proper answer, DO NOT include that question in the output
+- Questions without answers will cause regeneration of the entire set
+- This is the HIGHEST PRIORITY requirement - answers are MANDATORY for every question
 
 ━━━━━━━━━━━━━━━━━━━━━━
 📝 QUESTION FRAMING RULES (CRITICAL FOR QUALITY)
@@ -873,6 +920,18 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
         marks = q.get("marks", 0)
         answer = q.get("correct_answer", "") or q.get("answer", "")
         
+        # CRITICAL: Check for missing or invalid answers - DO NOT SKIP, mark for regeneration
+        if not answer or answer == "N/A" or answer == "N/A - Answer not generated by AI" or (isinstance(answer, dict) and len(answer) == 0):
+            print(f"❌ ERROR: Question {idx+1} (marks={marks}): Missing or invalid answer!")
+            print(f"   Question: {q.get('question', 'N/A')[:100]}...")
+            print(f"   Answer value: {answer}")
+            # Mark as invalid to trigger regeneration - DO NOT skip, keep question but mark it
+            has_invalid_10mark_answer = True
+            # Add to validated list but mark as invalid so regeneration is triggered
+            q["_invalid_answer"] = True
+            validated_questions.append(q)  # Keep the question but mark it as invalid
+            continue  # Skip validation for this question but keep it in the list
+        
         # Handle structured answer format (dict) vs string format
         if isinstance(answer, dict):
             # Check if it's English/Literature style (introduction, explanation, analysis, conclusion)
@@ -1017,16 +1076,37 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
                     has_key_points = answer.get("key_points")
                     has_explanation = answer.get("explanation")
                     has_conclusion = answer.get("conclusion")
+                    
+                    # Check if Key Points are numbered (if string format)
+                    key_points_numbered = False
+                    if has_key_points:
+                        if isinstance(has_key_points, list):
+                            key_points_numbered = True  # Array format is acceptable
+                        elif isinstance(has_key_points, str):
+                            # Check if string contains numbered list (1. 2. 3. 4.)
+                            key_points_numbered = bool(re.search(r'\b[1-4]\.\s', has_key_points))
                 else:
                     has_background = any(word in answer_lower for word in ["background", "context", "பின்னணி", "पृष्ठभूमि", "background:", "context:"])
                     has_key_points = any(word in answer_lower for word in ["key points", "key point", "முக்கிய புள்ளிகள்", "मुख्य बिंदु", "key points:", "key point:"])
                     has_explanation = any(word in answer_lower for word in ["explanation", "explain", "விளக்கம்", "व्याख्या", "explanation:"])
                     has_conclusion = any(word in answer_lower for word in ["conclusion", "முடிவு", "निष्कर्ष", "conclusion:"])
+                    
+                    # Check if Key Points are numbered in string format
+                    key_points_numbered = False
+                    if has_key_points:
+                        # Extract Key Points section and check for numbering
+                        kp_match = re.search(r'(?:key points|key points:)\s*([^\n]+(?:\n(?!explanation|conclusion|background|context)[^\n]+)*)', answer_lower)
+                        if kp_match:
+                            kp_text = kp_match.group(1)
+                            key_points_numbered = bool(re.search(r'\b[1-4]\.\s', kp_text))
                 
                 if not has_background:
                     missing_parts.append("Background/Context")
                 if not has_key_points:
                     missing_parts.append("Key Points")
+                elif not key_points_numbered and isinstance(has_key_points, str):
+                    # Key Points exist but not numbered
+                    issues.append("Key Points must be formatted as numbered list (1. 2. 3. 4.) - NOT bullet points or unnumbered")
                 if not has_explanation:
                     missing_parts.append("Explanation")
                 if not has_conclusion:
@@ -1035,7 +1115,7 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
                 if missing_parts:
                     is_valid = False
                     has_invalid_10mark_answer = True
-                    issues.append(f"10-mark Social Science answer missing mandatory parts: {', '.join(missing_parts)}. Must include: Background/Context, Key Points (3-4 points), Explanation, Conclusion (total 12-15+ lines).")
+                    issues.append(f"10-mark Social Science answer missing mandatory parts: {', '.join(missing_parts)}. Must include: Background/Context, Key Points (3-4 numbered points: 1. 2. 3. 4.), Explanation, Conclusion (total 12-15+ lines).")
             elif is_english_format:
                 # English: Introduction, Explanation, Analysis, Conclusion
                 if isinstance(answer, dict):
@@ -1460,9 +1540,15 @@ def _validate_exam_quality(questions: List[Dict[str, Any]], difficulty: str) -> 
         print(f"[CRITICAL] CRITICAL: HARD MODE VIOLATIONS DETECTED - Regenerating questions to ensure complexity...")
         return validated_questions, True  # Return True to trigger regeneration
     
-    # CRITICAL: If 10-mark answers are invalid (missing parts or too short) for ANY subject, trigger regeneration
+    # CRITICAL: If ANY answers are invalid (missing or too short) for ANY subject, trigger regeneration
     if has_invalid_10mark_answer:
-        print(f"[CRITICAL] CRITICAL: 10-MARK ANSWERS ARE INVALID - Missing mandatory sections or too short (<12 lines). Regenerating to ensure all required sections and 12-15+ lines...")
+        print(f"[CRITICAL] CRITICAL: ANSWERS ARE INVALID - Missing answers or mandatory sections or too short. Regenerating to ensure all questions have complete answers...")
+        return validated_questions, True  # Return True to trigger regeneration
+    
+    # Also check if any questions have _invalid_answer flag
+    has_any_invalid = any(q.get("_invalid_answer", False) for q in validated_questions)
+    if has_any_invalid:
+        print(f"[CRITICAL] CRITICAL: QUESTIONS WITH MISSING ANSWERS DETECTED - Regenerating to ensure all questions have answers...")
         return validated_questions, True  # Return True to trigger regeneration
     
     return validated_questions, has_repetition
@@ -1477,7 +1563,8 @@ def generate_qna(
     remaining_questions: Optional[int] = None,
     distribution_list: Optional[List[Dict[str, Any]]] = None,
     subject: Optional[str] = None,  # Explicit subject selection: mathematics, english, science, social_science, general
-    num_parts: Optional[int] = None  # Number of parts selected (for dynamic content limit)
+    num_parts: Optional[int] = None,  # Number of parts selected (for dynamic content limit)
+    previous_questions: Optional[List[str]] = None  # Previously generated questions to avoid duplicates
 ) -> Dict[str, Any]:
     """
     Generate Q/A from text using OpenAI
@@ -1515,8 +1602,11 @@ def generate_qna(
     if not isinstance(distribution_list, list):
         raise ValueError(f"distribution_list must be a list, got {type(distribution_list)}")
     
+    # Remove any items with count=0 before validation
+    distribution_list = [item for item in distribution_list if item.get("count", 0) > 0]
+    
     if len(distribution_list) == 0:
-        raise ValueError("distribution_list cannot be empty")
+        raise ValueError("distribution_list cannot be empty after removing zero-count items")
     
     # Validate each item in distribution list has required keys
     for idx, item in enumerate(distribution_list):
@@ -1550,6 +1640,8 @@ def generate_qna(
         scale_factor = remaining_questions / total_requested
         for item in distribution_list:
             item["count"] = max(1, int(item["count"] * scale_factor))
+        # Remove items with count=0 (shouldn't happen with max(1, ...) but just in case)
+        distribution_list = [item for item in distribution_list if item.get("count", 0) > 0]
         # Recalculate to ensure exact match
         total_after_scale = sum(item.get("count", 0) for item in distribution_list)
         if total_after_scale < remaining_questions:
@@ -2229,6 +2321,34 @@ FOR 10-MARK QUESTIONS (MATHEMATICS - STRICT EXAM FORMAT):
    - MUST have clear final answer (NO \\boxed, use "Final Answer:" heading)
 """ if detected_subject == "mathematics" else ""
     
+    # Build previous questions section if provided
+    previous_questions_section = ""
+    if previous_questions and len(previous_questions) > 0:
+        previous_questions_list = "\n".join([f"{idx + 1}. {q}" for idx, q in enumerate(previous_questions[:20])])  # Limit to 20
+        previous_questions_section = f"""
+
+━━━━━━━━━━━━━━━━━━━━━━
+[CRITICAL] PREVIOUSLY GENERATED QUESTIONS - AVOID DUPLICATES
+━━━━━━━━━━━━━━━━━━━━━━
+
+The following questions have ALREADY been generated from this content. You MUST NOT generate questions that are semantically or structurally similar to these.
+
+PREVIOUSLY GENERATED QUESTIONS:
+{previous_questions_list}
+
+CRITICAL RULES FOR AVOIDING DUPLICATES:
+1. ❌ NEVER generate questions that test the same concept/topic as any previous question
+2. ❌ NEVER generate questions with similar wording, structure, or phrasing
+3. ❌ NEVER rephrase a previous question - each question must be COMPLETELY DIFFERENT
+4. ✅ Generate questions on DIFFERENT topics/concepts from the content
+5. ✅ Use DIFFERENT question formats, structures, and phrasings
+6. ✅ If a question overlaps semantically or structurally with any previous question, SKIP it and generate a different one
+
+If you cannot generate enough unique questions without overlapping with previous ones, generate fewer questions rather than creating duplicates.
+
+━━━━━━━━━━━━━━━━━━━━━━
+"""
+    
     user_prompt = f"""Generate exam questions from the following study material:
 
 [STUDY_MATERIAL]
@@ -2242,6 +2362,7 @@ Question Distribution (Strict):
 {distribution_string}
 
 {subject_instruction}
+{previous_questions_section}
 
 ━━━━━━━━━━━━━━━━━━━━━━
 [CRITICAL] CRITICAL: QUESTION COMPLEXITY REQUIREMENT [CRITICAL]
@@ -2804,11 +2925,18 @@ ANSWER FORMAT RULES (MANDATORY - SUBJECT-SPECIFIC):
   FOR SOCIAL SCIENCE (5+ marks):
   - "background" or "context": string - REQUIRED for 5+ marks (2-3 lines for 10 marks)
   - "key_points": string or array of strings - REQUIRED for 5+ marks (3-4 key points, 4-5 lines total for 10 marks)
+    * If array: ["Point 1 text", "Point 2 text", "Point 3 text", "Point 4 text"] - each point 1-2 lines
+    * If string: Must be formatted as numbered list "1. Point 1\n2. Point 2\n3. Point 3\n4. Point 4"
   - "explanation": string - REQUIRED for 5+ marks (4-6 lines for 10 marks)
   - "conclusion": string - REQUIRED for 5+ marks (2-3 lines for 10 marks)
-  - For 10 marks: ALL fields MUST be present and substantial, totaling 12-15+ lines
-  - OR can be a single string with embedded headings: "Background/Context: ... Key Points: ... Explanation: ... Conclusion: ..."
-  - If using string format, ensure it has ALL sections and totals 12-15+ lines
+  - For 10 marks: ALL fields MUST be present and substantial, totaling 12-15+ lines MINIMUM
+  - EXACT FORMAT REQUIRED:
+    * Background/Context: 2-3 lines of historical/geographical context
+    * Key Points: 3-4 numbered points (1. ... 2. ... 3. ... 4. ...), each 1-2 lines, total 4-5 lines
+    * Explanation: 4-6 lines comprehensive explanation
+    * Conclusion: 2-3 lines strong conclusion
+  - OR can be a single string with embedded headings: "Background/Context: ... Key Points:\n1. ...\n2. ...\n3. ...\n4. ...\nExplanation: ... Conclusion: ..."
+  - If using string format, ensure it has ALL sections with numbered Key Points and totals 12-15+ lines
 
 CRITICAL: For non-mathematics subjects, DO NOT use math-style fields (given, formula, steps). Use subject-appropriate fields as specified above.
 - For 10-mark questions: MUST include ALL required fields for the subject
@@ -3173,15 +3301,22 @@ CRITICAL: Quality is MORE IMPORTANT than quantity. Generate only as many high-qu
                 # If neither exists, this is an error - log it
                 print(f"❌ ERROR: Question {idx+1} (marks={q.get('marks', 'unknown')}) has NO answer field!")
                 print(f"   Question text: {q.get('question', 'N/A')[:100]}...")
-                # Set a default but this should not happen
+                print(f"   Full question object: {q}")
+                # This is a critical error - the AI failed to generate an answer
+                # We should NOT accept this question, but for now set a placeholder
+                # The validation will catch this and potentially trigger regeneration
                 q["correct_answer"] = "N/A - Answer not generated by AI"
+                print(f"⚠️  WARNING: Question {idx+1} will be marked as invalid due to missing answer!")
             
             # Validate that answer is not empty
             answer = q.get("correct_answer", "")
-            if not answer or answer == "N/A" or (isinstance(answer, dict) and len(answer) == 0):
+            if not answer or answer == "N/A" or answer == "N/A - Answer not generated by AI" or (isinstance(answer, dict) and len(answer) == 0):
                 print(f"⚠️  WARNING: Question {idx+1} (marks={q.get('marks', 'unknown')}) has empty/invalid answer!")
                 print(f"   Answer value: {answer}")
-                print(f"   This question should be regenerated!")
+                print(f"   Question: {q.get('question', 'N/A')[:150]}...")
+                print(f"   This question should be regenerated or excluded!")
+                # Mark this question as invalid for validation
+                q["_invalid_answer"] = True
             
             # Ensure difficulty field exists (for difficulty-based formatting)
             if "difficulty" not in q:
@@ -3232,6 +3367,21 @@ CRITICAL: Quality is MORE IMPORTANT than quantity. Generate only as many high-qu
         count_after_dedup = len(questions)
         if count_after_dedup < count_after_validation:
             print(f"Removed {count_after_validation - count_after_dedup} duplicate question(s). Remaining: {count_after_dedup}")
+        
+        # CRITICAL: Filter out questions with missing or invalid answers
+        questions_before_answer_filter = len(questions)
+        questions = [
+            q for q in questions 
+            if q.get("correct_answer") and 
+               q.get("correct_answer") != "N/A" and 
+               q.get("correct_answer") != "N/A - Answer not generated by AI" and
+               not (isinstance(q.get("correct_answer"), dict) and len(q.get("correct_answer", {})) == 0) and
+               not q.get("_invalid_answer", False)
+        ]
+        count_after_answer_filter = len(questions)
+        if count_after_answer_filter < questions_before_answer_filter:
+            print(f"❌ REMOVED {questions_before_answer_filter - count_after_answer_filter} question(s) with missing/invalid answers")
+            print(f"   Remaining: {count_after_answer_filter} questions with valid answers")
         
         # Log format repetition but don't retry - accept the result
         if has_format_repetition:
@@ -3436,25 +3586,30 @@ def _build_distribution_list(marks_pattern: str, qna_type: str, num_questions: i
                 distribution_list.append({"marks": 10, "count": count_10, "type": "descriptive"})
         else:  # mixed type
             # Mix: MCQs (1-2), Short (1-2), Descriptive (3-10)
-            mcq_count = num_questions // 3
-            short_count = num_questions // 3
-            desc_count = num_questions - mcq_count - short_count
-            
-            if mcq_count > 0:
-                distribution_list.append({"marks": 1, "count": mcq_count, "type": "mcq"})
-            if short_count > 0:
-                distribution_list.append({"marks": 2, "count": short_count, "type": "short"})
-            if desc_count > 0:
-                # Distribute descriptive across 3, 5, 10
-                desc_3 = desc_count // 3
-                desc_5 = desc_count // 3
-                desc_10 = desc_count - desc_3 - desc_5
-                if desc_3 > 0:
-                    distribution_list.append({"marks": 3, "count": desc_3, "type": "descriptive"})
-                if desc_5 > 0:
-                    distribution_list.append({"marks": 5, "count": desc_5, "type": "descriptive"})
-                if desc_10 > 0:
-                    distribution_list.append({"marks": 10, "count": desc_10, "type": "descriptive"})
+            # For very small num_questions, ensure at least one question type gets all questions
+            if num_questions <= 2:
+                # For 1-2 questions, just use MCQ
+                distribution_list.append({"marks": 1, "count": num_questions, "type": "mcq"})
+            else:
+                mcq_count = num_questions // 3
+                short_count = num_questions // 3
+                desc_count = num_questions - mcq_count - short_count
+                
+                if mcq_count > 0:
+                    distribution_list.append({"marks": 1, "count": mcq_count, "type": "mcq"})
+                if short_count > 0:
+                    distribution_list.append({"marks": 2, "count": short_count, "type": "short"})
+                if desc_count > 0:
+                    # Distribute descriptive across 3, 5, 10
+                    desc_3 = desc_count // 3
+                    desc_5 = desc_count // 3
+                    desc_10 = desc_count - desc_3 - desc_5
+                    if desc_3 > 0:
+                        distribution_list.append({"marks": 3, "count": desc_3, "type": "descriptive"})
+                    if desc_5 > 0:
+                        distribution_list.append({"marks": 5, "count": desc_5, "type": "descriptive"})
+                    if desc_10 > 0:
+                        distribution_list.append({"marks": 10, "count": desc_10, "type": "descriptive"})
     else:
         # Single mark pattern
         try:

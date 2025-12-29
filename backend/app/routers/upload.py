@@ -6,15 +6,14 @@ from app.routers.dependencies import get_current_user, get_premium_user
 from app.models import User, Upload, FileType, UsageLog, PdfSplitPart
 from app.schemas import UploadResponse, PdfSplitPartResponse, PdfSplitResponse, PdfSplitPartRenameRequest
 from app.storage_service import save_file
-from app.content_validation import validate_content, check_image_quality
+# Image validation removed - only PDF uploads are supported
 from app.pdf_split_service import split_pdf_into_parts, get_part_preview
 from app.config import settings
 from app.error_logger import log_api_error
 from datetime import datetime
 from PyPDF2 import PdfReader
 import io
-from PIL import Image
-import tempfile
+# Image processing imports removed - only PDF uploads are supported
 import os
 from typing import Tuple, List, Optional
 
@@ -31,61 +30,7 @@ def count_pdf_pages(pdf_content: bytes) -> int:
             detail=f"Invalid PDF file: {str(e)}"
         )
 
-def validate_image(file_content: bytes, user: User) -> Tuple[bool, str]:
-    """
-    Comprehensive image validation:
-    - Blocks: humans, nudity, violence, weapons, PII, IDs, certificates
-    - Allows: textbook pages, study materials, diagrams, charts, clean text
-    """
-    # Save to temp file for detection
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
-        tmp.write(file_content)
-        tmp_path = tmp.name
-    
-    try:
-        print(f"🔍 Starting image validation for file: {tmp_path}")
-        print(f"📏 File size: {len(file_content)} bytes")
-        
-        # Comprehensive content validation (blocks inappropriate content)
-        try:
-            is_valid, error_msg = validate_content(tmp_path)
-            print(f"📋 Content validation result: valid={is_valid}, error={error_msg}")
-            
-            if not is_valid:
-                # Use the specific error message from validation, or default
-                error_message = error_msg or "Image contains blocked content. This app supports only educational text images."
-                print(f"❌ Content validation failed: {error_message}")
-                print(f"❌ Full error details: {error_msg}")
-                return False, error_message
-            else:
-                print(f"✅ Content validation passed")
-        except Exception as e:
-            print(f"⚠️ Content validation exception: {e}")
-            import traceback
-            print(f"⚠️ Traceback: {traceback.format_exc()}")
-            # On validation error, allow but log (better to allow than block legitimate content)
-            print(f"⚠️ Allowing image despite validation error (non-blocking)")
-            # Don't block on validation errors - allow the image
-            # return False, f"Image validation failed: {str(e)}. This app supports only educational text images."
-        
-        # Check quality
-        try:
-            is_readable, quality_error = check_image_quality(tmp_path)
-            print(f"📊 Quality check result: readable={is_readable}, error={quality_error}")
-            
-            if not is_readable:
-                error_message = quality_error or "Image not readable. Retake closer and clearer photo."
-                print(f"❌ Quality check failed: {error_message}")
-                return False, error_message
-        except Exception as e:
-            print(f"⚠️ Quality check exception: {e}")
-            return False, f"Image quality check failed: {str(e)}. Please retake the photo."
-        
-        print("✅ Image validation passed")
-        return True, ""
-    finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
+# Image validation function removed - only PDF uploads are supported
 
 @router.post("", response_model=UploadResponse)
 async def upload_file(
@@ -95,45 +40,36 @@ async def upload_file(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Upload PDF or Image file with subject selection"""
+    """Upload PDF file with subject selection (Image uploads are not supported)"""
     
     try:
         # Read file content
         file_content = await file.read()
         file_size = len(file_content)
     
-        # Determine file type
+        # Determine file type - Only PDFs are supported
         content_type = file.content_type or ""
         file_ext = os.path.splitext(file.filename)[1].lower()
         
         is_pdf = content_type == "application/pdf" or file_ext == ".pdf"
-        is_image = content_type.startswith("image/") or file_ext in [".jpg", ".jpeg", ".png", ".gif", ".bmp"]
         
-        if not (is_pdf or is_image):
+        if not is_pdf:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Only PDF and image files are allowed"
+                detail="Only PDF files are allowed"
             )
         
-        file_type = FileType.PDF if is_pdf else FileType.IMAGE
+        file_type = FileType.PDF
     
         # Validate size
         # For PDFs, allow up to MAX_BOOK_PDF_SIZE_MB for book splitting feature
         # Regular PDFs still limited to MAX_PDF_SIZE_MB, but larger ones can be split
-        if is_pdf:
-            max_size = settings.MAX_BOOK_PDF_SIZE_MB * 1024 * 1024
-            if file_size > max_size:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"PDF size exceeds {settings.MAX_BOOK_PDF_SIZE_MB}MB limit. Maximum size for book splitting is {settings.MAX_BOOK_PDF_SIZE_MB}MB."
-                )
-        else:
-            max_size = settings.MAX_IMAGE_SIZE_MB * 1024 * 1024
-            if file_size > max_size:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"File size exceeds {settings.MAX_IMAGE_SIZE_MB}MB limit"
-                )
+        max_size = settings.MAX_BOOK_PDF_SIZE_MB * 1024 * 1024
+        if file_size > max_size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"PDF size exceeds {settings.MAX_BOOK_PDF_SIZE_MB}MB limit. Maximum size for book splitting is {settings.MAX_BOOK_PDF_SIZE_MB}MB."
+            )
         
         # Check premium status for limits
         is_premium = (
@@ -142,84 +78,48 @@ async def upload_file(
             current_user.premium_valid_until > datetime.utcnow()
         )
         
-        # Initialize pages variable
-        pages = None
-        
         # PDF validation
-        if is_pdf:
-            pages = count_pdf_pages(file_content)
-            max_pages = settings.MAX_PDF_PAGES if is_premium else settings.MAX_FREE_PDF_PAGES
-            
-            # Determine if PDF is large enough for splitting (>6MB)
-            is_large_pdf_for_splitting = file_size > (6 * 1024 * 1024)
-            
-            # Logic:
-            # - PDFs ≤6MB: still subject to 40-page limit (premium) or 10-page limit (free)
-            # - PDFs >6MB: can have up to 300 pages (will be split into parts)
-            # - PDFs >300 pages: still blocked (too large even for splitting)
-            if is_large_pdf_for_splitting:
-                # Large PDFs (>6MB) can have up to 300 pages for splitting
-                if pages > 300:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="PDF exceeds 300 pages limit. Please split your book into smaller sections (max 300 pages) before uploading."
-                    )
-            else:
-                # Regular PDFs (≤6MB) are subject to normal page limits
-                if pages > max_pages:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"PDF exceeds {max_pages} pages limit. Please upload chapter-wise for large books."
-                    )
-            
-            # Check upload limits
-            # Note: We now track by questions (700 total, 50 daily) instead of PDF/image quotas
-            # Premium users can upload unlimited files, but are limited by question generation
-            # Free users: 1 PDF per day limit
-            if not is_premium:
-                # Free users: 1 file per day check
-                today_uploads = db.query(Upload).filter(
-                    Upload.user_id == current_user.id,
-                    Upload.file_type == FileType.PDF,
-                    Upload.created_at >= datetime.utcnow().date()
-                ).count()
-                
-                if today_uploads >= 1:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Free users can upload 1 PDF per day"
-                    )
+        pages = count_pdf_pages(file_content)
+        max_pages = settings.MAX_PDF_PAGES if is_premium else settings.MAX_FREE_PDF_PAGES
         
-        # Image validation
-        if is_image:
-            try:
-                # Comprehensive content validation
-                is_valid, error_msg = validate_image(file_content, current_user)
-                if not is_valid:
-                    print(f"❌ Image validation failed: {error_msg}")
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=error_msg or "Image contains blocked content. This app supports only educational text images."
-                    )
-            except HTTPException:
-                # Re-raise HTTP exceptions (validation errors)
-                raise
-            except Exception as e:
-                # Catch any other errors in validation
-                print(f"⚠️ Image validation error: {e}")
+        # Determine if PDF is large enough for splitting (>6MB)
+        is_large_pdf_for_splitting = file_size > (6 * 1024 * 1024)
+        
+        # Logic:
+        # - PDFs ≤6MB: still subject to 40-page limit (premium) or 10-page limit (free)
+        # - PDFs >6MB: can have up to 300 pages (will be split into parts)
+        # - PDFs >300 pages: still blocked (too large even for splitting)
+        if is_large_pdf_for_splitting:
+            # Large PDFs (>6MB) can have up to 300 pages for splitting
+            if pages > 300:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Image validation failed: {str(e)}. This app supports only educational text images."
+                    detail="PDF exceeds 300 pages limit. Please split your book into smaller sections (max 300 pages) before uploading."
                 )
+        else:
+            # Regular PDFs (≤6MB) are subject to normal page limits
+            if pages > max_pages:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"PDF exceeds {max_pages} pages limit. Please upload chapter-wise for large books."
+                )
+        
+        # Check upload limits
+        # Note: We now track by questions (700 total, 50 daily) instead of PDF/image quotas
+        # Premium users can upload unlimited files, but are limited by question generation
+        # Free users: 1 PDF per day limit
+        if not is_premium:
+            # Free users: 1 file per day check
+            today_uploads = db.query(Upload).filter(
+                Upload.user_id == current_user.id,
+                Upload.file_type == FileType.PDF,
+                Upload.created_at >= datetime.utcnow().date()
+            ).count()
             
-            # Check upload limits
-            # Note: We now track by questions (700 total, 50 daily) instead of PDF/image quotas
-            # Premium users can upload unlimited files, but are limited by question generation
-            # Free users: Images require premium access
-            if not is_premium:
+            if today_uploads >= 1:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Image uploads require premium access"
+                    detail="Free users can upload 1 PDF per day"
                 )
         
         # Save file

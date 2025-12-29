@@ -5,6 +5,7 @@ import { InlineMath, BlockMath } from 'react-katex'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import { getRotatingMessages } from '../utils/rotatingLoader'
+import { isMobileDevice } from '../utils/deviceDetection'
 import 'katex/dist/katex.min.css'
 
 const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGenerationComplete }) => {
@@ -26,12 +27,13 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
   // - 2 marks: 6 questions per part
   // - 3 marks: 4 questions per part
   // - 5 marks: 3 questions per part
-  // - 10 marks: 2 questions per part
-  // - mixed: 16 questions per part (1 mark: 6 + 2 marks: 4 + 3 marks: 3 + 5 marks: 2 + 10 marks: 1)
-  const calculateDefaultQuestions = (partCount, marksPattern) => {
+  // - 10 marks: 2 questions per part (desktop only, excluded on mobile)
+  // - mixed: 16 questions per part (desktop) or 15 questions per part (mobile - no 10 marks)
+  const calculateDefaultQuestions = (partCount, marksPattern, mobileMode = false) => {
     if (!partCount || partCount === 0) return isPremium ? 10 : 3
     
-    let questionsPerPart = 16 // Default for mixed
+    // For mixed pattern: 15 questions per part on mobile (no 10 marks), 16 on desktop
+    let questionsPerPart = mobileMode ? 15 : 16 // Default for mixed
     
     if (marksPattern && marksPattern !== 'mixed') {
       const marks = parseInt(marksPattern, 10)
@@ -49,10 +51,11 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
           questionsPerPart = 3
           break
         case 10:
-          questionsPerPart = 2
+          // 10 marks excluded on mobile
+          questionsPerPart = mobileMode ? 0 : 2
           break
         default:
-          questionsPerPart = 16
+          questionsPerPart = mobileMode ? 15 : 16
       }
     }
     
@@ -65,7 +68,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
     difficulty: 'medium',
     qna_type: 'mixed',
     num_questions: selectedPartIds && selectedPartIds.length > 0 
-      ? calculateDefaultQuestions(selectedPartIds.length, 'mixed')
+      ? calculateDefaultQuestions(selectedPartIds.length, 'mixed', false) // Will be updated when isMobile is set
       : (isPremium ? 10 : 3),
     output_format: isPremium ? 'questions_answers' : 'questions_only',  // Free users get questions_only by default
     include_answers: isPremium,  // Free users can't include answers
@@ -75,6 +78,65 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
   const [isNumQuestionsManuallySet, setIsNumQuestionsManuallySet] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState(null)
+  const [generationComplete, setGenerationComplete] = useState(false) // Track if generation is complete
+  const [isMobile, setIsMobile] = useState(false) // Track mobile device
+  
+  // Detect mobile device and update distribution accordingly
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = isMobileDevice()
+      setIsMobile(mobile)
+      // Update num_questions if parts are selected and mobile status changed
+      if (selectedPartIds && selectedPartIds.length > 0 && !isNumQuestionsManuallySet) {
+        const calculated = calculateDefaultQuestions(selectedPartIds.length, settings.marks, mobile)
+        setSettings(prev => ({
+          ...prev,
+          num_questions: calculated
+        }))
+      }
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [selectedPartIds, settings.marks, isNumQuestionsManuallySet])
+  
+  // Reset generation complete state when upload/part selection changes
+  // Convert selectedPartIds to string for reliable change detection
+  const selectedPartIdsStr = selectedUpload?.selectedPartIds ? JSON.stringify(selectedUpload.selectedPartIds.sort()) : ''
+  
+  // Debug: Track result state changes
+  useEffect(() => {
+    console.log('📊 Result state changed:', {
+      hasResult: !!result,
+      resultId: result?.id,
+      questionCount: result?.qna_json?.questions?.length || 0,
+      isMobile: isMobile
+    })
+  }, [result, isMobile])
+  
+  useEffect(() => {
+    // Reset when selectedUpload changes (including when parts are selected)
+    console.log('🔄 Resetting result due to upload/part change:', {
+      selectedUploadId: selectedUpload?.id,
+      selectedPartIdsStr,
+      isMobile
+    })
+    setGenerationComplete(false)
+    setResult(null)
+    setEditedQuestions([])
+  }, [selectedUpload?.id, selectedPartIdsStr]) // Use stringified sorted array for reliable change detection
+  
+  // Also reset when settings change (parts/upload selection) - this handles cases where selectedUpload doesn't change
+  useEffect(() => {
+    // Reset if we have a valid selection (upload or parts) - this ensures reset even if selectedUpload reference doesn't change
+    const hasUpload = settings.upload_id && settings.upload_id !== ''
+    const hasParts = settings.part_ids && Array.isArray(settings.part_ids) && settings.part_ids.length > 0
+    
+    if (hasUpload || hasParts) {
+      setGenerationComplete(false)
+    }
+  }, [settings.upload_id, JSON.stringify(settings.part_ids)]) // Use JSON.stringify to detect array changes
   const [showDownloadMenu, setShowDownloadMenu] = useState(false)
   const [editedQuestions, setEditedQuestions] = useState([])
   const [downloading, setDownloading] = useState(false)
@@ -198,6 +260,9 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       if (marks === 1 || marks === 2) {
         // 1-2 marks: InlineMath
         return renderLatexInText(answer)
+      } else if (marks === 3) {
+        // 3 marks: Brief explanation with example - render as formatted text
+        return <div className="whitespace-pre-wrap text-gray-800">{answer}</div>
       } else if (marks === 5) {
         // 5 marks: BlockMath
         const latex = extractLatex(answer)
@@ -224,29 +289,29 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       // Check if it's English/Literature style answer (Introduction, Explanation, Analysis, Conclusion)
       if (answer.introduction || answer.explanation || answer.analysis || answer.conclusion) {
         return (
-          <div className="space-y-4">
+          <div className="space-y-2 md:space-y-4">
             {answer.introduction && (
-              <div className="border-l-4 border-blue-500 pl-3 py-2 bg-blue-50/30">
-                <span className="font-semibold text-blue-700 text-base">Introduction:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.introduction}</div>
+              <div className="border-l-4 border-blue-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-blue-50/30">
+                <span className="font-semibold text-blue-700 text-xs md:text-base block mb-1">Introduction:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{answer.introduction}</div>
               </div>
             )}
             {answer.explanation && (
-              <div className="border-l-4 border-purple-500 pl-3 py-2 bg-purple-50/30">
-                <span className="font-semibold text-purple-700 text-base">Explanation:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.explanation}</div>
+              <div className="border-l-4 border-purple-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-purple-50/30">
+                <span className="font-semibold text-purple-700 text-xs md:text-base block mb-1">Explanation:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{answer.explanation}</div>
               </div>
             )}
             {answer.analysis && (
-              <div className="border-l-4 border-orange-500 pl-3 py-2 bg-orange-50/30">
-                <span className="font-semibold text-orange-700 text-base">Analysis:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.analysis}</div>
+              <div className="border-l-4 border-orange-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-orange-50/30">
+                <span className="font-semibold text-orange-700 text-xs md:text-base block mb-1">Analysis:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{answer.analysis}</div>
               </div>
             )}
             {answer.conclusion && (
-              <div className="border-l-4 border-green-500 pl-3 py-2 bg-green-50/30">
-                <span className="font-semibold text-green-700 text-base">Conclusion:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.conclusion}</div>
+              <div className="border-l-4 border-green-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-green-50/30">
+                <span className="font-semibold text-green-700 text-xs md:text-base block mb-1">Conclusion:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{answer.conclusion}</div>
               </div>
             )}
           </div>
@@ -256,29 +321,29 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       // Check if it's Science style answer (Definition, Explanation, Example, Conclusion)
       if (answer.definition && (answer.explanation || answer.example || answer.conclusion)) {
         return (
-          <div className="space-y-4">
+          <div className="space-y-2 md:space-y-4">
             {answer.definition && (
-              <div className="border-l-4 border-blue-500 pl-3 py-2 bg-blue-50/30">
-                <span className="font-semibold text-blue-700 text-base">Definition:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.definition}</div>
+              <div className="border-l-4 border-blue-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-blue-50/30">
+                <span className="font-semibold text-blue-700 text-xs md:text-base block mb-1">Definition:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{answer.definition}</div>
               </div>
             )}
             {answer.explanation && (
-              <div className="border-l-4 border-purple-500 pl-3 py-2 bg-purple-50/30">
-                <span className="font-semibold text-purple-700 text-base">Explanation:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.explanation}</div>
+              <div className="border-l-4 border-purple-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-purple-50/30">
+                <span className="font-semibold text-purple-700 text-xs md:text-base block mb-1">Explanation:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{answer.explanation}</div>
               </div>
             )}
             {answer.example && (
-              <div className="border-l-4 border-orange-500 pl-3 py-2 bg-orange-50/30">
-                <span className="font-semibold text-orange-700 text-base">Example:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.example}</div>
+              <div className="border-l-4 border-orange-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-orange-50/30">
+                <span className="font-semibold text-orange-700 text-xs md:text-base block mb-1">Example:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{answer.example}</div>
               </div>
             )}
             {answer.conclusion && (
-              <div className="border-l-4 border-green-500 pl-3 py-2 bg-green-50/30">
-                <span className="font-semibold text-green-700 text-base">Conclusion:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.conclusion}</div>
+              <div className="border-l-4 border-green-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-green-50/30">
+                <span className="font-semibold text-green-700 text-xs md:text-base block mb-1">Conclusion:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{answer.conclusion}</div>
               </div>
             )}
           </div>
@@ -286,41 +351,47 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       }
       
       // Check if it's Social Science style answer (Background, Key Points, Explanation, Conclusion)
-      if (answer.background || answer.context || answer.key_points) {
+      // Handle both formats: lowercase/underscore (background, context, key_points) and capitalized/spaced (Background/Context, Key Points)
+      const backgroundContext = answer.background || answer.context || answer["Background/Context"] || answer["Background"] || answer["Context"]
+      const keyPoints = answer.key_points || answer["Key Points"] || answer["key_points"] || answer["keyPoints"]
+      const explanation = answer.explanation || answer["Explanation"]
+      const conclusion = answer.conclusion || answer["Conclusion"]
+      
+      if (backgroundContext || keyPoints) {
         return (
-          <div className="space-y-4">
-            {(answer.background || answer.context) && (
-              <div className="border-l-4 border-blue-500 pl-3 py-2 bg-blue-50/30">
-                <span className="font-semibold text-blue-700 text-base">Background / Context:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.background || answer.context}</div>
+          <div className="space-y-2 md:space-y-4">
+            {backgroundContext && (
+              <div className="border-l-4 border-blue-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-blue-50/30">
+                <span className="font-semibold text-blue-700 text-xs md:text-base block mb-1">Background / Context:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{backgroundContext}</div>
               </div>
             )}
-            {answer.key_points && (
-              <div className="border-l-4 border-purple-500 pl-3 py-2 bg-purple-50/30">
-                <span className="font-semibold text-purple-700 text-base">Key Points:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">
-                  {Array.isArray(answer.key_points) ? (
-                    <ul className="list-disc list-inside space-y-1 ml-4">
-                      {answer.key_points.map((point, i) => (
-                        <li key={i}>{point}</li>
+            {keyPoints && (
+              <div className="border-l-4 border-purple-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-purple-50/30">
+                <span className="font-semibold text-purple-700 text-xs md:text-base block mb-1">Key Points:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm">
+                  {Array.isArray(keyPoints) ? (
+                    <ol className="list-decimal list-inside space-y-1 ml-2 md:ml-4">
+                      {keyPoints.map((point, i) => (
+                        <li key={i} className="break-words">{point}</li>
                       ))}
-                    </ul>
+                    </ol>
                   ) : (
-                    answer.key_points
+                    <div className="break-words whitespace-pre-line">{keyPoints}</div>
                   )}
                 </div>
               </div>
             )}
-            {answer.explanation && (
-              <div className="border-l-4 border-orange-500 pl-3 py-2 bg-orange-50/30">
-                <span className="font-semibold text-orange-700 text-base">Explanation:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.explanation}</div>
+            {explanation && (
+              <div className="border-l-4 border-orange-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-orange-50/30">
+                <span className="font-semibold text-orange-700 text-xs md:text-base block mb-1">Explanation:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{explanation}</div>
               </div>
             )}
-            {answer.conclusion && (
-              <div className="border-l-4 border-green-500 pl-3 py-2 bg-green-50/30">
-                <span className="font-semibold text-green-700 text-base">Conclusion:</span>
-                <div className="mt-1 text-gray-800 whitespace-pre-wrap">{answer.conclusion}</div>
+            {conclusion && (
+              <div className="border-l-4 border-green-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-green-50/30">
+                <span className="font-semibold text-green-700 text-xs md:text-base block mb-1">Conclusion:</span>
+                <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{conclusion}</div>
               </div>
             )}
           </div>
@@ -331,25 +402,25 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       if (marks === 5) {
         // 5 marks: BlockMath
         return (
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             {answer.given && (
-              <div>
+              <div className="text-xs md:text-sm">
                 <span className="font-semibold">Given: </span>
                 <InlineMath math={extractLatex(answer.given)} />
               </div>
             )}
             {answer.formula && (
-              <div>
+              <div className="text-xs md:text-sm">
                 <span className="font-semibold">Formula: </span>
                 <BlockMath math={extractLatex(answer.formula)} />
               </div>
             )}
             {answer.steps && Array.isArray(answer.steps) && (
               <div className="mt-2">
-                <span className="font-semibold">Steps:</span>
-                <ol className="list-decimal list-inside mt-1 space-y-2 ml-4">
+                <span className="font-semibold text-xs md:text-sm">Steps:</span>
+                <ol className="list-decimal list-inside mt-1 space-y-2 ml-2 md:ml-4">
                   {answer.steps.map((step, i) => (
-                    <li key={i} className="text-sm">
+                    <li key={i} className="text-xs md:text-sm">
                       <BlockMath math={extractLatex(step)} />
                     </li>
                   ))}
@@ -357,7 +428,7 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
               </div>
             )}
             {answer.final && (
-              <div className="mt-2">
+              <div className="mt-2 text-xs md:text-sm">
                 <span className="font-semibold">Final Answer: </span>
                 <BlockMath math={extractLatex(answer.final)} />
               </div>
@@ -369,34 +440,34 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
         if (answer.substitution !== undefined || answer.calculation !== undefined || answer.final_answer !== undefined) {
           // Board-style format: Given, Formula, Substitution, Calculation, Final Answer
           return (
-            <div className="space-y-3 mt-2">
+            <div className="space-y-2 md:space-y-3 mt-2">
               {answer.given && (
-                <div className="border-l-4 border-blue-500 pl-3 py-2 bg-blue-50/30">
-                  <span className="font-semibold text-blue-700 text-base">Given:</span>
-                  <div className="mt-1 text-gray-800 whitespace-pre-wrap font-mono text-sm">{answer.given}</div>
+                <div className="border-l-4 border-blue-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-blue-50/30">
+                  <span className="font-semibold text-blue-700 text-xs md:text-base block mb-1">Given:</span>
+                  <div className="mt-1 text-gray-800 whitespace-pre-wrap font-mono text-xs md:text-sm break-words">{answer.given}</div>
                 </div>
               )}
               {answer.formula && (
-                <div className="border-l-4 border-purple-500 pl-3 py-2 bg-purple-50/30">
-                  <span className="font-semibold text-purple-700 text-base">Formula:</span>
-                  <div className="mt-1 text-gray-800 whitespace-pre-wrap font-mono text-sm">{answer.formula}</div>
+                <div className="border-l-4 border-purple-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-purple-50/30">
+                  <span className="font-semibold text-purple-700 text-xs md:text-base block mb-1">Formula:</span>
+                  <div className="mt-1 text-gray-800 whitespace-pre-wrap font-mono text-xs md:text-sm break-words">{answer.formula}</div>
                 </div>
               )}
               {answer.substitution && (
-                <div className="border-l-4 border-orange-500 pl-3 py-2 bg-orange-50/30">
-                  <span className="font-semibold text-orange-700 text-base">Substitution:</span>
-                  <div className="mt-1 text-gray-800 whitespace-pre-wrap font-mono text-sm">{answer.substitution}</div>
+                <div className="border-l-4 border-orange-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-orange-50/30">
+                  <span className="font-semibold text-orange-700 text-xs md:text-base block mb-1">Substitution:</span>
+                  <div className="mt-1 text-gray-800 whitespace-pre-wrap font-mono text-xs md:text-sm break-words">{answer.substitution}</div>
                 </div>
               )}
               {answer.calculation && (
-                <div className="border-l-4 border-green-500 pl-3 py-2 bg-green-50/30">
-                  <span className="font-semibold text-green-700 text-base">Calculation:</span>
-                  <div className="mt-1 text-gray-800 whitespace-pre-wrap font-mono text-sm">{answer.calculation}</div>
+                <div className="border-l-4 border-green-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-green-50/30">
+                  <span className="font-semibold text-green-700 text-xs md:text-base block mb-1">Calculation:</span>
+                  <div className="mt-1 text-gray-800 whitespace-pre-wrap font-mono text-xs md:text-sm break-words">{answer.calculation}</div>
                 </div>
               )}
               {answer.final_answer && (
-                <div className="mt-3 p-3 bg-green-50 border-2 border-green-300 rounded-lg">
-                  <span className="font-bold text-green-800 text-base">{answer.final_answer}</span>
+                <div className="mt-2 md:mt-3 p-2 md:p-3 bg-green-50 border-2 border-green-300 rounded-lg">
+                  <span className="font-bold text-green-800 text-xs md:text-base break-words">{answer.final_answer}</span>
                 </div>
               )}
             </div>
@@ -499,9 +570,66 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
           </div>
         )
       }
+      
+      // Fallback: If object doesn't match any pattern, try to render it generically
+      // This handles cases where the structure is slightly different
+      const hasAnyContent = Object.keys(answer).some(key => {
+        const val = answer[key]
+        return val && (
+          (typeof val === 'string' && val.trim() !== '') ||
+          (Array.isArray(val) && val.length > 0) ||
+          (typeof val === 'object' && val !== null && Object.keys(val).length > 0)
+        )
+      })
+      
+      if (hasAnyContent) {
+        // Render as a generic structured answer
+        return (
+          <div className="space-y-2 md:space-y-3">
+            {Object.entries(answer).map(([key, value]) => {
+              if (!value || (typeof value === 'string' && value.trim() === '') || 
+                  (Array.isArray(value) && value.length === 0)) {
+                return null
+              }
+              
+              const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+              
+              if (Array.isArray(value)) {
+                return (
+                  <div key={key} className="border-l-4 border-blue-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-blue-50/30">
+                    <span className="font-semibold text-blue-700 text-xs md:text-base block mb-1">{displayKey}:</span>
+                    <ol className="list-decimal list-inside space-y-1 ml-2 md:ml-4 mt-1">
+                      {value.map((item, i) => (
+                        <li key={i} className="text-gray-800 text-xs md:text-sm break-words">{String(item)}</li>
+                      ))}
+                    </ol>
+                  </div>
+                )
+              } else if (typeof value === 'object' && value !== null) {
+                return (
+                  <div key={key} className="border-l-4 border-blue-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-blue-50/30">
+                    <span className="font-semibold text-blue-700 text-xs md:text-base block mb-1">{displayKey}:</span>
+                    <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">
+                      {JSON.stringify(value, null, 2)}
+                    </div>
+                  </div>
+                )
+              } else {
+                return (
+                  <div key={key} className="border-l-4 border-blue-500 pl-2 md:pl-3 py-1.5 md:py-2 bg-blue-50/30">
+                    <span className="font-semibold text-blue-700 text-xs md:text-base block mb-1">{displayKey}:</span>
+                    <div className="mt-1 text-gray-800 whitespace-pre-wrap text-xs md:text-sm break-words">{String(value)}</div>
+                  </div>
+                )
+              }
+            })}
+          </div>
+        )
+      }
     }
     
-    return <span>{String(answer)}</span>
+    // Final fallback: convert to string
+    return <div className="whitespace-pre-wrap text-gray-800">{String(answer)}</div>
   }
   
   // Update settings when selectedUpload changes
@@ -518,11 +646,15 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       part_ids: partIds || null,
       // Auto-update num_questions when parts selection changes (reset to default)
       num_questions: partCount > 0 
-        ? calculateDefaultQuestions(partCount, prev.marks)
+        ? calculateDefaultQuestions(partCount, prev.marks, isMobile)
         : (partCount === 0
           ? (isPremium ? 10 : 3)
           : prev.num_questions)
     }))
+    // Always reset generation complete when selection changes (allows re-generation from same or different content)
+    setGenerationComplete(false)
+    setResult(null)
+    setEditedQuestions([])
   }, [selectedUpload, isPremium])
   
   // Update num_questions when marks pattern changes (if parts are selected) - only if not manually set
@@ -690,26 +822,106 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
           // Distribute the total questions proportionally across marks
           // Pattern: 1 mark (6) + 2 marks (4) + 3 marks (3) + 5 marks (2) + 10 marks (1) = 16 per part
           const totalPerPart = 16
-          const scaleFactor = totalQuestions / (totalPerPart * partCount)
+          const expectedTotal = totalPerPart * partCount
           
-          customDistribution = [
-            { marks: 1, count: Math.round(6 * partCount * scaleFactor), type: 'mcq' },
-            { marks: 2, count: Math.round(4 * partCount * scaleFactor), type: 'short' },
-            { marks: 3, count: Math.round(3 * partCount * scaleFactor), type: 'descriptive' },
-            { marks: 5, count: Math.round(2 * partCount * scaleFactor), type: 'descriptive' },
-            { marks: 10, count: Math.round(1 * partCount * scaleFactor), type: 'descriptive' }
-          ]
+          // Calculate base counts per part
+          // For mobile: exclude 10-mark questions (15 questions per part instead of 16)
+          // For desktop: include all marks (16 questions per part)
+          const questionsPerPart = isMobile ? 15 : 16
+          const adjustedExpectedTotal = questionsPerPart * partCount
+          const adjustedTotalQuestions = isNumQuestionsManuallySet 
+            ? settings.num_questions 
+            : (isMobile ? 15 * partCount : defaultTotal)
           
-          // Ensure total matches user input (adjust the last item if needed)
-          const currentTotal = customDistribution.reduce((sum, item) => sum + item.count, 0)
-          if (currentTotal !== totalQuestions && customDistribution.length > 0) {
-            const diff = totalQuestions - currentTotal
-            customDistribution[customDistribution.length - 1].count += diff
-            // Ensure count doesn't go negative
-            if (customDistribution[customDistribution.length - 1].count < 0) {
-              customDistribution[customDistribution.length - 1].count = 0
+          const baseCounts = {
+            1: 6,   // MCQ
+            2: 4,   // Short
+            3: 3,   // Descriptive
+            5: 2,   // Descriptive
+            10: isMobile ? 0 : 1   // Descriptive - EXCLUDED on mobile
+          }
+          
+          // Calculate proportional distribution
+          const scaleFactor = adjustedTotalQuestions / adjustedExpectedTotal
+          
+          // Calculate counts ensuring minimum of 1 for each type (if totalQuestions allows)
+          // Skip 10 marks on mobile
+          let counts = {
+            1: Math.max(1, Math.round(baseCounts[1] * partCount * scaleFactor)),
+            2: Math.max(1, Math.round(baseCounts[2] * partCount * scaleFactor)),
+            3: Math.max(1, Math.round(baseCounts[3] * partCount * scaleFactor)),
+            5: Math.max(1, Math.round(baseCounts[5] * partCount * scaleFactor)),
+            10: isMobile ? 0 : Math.max(1, Math.round(baseCounts[10] * partCount * scaleFactor))
+          }
+          
+          // If total is too small, prioritize higher marks (3, 5, 10) over lower marks
+          let currentTotal = Object.values(counts).reduce((sum, count) => sum + count, 0)
+          if (currentTotal > totalQuestions) {
+            // Scale down proportionally, but ensure at least 1 of each if possible
+            const excess = currentTotal - totalQuestions
+            // Reduce from lower marks first
+            if (counts[1] > 1 && excess > 0) {
+              const reduce = Math.min(counts[1] - 1, excess)
+              counts[1] -= reduce
+              currentTotal -= reduce
+            }
+            if (counts[2] > 1 && currentTotal > totalQuestions) {
+              const reduce = Math.min(counts[2] - 1, currentTotal - totalQuestions)
+              counts[2] -= reduce
+              currentTotal -= reduce
+            }
+            if (counts[3] > 1 && currentTotal > totalQuestions) {
+              const reduce = Math.min(counts[3] - 1, currentTotal - totalQuestions)
+              counts[3] -= reduce
+              currentTotal -= reduce
+            }
+            if (counts[5] > 1 && currentTotal > totalQuestions) {
+              const reduce = Math.min(counts[5] - 1, currentTotal - totalQuestions)
+              counts[5] -= reduce
+              currentTotal -= reduce
+            }
+            if (counts[10] > 1 && currentTotal > totalQuestions) {
+              const reduce = Math.min(counts[10] - 1, currentTotal - totalQuestions)
+              counts[10] -= reduce
+              currentTotal -= reduce
             }
           }
+          
+          // Build distribution array, filtering out zero counts
+          // On mobile: exclude 10-mark questions entirely
+          customDistribution = [
+            { marks: 1, count: counts[1], type: 'mcq' },
+            { marks: 2, count: counts[2], type: 'short' },
+            { marks: 3, count: counts[3], type: 'descriptive' },
+            { marks: 5, count: counts[5], type: 'descriptive' },
+            ...(isMobile ? [] : [{ marks: 10, count: counts[10], type: 'descriptive' }]) // Only include 10 marks on desktop
+          ].filter(item => item.count > 0) // Remove zero counts
+          
+          // Adjust to match exact total (add/subtract from largest count item)
+          // Use adjusted total for mobile (15 per part) or original total for desktop
+          const targetTotal = isMobile ? adjustedTotalQuestions : totalQuestions
+          currentTotal = customDistribution.reduce((sum, item) => sum + item.count, 0)
+          if (currentTotal !== targetTotal && customDistribution.length > 0) {
+            const diff = targetTotal - currentTotal
+            // Find the item with the largest count to adjust
+            const largestIndex = customDistribution.reduce((maxIdx, item, idx) => 
+              item.count > customDistribution[maxIdx].count ? idx : maxIdx, 0
+            )
+            customDistribution[largestIndex].count += diff
+            // Ensure count doesn't go negative or zero
+            if (customDistribution[largestIndex].count <= 0) {
+              // Remove this item and redistribute
+              customDistribution.splice(largestIndex, 1)
+              // Recalculate without this item
+              const newTotal = customDistribution.reduce((sum, item) => sum + item.count, 0)
+              if (newTotal < totalQuestions && customDistribution.length > 0) {
+                customDistribution[0].count += (totalQuestions - newTotal)
+              }
+            }
+          }
+          
+          // Final filter to ensure no zero counts
+          customDistribution = customDistribution.filter(item => item.count > 0)
         } else {
           // Single marks pattern: use user's manual input if set, otherwise calculate
           const marks = parseInt(settings.marks, 10)
@@ -740,6 +952,13 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
         ...(settings.part_ids ? { upload_id: null } : { part_ids: null }),
         // Add custom distribution if parts are selected
         ...(customDistribution ? { custom_distribution: customDistribution } : {})
+      }
+      
+      // Debug: Log distribution for troubleshooting
+      if (customDistribution) {
+        console.log('📊 Custom Distribution being sent:', customDistribution)
+        console.log('📊 Total questions from distribution:', customDistribution.reduce((sum, item) => sum + item.count, 0))
+        console.log('📊 Distribution breakdown:', customDistribution.map(item => `${item.marks} marks (${item.type}): ${item.count} questions`).join(', '))
       }
       
       // Update toast to show processing with cancel button
@@ -802,8 +1021,45 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
         return
       }
       
+      // Debug: Log full response structure
+      console.log('📦 Full Response Data:', {
+        hasData: !!response.data,
+        hasQnaJson: !!response.data?.qna_json,
+        hasQuestions: !!response.data?.qna_json?.questions,
+        questionCount: response.data?.qna_json?.questions?.length || 0,
+        isMobile: isMobile,
+        responseStructure: Object.keys(response.data || {}),
+        qnaJsonStructure: response.data?.qna_json ? Object.keys(response.data.qna_json) : []
+      })
+      
       setResult(response.data)
-      setEditedQuestions(response.data?.qna_json?.questions || [])
+      const questionsArray = response.data?.qna_json?.questions || []
+      setEditedQuestions(questionsArray)
+      
+      // Debug: Log answer data to console
+      if (questionsArray.length > 0) {
+        console.log('📊 Generated Questions with Answers:', questionsArray.map((q, i) => ({
+          questionNum: i + 1,
+          question: q.question?.substring(0, 50),
+          marks: q.marks,
+          hasCorrectAnswer: !!q.correct_answer,
+          hasAnswer: !!q.answer,
+          correctAnswerType: typeof q.correct_answer,
+          correctAnswerPreview: q.correct_answer ? (typeof q.correct_answer === 'string' ? q.correct_answer.substring(0, 100) : JSON.stringify(q.correct_answer).substring(0, 100)) : 'MISSING',
+          answerKeys: typeof q.correct_answer === 'object' && q.correct_answer !== null ? Object.keys(q.correct_answer) : 'N/A'
+        })))
+        console.log('✅ Result state set. Questions count:', questionsArray.length, 'isMobile:', isMobile)
+      } else {
+        console.warn('⚠️ No questions in response!', {
+          responseData: response.data,
+          qnaJson: response.data?.qna_json,
+          questions: response.data?.qna_json?.questions
+        })
+      }
+      
+      // Disable generate button after successful generation
+      // User must upload new content or refresh page to generate again
+      setGenerationComplete(true)
       
       // Check if cancelled before showing messages
       if (abortController.signal.aborted) {
@@ -934,20 +1190,63 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
   }
 
   const renderPreview = () => {
-    if (!result) return null
-    const questions = editedQuestions.length ? editedQuestions : (result.qna_json?.questions || [])
+    // Debug: Log renderPreview call
+    console.log('🎨 renderPreview called:', {
+      hasResult: !!result,
+      hasEditedQuestions: editedQuestions.length > 0,
+      editedQuestionsCount: editedQuestions.length,
+      resultQnaJson: !!result?.qna_json,
+      resultQuestionsCount: result?.qna_json?.questions?.length || 0,
+      isMobile: isMobile
+    })
+    
+    if (!result) {
+      console.log('❌ renderPreview: No result, returning null')
+      return null
+    }
+    
+    // Always prefer result.qna_json?.questions if editedQuestions is empty or doesn't match
+    // This ensures questions are displayed even if editedQuestions state hasn't updated yet
+    const resultQuestions = result.qna_json?.questions || []
+    const questions = (editedQuestions.length > 0 && editedQuestions.length === resultQuestions.length) 
+      ? editedQuestions 
+      : resultQuestions
     const previewCount = isPremium ? questions.length : Math.min(3, questions.length)
+    
+    // Debug: Log questions being rendered
+    console.log('🎨 Rendering preview:', {
+      totalQuestions: questions.length,
+      previewCount,
+      isPremium,
+      isMobile,
+      questionsWithAnswers: questions.filter(q => q.correct_answer || q.answer).length,
+      sampleQuestion: questions[0] ? {
+        hasCorrectAnswer: !!questions[0].correct_answer,
+        hasAnswer: !!questions[0].answer,
+        correctAnswerType: typeof questions[0].correct_answer,
+        correctAnswerKeys: typeof questions[0].correct_answer === 'object' && questions[0].correct_answer !== null ? Object.keys(questions[0].correct_answer) : 'N/A'
+      } : 'No questions'
+    })
+    
+    if (questions.length === 0) {
+      console.warn('⚠️ renderPreview: No questions to render!', {
+        editedQuestions,
+        resultQnaJson: result.qna_json,
+        resultQuestions: result.qna_json?.questions
+      })
+      return null
+    }
 
     return (
-      <div className="mt-6 space-y-6">
-        <h3 className="text-lg font-semibold">Generated Questions</h3>
+      <div className="mt-4 md:mt-6 space-y-4 md:space-y-6">
+        <h3 className="text-base md:text-lg font-semibold">Generated Questions</h3>
         
         {questions.slice(0, previewCount).map((q, idx) => (
-          <div key={idx} className="border-2 border-gray-300 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-start gap-3">
-              <span className="font-bold text-blue-600 text-lg">Q{idx + 1}.</span>
-              <div className="flex-1">
-                <div className="flex gap-3 items-start mb-2">
+          <div key={idx} className="border-2 border-gray-300 rounded-lg p-3 md:p-5 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-2 md:gap-3">
+              <span className="font-bold text-blue-600 text-base md:text-lg flex-shrink-0">Q{idx + 1}.</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-start mb-2">
                   <textarea
                     value={q.question || ''}
                     onChange={(e) => {
@@ -955,16 +1254,16 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
                       updated[idx] = { ...updated[idx], question: e.target.value }
                       setEditedQuestions(updated)
                     }}
-                    className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="flex-1 w-full border border-gray-300 rounded-md px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm min-w-0"
                     rows={2}
                   />
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded">
+                  <div className="flex flex-col md:flex-col items-start md:items-end gap-1 w-full md:w-auto">
+                    <span className="inline-block px-2 py-1 text-[10px] md:text-xs font-semibold bg-blue-100 text-blue-800 rounded">
                       {q.marks} mark{q.marks !== 1 ? 's' : ''}
                     </span>
-                    <span className="text-[11px] text-gray-500">Auto-set type: {deriveTypeFromMarks(q.marks)}</span>
+                    <span className="text-[9px] md:text-[11px] text-gray-500">Auto-set type: {deriveTypeFromMarks(q.marks)}</span>
                     {q.source && (
-                      <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded mt-1">
+                      <span className="text-[8px] md:text-[10px] text-gray-500 bg-gray-100 px-1.5 md:px-2 py-0.5 rounded mt-1 break-words">
                         📄 Part {q.source.part_number} {q.source.exact_page ? `(Page ${q.source.exact_page})` : (q.source.page_range || `Pages ${q.source.start_page}-${q.source.end_page}`)}
                       </span>
                     )}
@@ -972,40 +1271,148 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
                 </div>
 
                 {q.type === 'mcq' && q.options && (
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-2 md:mt-3 space-y-1.5 md:space-y-2">
                     {q.options.map((opt, i) => {
                       const optionLabel = String.fromCharCode(65 + i)
                       return (
                         <div 
                           key={i} 
-                          className="flex items-start gap-3 p-2 border border-gray-200 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors"
+                          className="flex items-start gap-2 md:gap-3 p-1.5 md:p-2 border border-gray-200 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors"
                         >
-                          <span className="font-bold text-blue-600 min-w-[24px]">{optionLabel}.</span>
-                          <span className="text-gray-700 flex-1">{opt}</span>
+                          <span className="font-bold text-blue-600 min-w-[20px] md:min-w-[24px] text-xs md:text-sm">{optionLabel}.</span>
+                          <span className="text-gray-700 flex-1 text-xs md:text-sm break-words">{opt}</span>
                         </div>
                       )
                     })}
                   </div>
                 )}
 
-                {isPremium && settings.output_format !== 'questions_only' && (
-                  <div className="mt-4 p-4 bg-green-50 rounded-lg border-2 border-green-300">
-                    <p className="text-sm font-semibold text-green-800 mb-2">✓ Correct Answer:</p>
-                    <div className="text-green-700 font-medium">
+                {/* Always show answer section for premium users if answer exists */}
+                {isPremium && (
+                  <div className="mt-3 md:mt-4 p-3 md:p-4 bg-green-50 rounded-lg border-2 border-green-300">
+                    <p className="text-xs md:text-sm font-semibold text-green-800 mb-2">✓ Correct Answer:</p>
+                    <div className="text-green-700 font-medium text-xs md:text-sm">
                       {(() => {
                         const answer = q.correct_answer || q.answer
+                        
+                        // Debug: Log answer data for every question
+                        const answerObj = q.correct_answer || q.answer
+                        console.log(`🔍 Q${idx + 1} Answer Debug:`, {
+                          hasCorrectAnswer: !!q.correct_answer,
+                          hasAnswer: !!q.answer,
+                          correctAnswerType: typeof q.correct_answer,
+                          answerType: typeof q.answer,
+                          correctAnswerValue: q.correct_answer,
+                          answerValue: q.answer,
+                          answerKeys: typeof answerObj === 'object' && answerObj !== null ? Object.keys(answerObj) : 'N/A',
+                          answerValues: typeof answerObj === 'object' && answerObj !== null ? Object.entries(answerObj).map(([k, v]) => ({ key: k, value: v, type: typeof v, isEmpty: typeof v === 'string' ? v.trim() === '' : (Array.isArray(v) ? v.length === 0 : !v) })) : 'N/A',
+                          fullQuestion: q,
+                          answerStringified: typeof answerObj === 'object' && answerObj !== null ? JSON.stringify(answerObj, null, 2) : String(answerObj)
+                        })
+                        
+                        // Debug logging for missing answers
                         if (!answer || answer === "N/A" || answer === "N/A - Answer not generated by AI") {
-                          console.warn(`⚠️ Missing or invalid answer for Q${idx + 1} (${q.marks} marks):`, { answer, question: q.question?.substring(0, 50) })
-                          return <span className="text-yellow-600 italic">Answer not generated. Please regenerate questions.</span>
+                          console.warn(`⚠️ Missing or invalid answer for Q${idx + 1} (${q.marks} marks):`, { 
+                            answer, 
+                            question: q.question?.substring(0, 50),
+                            hasCorrectAnswer: !!q.correct_answer,
+                            hasAnswer: !!q.answer,
+                            correctAnswerType: typeof q.correct_answer,
+                            answerType: typeof q.answer,
+                            fullQuestionObject: q
+                          })
+                          return <span className="text-yellow-600 italic text-xs">Answer not generated. Please regenerate questions.</span>
                         }
-                        if (typeof answer === 'object' && Object.keys(answer).length === 0) {
-                          console.warn(`⚠️ Empty answer object for Q${idx + 1} (${q.marks} marks):`, q)
-                          return <span className="text-yellow-600 italic">Answer object is empty. Please regenerate questions.</span>
+                        if (typeof answer === 'object' && answer !== null) {
+                          const keys = Object.keys(answer)
+                          if (keys.length === 0) {
+                            console.warn(`⚠️ Empty answer object for Q${idx + 1} (${q.marks} marks):`, q)
+                            return <span className="text-yellow-600 italic text-xs">Answer object is empty. Please regenerate questions.</span>
+                          }
+                          // Check if all values are empty/null
+                          const allEmpty = keys.every(key => {
+                            const val = answer[key]
+                            return !val || (typeof val === 'string' && val.trim() === '') || (Array.isArray(val) && val.length === 0)
+                          })
+                          if (allEmpty) {
+                            console.warn(`⚠️ Answer object has all empty values for Q${idx + 1} (${q.marks} marks):`, { answer, keys })
+                            return <span className="text-yellow-600 italic text-xs">Answer is empty. Please regenerate questions.</span>
+                          }
                         }
-                        const rendered = renderAnswer(answer, q.marks || 0)
+                        if (typeof answer === 'string' && answer.trim() === '') {
+                          console.warn(`⚠️ Empty string answer for Q${idx + 1} (${q.marks} marks):`, q)
+                          return <span className="text-yellow-600 italic text-xs">Answer is empty. Please regenerate questions.</span>
+                        }
+                        // Try renderAnswer first (for structured objects with proper formatting)
+                        let rendered = renderAnswer(answer, q.marks || 0)
+                        
+                        // If renderAnswer returns null or if answer is a string with structured content, try formatAnswer-style rendering
                         if (!rendered) {
-                          console.warn(`⚠️ renderAnswer returned null for Q${idx + 1} (${q.marks} marks):`, { answer, answerType: typeof answer })
-                          return <span className="text-yellow-600 italic">Answer could not be rendered. Please regenerate questions.</span>
+                          // Fallback: If answer is a string that might contain structured content, try to format it
+                          if (typeof answer === 'string' && answer.includes('Background/Context') || answer.includes('Key Points') || answer.includes('Explanation') || answer.includes('Conclusion')) {
+                            // It's a formatted string - render it as-is with proper whitespace
+                            rendered = <div className="whitespace-pre-wrap text-gray-800">{answer}</div>
+                          } else if (typeof answer === 'object' && answer !== null) {
+                            // Try to format as structured answer (like SavedSets does)
+                            const parts = []
+                            if (answer.background || answer.context) {
+                              parts.push(`Background/Context: ${answer.background || answer.context}`)
+                            }
+                            if (answer.key_points) {
+                              if (Array.isArray(answer.key_points)) {
+                                parts.push(`Key Points:\n${answer.key_points.map((kp, i) => `${i + 1}. ${kp}`).join('\n')}`)
+                              } else {
+                                parts.push(`Key Points: ${answer.key_points}`)
+                              }
+                            }
+                            if (answer.explanation) {
+                              parts.push(`Explanation: ${answer.explanation}`)
+                            }
+                            if (answer.conclusion) {
+                              parts.push(`Conclusion: ${answer.conclusion}`)
+                            }
+                            if (parts.length > 0) {
+                              rendered = <div className="whitespace-pre-wrap text-gray-800">{parts.join('\n\n')}</div>
+                            }
+                          }
+                        }
+                        
+                        if (!rendered) {
+                          console.warn(`⚠️ renderAnswer returned null for Q${idx + 1} (${q.marks} marks):`, { 
+                            answer, 
+                            answerType: typeof answer,
+                            marks: q.marks,
+                            questionType: q.type,
+                            answerKeys: typeof answer === 'object' && answer !== null ? Object.keys(answer) : 'N/A',
+                            answerString: typeof answer === 'string' ? answer.substring(0, 200) : (typeof answer === 'object' ? JSON.stringify(answer).substring(0, 200) : 'N/A')
+                          })
+                          // Final fallback: Display answer as text/JSON
+                          if (typeof answer === 'string' && answer.trim()) {
+                            return <div className="whitespace-pre-wrap text-gray-800">{answer}</div>
+                          } else if (typeof answer === 'object' && answer !== null) {
+                            // Try to format structured answer one more time
+                            const parts = []
+                            if (answer.background || answer.context) parts.push(`Background/Context: ${answer.background || answer.context}`)
+                            if (answer.key_points) {
+                              if (Array.isArray(answer.key_points)) {
+                                parts.push(`Key Points:\n${answer.key_points.map((kp, i) => `${i + 1}. ${kp}`).join('\n')}`)
+                              } else {
+                                parts.push(`Key Points: ${answer.key_points}`)
+                              }
+                            }
+                            if (answer.explanation) parts.push(`Explanation: ${answer.explanation}`)
+                            if (answer.conclusion) parts.push(`Conclusion: ${answer.conclusion}`)
+                            if (answer.introduction) parts.push(`Introduction: ${answer.introduction}`)
+                            if (answer.analysis) parts.push(`Analysis: ${answer.analysis}`)
+                            if (answer.definition) parts.push(`Definition: ${answer.definition}`)
+                            if (answer.example) parts.push(`Example: ${answer.example}`)
+                            if (parts.length > 0) {
+                              return <div className="whitespace-pre-wrap text-gray-800">{parts.join('\n\n')}</div>
+                            }
+                            // Last resort: show as JSON
+                            return <div className="whitespace-pre-wrap text-gray-800 font-mono text-xs">{JSON.stringify(answer, null, 2)}</div>
+                          }
+                          return <span className="text-yellow-600 italic text-xs">Answer could not be rendered. Please regenerate questions.</span>
                         }
                         return rendered
                       })()}
@@ -1034,37 +1441,37 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
         )}
 
         {isPremium && (
-          <div className="relative inline-flex mt-4">
+          <div className="relative inline-flex mt-3 md:mt-4 w-full md:w-auto">
             <button
               onClick={() => downloadSet(result.id, 'pdf', 'questions_answers')}
               disabled={downloading}
-              className="px-4 py-2 bg-green-600 text-white rounded-l-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="flex-1 md:flex-none px-3 md:px-4 py-2 bg-green-600 text-white rounded-l-lg md:rounded-l-lg rounded-r-lg md:rounded-r-none hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm md:text-base"
               title={downloading ? "Download in progress..." : "Download Q+A (PDF)"}
             >
               {downloading ? (
                 <>
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Downloading...
+                  <span className="text-xs md:text-sm">Downloading...</span>
                 </>
               ) : (
-                'Download'
+                <span className="text-xs md:text-base">Download</span>
               )}
             </button>
             <button
               onClick={() => setShowDownloadMenu((prev) => !prev)}
               disabled={downloading}
-              className="px-3 py-2 bg-green-600 text-white rounded-r-lg hover:bg-green-700 border-l border-green-500 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 md:px-3 py-2 bg-green-600 text-white rounded-r-lg hover:bg-green-700 border-l border-green-500 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
               title={downloading ? "Download in progress..." : "More formats"}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
             {showDownloadMenu && !downloading && (
-              <div className="absolute z-20 top-full left-0 mt-2 w-72 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl">
+              <div className="absolute z-20 top-full left-0 mt-2 w-full md:w-72 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl">
                 <div className="py-1">
                   <button
                     onClick={() => { setShowDownloadMenu(false); downloadSet(result.id, 'pdf', 'questions_only') }}
@@ -1340,19 +1747,21 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
               {settings.marks === 'mixed' ? (
                 <>
                   <p className="text-xs text-gray-600 mb-2">
-                    Per part (40 pages): 1 mark (6 MCQ) + 2 marks (4) + 3 marks (3) + 5 marks (2) + 10 marks (1) = <strong>16 questions</strong>
+                    Per part (40 pages): 1 mark (6 MCQ) + 2 marks (4) + 3 marks (3) + 5 marks (2){isMobile ? '' : ' + 10 marks (1)'} = <strong>{isMobile ? '15' : '16'} questions</strong>
+                    {isMobile && <span className="text-blue-600 ml-1 block mt-1">(10-mark questions excluded on mobile for better display)</span>}
                   </p>
                   <p className="text-xs text-gray-600">
-                    Total for {selectedPartIds.length} part{selectedPartIds.length > 1 ? 's' : ''}: <strong className="text-green-700">{calculateDefaultQuestions(selectedPartIds.length, settings.marks)} questions</strong>
+                    Total for {selectedPartIds.length} part{selectedPartIds.length > 1 ? 's' : ''}: <strong className="text-green-700">{calculateDefaultQuestions(selectedPartIds.length, settings.marks, isMobile)} questions</strong>
                   </p>
                 </>
               ) : (
                 <>
                   <p className="text-xs text-gray-600 mb-2">
-                    Per part (40 pages): <strong>{settings.marks} mark{settings.marks !== '1' ? 's' : ''} → {calculateDefaultQuestions(1, settings.marks)} questions</strong>
+                    Per part (40 pages): <strong>{settings.marks} mark{settings.marks !== '1' ? 's' : ''} → {calculateDefaultQuestions(1, settings.marks, isMobile)} questions</strong>
+                    {isMobile && settings.marks === '10' && <span className="text-blue-600 ml-1 block mt-1">(10-mark questions excluded on mobile)</span>}
                   </p>
                   <p className="text-xs text-gray-600">
-                    Total for {selectedPartIds.length} part{selectedPartIds.length > 1 ? 's' : ''}: <strong className="text-green-700">{calculateDefaultQuestions(selectedPartIds.length, settings.marks)} questions</strong>
+                    Total for {selectedPartIds.length} part{selectedPartIds.length > 1 ? 's' : ''}: <strong className="text-green-700">{calculateDefaultQuestions(selectedPartIds.length, settings.marks, isMobile)} questions</strong>
                   </p>
                 </>
               )}
@@ -1683,11 +2092,17 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
       {/* Generate Button */}
       <button
         onClick={handleGenerate}
-        disabled={generating || (!settings.upload_id && !settings.part_ids) || !settings.target_language}
+        disabled={generating || (generationComplete && !settings.part_ids && !settings.upload_id) || (!settings.upload_id && !settings.part_ids) || !settings.target_language}
         className="w-full md:w-auto px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title={generationComplete && !settings.part_ids && !settings.upload_id ? 'Q/A already generated. Please select parts or upload new content to generate again.' : ''}
       >
-        {generating ? 'Generating...' : 'Generate Q/A'}
+        {generating ? 'Generating...' : (generationComplete && !settings.part_ids && !settings.upload_id ? 'Already Generated' : 'Generate Q/A')}
       </button>
+      {generationComplete && !settings.part_ids && !settings.upload_id && (
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          Q/A generated. Select parts or upload new content to generate again.
+        </p>
+      )}
 
       {/* Results */}
       {renderPreview()}

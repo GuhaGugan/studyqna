@@ -280,16 +280,71 @@ async def generate_qna_endpoint(
     # Check if generating these questions would exceed daily limit
     if daily_questions_used + questions_to_generate > daily_limit:
         remaining = max(0, daily_limit - daily_questions_used)
+        # Provide helpful suggestion to reduce question count
+        suggestion = ""
+        if remaining > 0:
+            suggestion = f" Try reducing the number of questions to {remaining} or less."
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Daily question limit exceeded. You have used {daily_questions_used} of {daily_limit} questions today. "
-                  f"You can generate {remaining} more questions today. Please wait until tomorrow or contact admin to reset your daily limit."
+                  f"You can generate {remaining} more questions today.{suggestion} Please wait until tomorrow or contact admin to reset your daily limit."
         )
+    
+    # Get number of parts for dynamic content limit (needed for both custom and standard generation)
+    num_parts = len(request.part_ids) if request.part_ids else (1 if request.upload_id else None)
+    
+    # Fetch previously generated questions from the same upload/parts to avoid duplicates
+    previous_questions = []
+    if request.upload_id:
+        # Get all previous QnASets from this upload
+        previous_sets = db.query(QnASet).filter(
+            QnASet.user_id == current_user.id,
+            QnASet.upload_id == request.upload_id
+        ).all()
+        for qna_set in previous_sets:
+            if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+                questions = qna_set.qna_json.get("questions", [])
+                if isinstance(questions, list):
+                    for q in questions:
+                        if q.get("question"):
+                            previous_questions.append(q.get("question"))
+    elif request.part_ids and len(request.part_ids) > 0:
+        # Get all previous QnASets that used any of these parts
+        # Note: We store upload_id in QnASet, so we need to check via parent upload
+        from app.models import PdfSplitPart
+        parts = db.query(PdfSplitPart).filter(
+            PdfSplitPart.id.in_(request.part_ids),
+            PdfSplitPart.user_id == current_user.id
+        ).all()
+        if parts:
+            parent_upload_ids = list(set([p.parent_upload_id for p in parts]))
+            previous_sets = db.query(QnASet).filter(
+                QnASet.user_id == current_user.id,
+                QnASet.upload_id.in_(parent_upload_ids)
+            ).all()
+            for qna_set in previous_sets:
+                if qna_set.qna_json and isinstance(qna_set.qna_json, dict):
+                    questions = qna_set.qna_json.get("questions", [])
+                    if isinstance(questions, list):
+                        for q in questions:
+                            if q.get("question"):
+                                previous_questions.append(q.get("question"))
+    
+    print(f"📋 Found {len(previous_questions)} previously generated questions from this content. Will avoid duplicates.")
     
     # Generate Q/A with error handling
     try:
         # Handle custom distribution if provided
         if request.custom_distribution and len(request.custom_distribution) > 0:
+            # Filter out zero-count items first
+            valid_distribution = [item for item in request.custom_distribution if item.count > 0]
+            
+            if len(valid_distribution) == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Custom distribution contains no valid items (all counts are zero)"
+                )
+            
             # Use custom distribution directly
             distribution_list = [
                 {
@@ -297,11 +352,15 @@ async def generate_qna_endpoint(
                     "count": item.count,
                     "type": item.type
                 }
-                for item in request.custom_distribution
+                for item in valid_distribution
             ]
             
-            # Calculate total from custom distribution
-            total_custom = sum(item.count for item in request.custom_distribution)
+            # Calculate total from valid custom distribution
+            total_custom = sum(item.count for item in valid_distribution)
+            
+            # Debug: Print distribution to verify
+            print(f"📊 Custom Distribution (filtered): {distribution_list}")
+            print(f"📊 Total questions from custom distribution: {total_custom}")
             
             # Validate total doesn't exceed limit
             if total_custom > max_questions:
@@ -313,9 +372,6 @@ async def generate_qna_endpoint(
             remaining_questions = max_questions
             
             # Generate with custom distribution - NO RETRIES, accept quality questions immediately
-            # Get number of parts for dynamic content limit
-            num_parts = len(request.part_ids) if request.part_ids else None
-            
             try:
                 # Use pipeline for better accuracy and cost control
                 qna_data = generate_qna_pipeline(
@@ -329,6 +385,7 @@ async def generate_qna_endpoint(
                     distribution_list=distribution_list,
                     subject=selected_subject,  # Pass selected subject
                     num_parts=num_parts,  # Pass number of parts for dynamic content limit
+                    previous_questions=previous_questions,  # Pass previous questions to avoid duplicates
                     use_pipeline=True  # Enable two-step pipeline
                 )
                 
@@ -420,6 +477,8 @@ async def generate_qna_endpoint(
                 scale = remaining_questions / total_distribution
                 for item in distribution_list:
                     item["count"] = max(1, int(item["count"] * scale))
+                # Remove items with count=0 (shouldn't happen with max(1, ...) but just in case)
+                distribution_list = [item for item in distribution_list if item.get("count", 0) > 0]
                 # Adjust to exact match
                 total_after_scale = sum(item.get("count", 0) for item in distribution_list)
                 if total_after_scale < remaining_questions and distribution_list:
@@ -439,6 +498,7 @@ async def generate_qna_endpoint(
                     distribution_list=distribution_list,
                     subject=selected_subject,  # Pass selected subject
                     num_parts=num_parts,  # Pass number of parts for dynamic content limit
+                    previous_questions=previous_questions,  # Pass previous questions to avoid duplicates
                     use_pipeline=True  # Enable two-step pipeline
                 )
                 
