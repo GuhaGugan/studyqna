@@ -1270,16 +1270,24 @@ const QnAGenerator = ({ uploads, selectedUpload, onSelectUpload, isPremium, onGe
                   </div>
                 </div>
 
+                {/* Image Description Display */}
+                {q.image_description && (
+                  <div className="mt-2 md:mt-3 p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs md:text-sm font-semibold text-blue-800 mb-1">📊 Figure/Diagram:</p>
+                    <p className="text-xs md:text-sm text-blue-700 italic break-words">{q.image_description}</p>
+                  </div>
+                )}
+
                 {q.type === 'mcq' && q.options && (
                   <div className="mt-2 md:mt-3 space-y-1.5 md:space-y-2">
                     {q.options.map((opt, i) => {
-                      const optionLabel = String.fromCharCode(65 + i)
+                      const optionLabel = String.fromCharCode(97 + i) // Use lowercase a, b, c, d
                       return (
                         <div 
                           key={i} 
                           className="flex items-start gap-2 md:gap-3 p-1.5 md:p-2 border border-gray-200 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors"
                         >
-                          <span className="font-bold text-blue-600 min-w-[20px] md:min-w-[24px] text-xs md:text-sm">{optionLabel}.</span>
+                          <span className="font-bold text-blue-600 min-w-[20px] md:min-w-[24px] text-xs md:text-sm">{optionLabel})</span>
                           <span className="text-gray-700 flex-1 text-xs md:text-sm break-words">{opt}</span>
                         </div>
                       )

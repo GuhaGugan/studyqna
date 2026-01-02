@@ -2134,31 +2134,91 @@ For {detected_subject.upper()} subjects:
       "marks": 1,
       "type": "mcq",
       "difficulty": "easy",
-      "question": "What is the value of 2 + 3?",
-      "options": ["4", "5", "6", "7"],
-      "correct_answer": "5"
-    }},
-    {{
-      "marks": 2,
-      "type": "short",
-      "difficulty": "easy",
-      "question": "Solve for \\( x \\): \\( 2x + 5 = 15 \\)",
-      "correct_answer": "\\( x = 5 \\)"
+      "question": "Shikha purchases an article for Rs 61,600, which includes 10% GST. The amount of SGST is rupees:",
+      "options": ["2800", "3080", "5600", "6160"],
+      "correct_answer": "2800"
     }},
     {{
       "marks": 1,
       "type": "mcq",
       "difficulty": "easy",
-      "question": "Which symbol represents equality?",
-      "options": ["\\( = \\)", "\\( \\neq \\)", "\\( < \\)", "\\( > \\)"],
-      "correct_answer": "\\( = \\)"
+      "question": "Which of the following equations has 2 as a root?",
+      "options": ["x² - 4x + 5 = 0", "x² + 3x - 12 = 0", "2x² - 7x + 6 = 0", "3x² - 6x - 2 = 0"],
+      "correct_answer": "2x² - 7x + 6 = 0"
     }},
     {{
-      "marks": 2,
-      "type": "short",
+      "marks": 1,
+      "type": "mcq",
       "difficulty": "easy",
-      "question": "What is the value of 2 + 3?",
-      "correct_answer": "The value of 2 + 3 is 5."
+      "question": "If (x-2) is a factor of 2x³ - x² + px - 2, the value of p is:",
+      "options": ["-11", "-5", "-2", "5"],
+      "correct_answer": "-5"
+    }},
+    {{
+      "marks": 1,
+      "type": "mcq",
+      "difficulty": "easy",
+      "question": "The solution set representing the number line is:",
+      "image_description": "A number line showing integers from -4 to 2, with a solid circle at -3 (included) and an open circle at 2 (not included), with the region between them shaded",
+      "options": ["{{x: x∈R, -3≤x<2}}", "{{x: x∈R, -3<x<2}}", "{{x: x∈R, -3<x≤2}}", "{{x: x∈R, -3≤x≤2}}"],
+      "correct_answer": "{{x: x∈R, -3≤x<2}}"
+    }},
+    {{
+      "marks": 3,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "In the given figure, PAQ is a tangent to the circle with center O at point A. If ∠OBA = 32°, find the values of x, y, z.",
+      "image_description": "A circle with center O. PAQ is a tangent line touching the circle at point A. Triangle ABC is inscribed in the circle. OB is a radius. Angles x, y, z are marked at different points. ∠OBA = 32° is given.",
+      "correct_answer": {{
+        "given": "PAQ is tangent at A, O is center, ∠OBA = 32°",
+        "formula": "Angle between tangent and chord = angle in alternate segment. Angle at center = 2 × angle at circumference.",
+        "steps": [
+          "Step 1: Since OA is perpendicular to tangent PAQ, ∠OAP = 90°",
+          "Step 2: In triangle OAB, OA = OB (radii), so ∠OAB = ∠OBA = 32°",
+          "Step 3: ∠AOB = 180° - 32° - 32° = 116° (angle sum of triangle)",
+          "Step 4: x = ∠BAQ = angle in alternate segment = ∠BCA = y",
+          "Step 5: z = ∠AOB = 116° (angle at center)",
+          "Step 6: y = ∠BCA = 1/2 × ∠AOB = 1/2 × 116° = 58° (angle at circumference)",
+          "Step 7: x = ∠BAQ = y = 58° (alternate segment theorem)"
+        ],
+        "final": "Final Answer: x = 58°, y = 58°, z = 116°"
+      }}
+    }},
+    {{
+      "marks": 4,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "A spherical glass vessel has a cylindrical neck 7cm long and 2cm diameter. If the diameter of the spherical part is 6cm, then calculate the amount of liquid it holds when filled till the brim of the neck. Give your answer to 2 places of decimal. Take π = 22/7",
+      "image_description": "A diagram showing a spherical vessel with a cylindrical neck. The sphere has diameter 6cm. The cylindrical neck has height 7cm and diameter 2cm, attached to the top of the sphere.",
+      "correct_answer": {{
+        "given": "Spherical part: diameter = 6cm, radius = 3cm. Cylindrical neck: height = 7cm, diameter = 2cm, radius = 1cm. π = 22/7",
+        "formula": "Volume of sphere = (4/3)πr³. Volume of cylinder = πr²h. Total volume = Volume of sphere + Volume of cylinder",
+        "steps": [
+          "Step 1: Volume of sphere = (4/3) × (22/7) × (3)³ = (4/3) × (22/7) × 27 = (4 × 22 × 27)/(3 × 7) = 2376/21 = 113.14 cm³",
+          "Step 2: Volume of cylinder = (22/7) × (1)² × 7 = (22/7) × 1 × 7 = 22 cm³",
+          "Step 3: Total volume = 113.14 + 22 = 135.14 cm³"
+        ],
+        "final": "Final Answer: The vessel holds 135.14 cm³ of liquid (to 2 decimal places)"
+      }}
+    }},
+    {{
+      "marks": 5,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "The daily profits in rupees of all the shops in a community market are represented graphically as shown below. Study the graph and answer the following questions: (a) What is the modal class of the profit? (b) Estimate the mode from the graph. (c) What is the name of this graph? (d) What is the total number of shops as shown in the graph? (e) How many more shops made a profit of (300-400) compared to (0-100)?",
+      "image_description": "A histogram showing daily profits of shops. X-axis: Profit in Rupees (0-100, 100-200, 200-300, 300-400, 400-500, 500-600). Y-axis: Number of shops. Bars show frequencies: 0-100: 13 shops, 100-200: 18 shops, 200-300: 28 shops (tallest), 300-400: 19 shops, 400-500: 17 shops, 500-600: 6 shops.",
+      "correct_answer": {{
+        "given": "From the histogram: Profit ranges and frequencies are given",
+        "formula": "Modal class = class with highest frequency. Mode estimation from histogram. Total shops = sum of all frequencies.",
+        "steps": [
+          "Step 1: (a) Modal class: The class 200-300 has the highest frequency (28 shops), so modal class is 200-300",
+          "Step 2: (b) Mode estimation: From the histogram, the mode is approximately at the midpoint of modal class = (200+300)/2 = 250 rupees",
+          "Step 3: (c) Name of graph: This is a histogram (bar chart for continuous data)",
+          "Step 4: (d) Total shops = 13 + 18 + 28 + 19 + 17 + 6 = 101 shops",
+          "Step 5: (e) Difference: Shops in 300-400 range = 19, Shops in 0-100 range = 13. Difference = 19 - 13 = 6 shops"
+        ],
+        "final": "Final Answer: (a) Modal class: 200-300, (b) Mode: approximately 250 rupees, (c) Histogram, (d) Total shops: 101, (e) 6 more shops"
+      }}
     }},
     {{
       "marks": 3,
@@ -2514,17 +2574,37 @@ IMAGE GENERATION GUIDELINES:
 - ✅ For Biology: Include cell structures, anatomical diagrams, process flowcharts
 
 IMAGE DESCRIPTION FORMAT:
-When generating image-based questions, include image descriptions in this format:
-- "Refer to the diagram showing [description]"
-- "Using the figure that illustrates [description]"
-- "Study the graph that represents [description]"
-- "From the given diagram of [description]"
+When generating image-based questions, use these exact phrases in the question text:
+- "In the given figure, ..."
+- "Study the graph and answer the following questions:"
+- "The daily profits in rupees of all the shops in a community market are represented graphically as shown below. Study the graph and answer:"
+- "In the figure given below, ..."
+- "Refer to the diagram provided, ..."
+- "Using the diagram showing ..."
+
+QUESTION FORMAT REQUIREMENTS (MANDATORY):
+1. ✅ MCQ questions MUST use lowercase letters with parenthesis: a), b), c), d)
+2. ✅ Questions referencing figures MUST start with "In the given figure" or "Study the graph" or similar
+3. ✅ Image descriptions MUST be detailed and specific (what the diagram shows, labels, measurements, etc.)
+4. ✅ For multi-part questions, use format: "(a) ... (b) ... (c) ..."
+5. ✅ Questions should reference "the given figure", "the diagram", "the graph" explicitly
+
+EXAM-STYLE QUESTION FORMAT EXAMPLES:
+✅ CORRECT FORMAT:
+- "In the given figure, PAQ is a tangent to the circle with center O at point A. If ∠OBA = 32°, find the values of x, y, z."
+- "The solution set representing the number line is:" (with image_description for number line)
+- "Study the graph and answer the following questions: (a) What is the modal class? (b) Estimate the mode from the graph."
+
+❌ INCORRECT FORMAT:
+- "Calculate the area of a triangle" (no figure reference)
+- "What is the value?" (too vague, no context)
 
 IMPORTANT NOTES:
 - ✅ Mix image-based questions with text-based questions for variety
 - ✅ Not every question needs to be image-based, but include them regularly (30-50% of questions)
-- ✅ Image descriptions should be clear and specific
+- ✅ Image descriptions should be clear and specific with all labels, measurements, and details
 - ✅ Questions should be solvable even if the image is not yet generated (include enough context in text)
+- ✅ Always use "In the given figure" or "Study the graph" when referencing visual elements
 
 ━━━━━━━━━━━━━━━━━━━━━━
 """

@@ -636,22 +636,35 @@ const SavedSets = ({ isPremium }) => {
                                             placeholder="Enter question text..."
                                           />
                                           
+                                          {/* Image Description Display (Edit Mode) */}
+                                          {q.image_description && (
+                                            <div className="mt-2 mb-3 p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                              <p className="text-xs md:text-sm font-semibold text-blue-800 mb-1">📊 Figure/Diagram:</p>
+                                              <textarea
+                                                value={q.image_description || ''}
+                                                onChange={(e) => updateQuestion(set.id, idx, 'image_description', e.target.value)}
+                                                className="w-full px-2 py-1 text-xs md:text-sm text-blue-700 italic bg-transparent border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y"
+                                                rows={2}
+                                                placeholder="Enter image/figure description..."
+                                              />
+                                            </div>
+                                          )}
                                           {/* Editable MCQ Options */}
                                           {q.type === 'mcq' && q.options && (
                                             <div className="mt-2 space-y-2 mb-3">
                                               {q.options.map((opt, i) => {
-                                                const optionLabel = String.fromCharCode(65 + i) // A, B, C, D
+                                                const optionLabel = String.fromCharCode(97 + i) // a, b, c, d (lowercase)
                                                 return (
                                                   <div 
                                                     key={i} 
                                                     className="flex items-start gap-3 p-2 border border-gray-200 rounded-md bg-gray-50"
                                                   >
-                                                    <span className="font-bold text-blue-600 min-w-[24px]">{optionLabel}.</span>
+                                                    <span className="font-bold text-blue-600 min-w-[24px]">{optionLabel})</span>
                                                     <input
                                                       type="text"
                                                       value={opt}
                                                       onChange={(e) => updateOption(set.id, idx, i, e.target.value)}
-                                                      className="flex-1 text-gray-700 bg-transparent border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                      className="flex-1 text-gray-700 bg-transparent border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:outline-none break-words"
                                                       placeholder={`Option ${optionLabel}`}
                                                     />
                                                   </div>
@@ -721,17 +734,23 @@ const SavedSets = ({ isPremium }) => {
                                       <span className="font-bold text-blue-600">Q{idx + 1}.</span>
                                       <div className="flex-1">
                                         <p className="font-medium mb-3 text-gray-900">{q.question}</p>
+                                        {q.image_description && (
+                                          <div className="mt-2 mb-3 p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <p className="text-xs md:text-sm font-semibold text-blue-800 mb-1">📊 Figure/Diagram:</p>
+                                            <p className="text-xs md:text-sm text-blue-700 italic break-words">{q.image_description}</p>
+                                          </div>
+                                        )}
                                         {q.type === 'mcq' && q.options && (
                                           <div className="mt-2 space-y-2">
                                             {q.options.map((opt, i) => {
-                                              const optionLabel = String.fromCharCode(65 + i) // A, B, C, D
+                                              const optionLabel = String.fromCharCode(97 + i) // a, b, c, d (lowercase)
                                               return (
                                                 <div 
                                                   key={i} 
                                                   className="flex items-start gap-3 p-2 border border-gray-200 rounded-md bg-gray-50"
                                                 >
-                                                  <span className="font-bold text-blue-600 min-w-[24px]">{optionLabel}.</span>
-                                                  <span className="text-gray-700 flex-1">{opt}</span>
+                                                  <span className="font-bold text-blue-600 min-w-[24px]">{optionLabel})</span>
+                                                  <span className="text-gray-700 flex-1 break-words">{opt}</span>
                                                 </div>
                                               )
                                             })}
