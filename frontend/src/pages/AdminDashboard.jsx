@@ -1714,40 +1714,88 @@ const AdminDashboard = () => {
               </p>
               {loading ? (
                 <div className="text-center py-8">Loading...</div>
+              ) : loginLogs.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No login logs yet</div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          <input
-                            type="checkbox"
-                            checked={selectedLoginLogIds.length > 0 && selectedLoginLogIds.length === loginLogs.length}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedLoginLogIds(loginLogs.map((log) => log.id))
-                              } else {
-                                setSelectedLoginLogIds([])
-                              }
-                            }}
-                          />
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Email</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Device Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Agent</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Login Time</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Logout Time</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {loginLogs.length === 0 ? (
+                <>
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-3">
+                    {loginLogs.map((log) => (
+                      <div key={log.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedLoginLogIds.includes(log.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedLoginLogIds((prev) => [...prev, log.id])
+                                } else {
+                                  setSelectedLoginLogIds((prev) => prev.filter((id) => id !== log.id))
+                                }
+                              }}
+                              className="mt-1"
+                            />
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm text-gray-900">{log.user_email}</p>
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-1 ${
+                                log.device_type === 'mobile' ? 'bg-blue-100 text-blue-800' :
+                                log.device_type === 'desktop' ? 'bg-green-100 text-green-800' :
+                                log.device_type === 'tablet' ? 'bg-purple-100 text-purple-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {log.device_type ? log.device_type.charAt(0).toUpperCase() + log.device_type.slice(1) : 'Unknown'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="text-gray-500">User Agent:</span>
+                            <p className="text-gray-900 break-words">{log.user_agent || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Login Time:</span>
+                            <p className="text-gray-900">{new Date(log.login_at).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Logout Time:</span>
+                            <p className={log.logout_at ? "text-gray-900" : "text-gray-400 italic"}>
+                              {log.logout_at ? new Date(log.logout_at).toLocaleString() : 'Still logged in'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
                         <tr>
-                          <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                            No login logs yet
-                          </td>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            <input
+                              type="checkbox"
+                              checked={selectedLoginLogIds.length > 0 && selectedLoginLogIds.length === loginLogs.length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedLoginLogIds(loginLogs.map((log) => log.id))
+                                } else {
+                                  setSelectedLoginLogIds([])
+                                }
+                              }}
+                            />
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Device Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Agent</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Login Time</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Logout Time</th>
                         </tr>
-                      ) : (
-                        loginLogs.map((log) => (
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {loginLogs.map((log) => (
                           <tr key={log.id} className="hover:bg-gray-50">
                             <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                               <input
@@ -1789,11 +1837,11 @@ const AdminDashboard = () => {
                               )}
                             </td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           )}

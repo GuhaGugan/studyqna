@@ -195,3 +195,5 @@ cd ~/studyqna/studyqna && git pull origin main && cd frontend && rm -rf dist nod
 - [ ] Only 1 OTP notification appears
 - [ ] Numbers match localhost
 
+
+

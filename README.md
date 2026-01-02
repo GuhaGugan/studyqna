@@ -5,7 +5,7 @@ A secure, production-ready web application for generating AI-powered questions a
 ## Features
 
 - 🔐 **Secure Authentication**: OTP-based email login with JWT tokens
-- 📄 **File Upload**: Support for PDFs and images with human detection
+- 📄 **File Upload**: Support for PDFs (image upload removed - PDF-only focus)
 - 🤖 **AI Q/A Generation**: Multiple difficulty levels, question types, and output formats
 - 💎 **Premium Access**: Request-based premium system with admin approval
 - 📱 **Mobile Responsive**: Full mobile support with camera input (mobile only)

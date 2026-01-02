@@ -119,3 +119,5 @@ curl -I http://localhost/
 2. Check if the numbers match localhost
 3. Verify all features work correctly
 
+
+

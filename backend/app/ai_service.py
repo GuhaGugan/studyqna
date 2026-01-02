@@ -1679,6 +1679,12 @@ def generate_qna(
         detected_subject = detect_subject(text_content)
         print(f"📚 Detected subject: {detected_subject}")
     
+    # Determine if image-based questions should be generated
+    # Image-based questions for: mathematics, science, physics, chemistry, biology
+    # NOT for: tamil, social_science, english, general
+    image_based_subjects = ["mathematics", "math", "maths", "science", "physics", "chemistry", "biology"]
+    should_generate_images = any(img_subj in detected_subject.lower() for img_subj in image_based_subjects)
+    
     # Subject-specific answer structure instructions
     subject_instructions = {
         "mathematics": """
@@ -2153,19 +2159,106 @@ For {detected_subject.upper()} subjects:
       "difficulty": "easy",
       "question": "What is the value of 2 + 3?",
       "correct_answer": "The value of 2 + 3 is 5."
+    }},
+    {{
+      "marks": 3,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Using the diagram showing a right-angled triangle with base 6 cm and height 8 cm, calculate the length of the hypotenuse.",
+      "image_description": "A right-angled triangle with base labeled as 6 cm, height labeled as 8 cm, and the hypotenuse marked with a question mark",
+      "correct_answer": {{
+        "given": "From the diagram: base = 6 cm, height = 8 cm",
+        "formula": "Pythagorean theorem: c² = a² + b², where c is the hypotenuse",
+        "steps": [
+          "c² = 6² + 8²",
+          "c² = 36 + 64 = 100",
+          "c = √100 = 10 cm"
+        ],
+        "final": "Final Answer: The length of the hypotenuse is 10 cm"
+      }}
+    }},
+    {{
+      "marks": 5,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Refer to the graph showing the function f(x) = x² - 4x + 3. Analyze the graph and find: (a) the vertex, (b) the x-intercepts, and (c) the y-intercept.",
+      "image_description": "A coordinate plane graph showing a parabola opening upwards with the function f(x) = x² - 4x + 3 plotted, with key points marked",
+      "correct_answer": {{
+        "given": "From the graph: f(x) = x² - 4x + 3",
+        "formula": "For quadratic ax² + bx + c, vertex is at x = -b/(2a)",
+        "steps": [
+          "Step 1: Find vertex x-coordinate: x = -(-4)/(2×1) = 4/2 = 2",
+          "Step 2: Find vertex y-coordinate: f(2) = 2² - 4(2) + 3 = 4 - 8 + 3 = -1",
+          "Step 3: Find x-intercepts: Solve x² - 4x + 3 = 0, (x-1)(x-3) = 0, so x = 1 and x = 3",
+          "Step 4: Find y-intercept: f(0) = 0² - 4(0) + 3 = 3"
+        ],
+        "final": "Final Answer: (a) Vertex at (2, -1), (b) x-intercepts at x = 1 and x = 3, (c) y-intercept at y = 3"
+      }}
     }}
   ]
 }}
-""" if detected_subject == "mathematics" else """
+""" if detected_subject == "mathematics" else ("""
 {{
   "questions": [
     {{
       "marks": 3,
       "type": "descriptive",
       "difficulty": "medium",
+      "question": "Using the circuit diagram provided, calculate the total resistance in the circuit.",
+      "image_description": "A circuit diagram showing resistors connected in series and parallel with labeled resistance values",
+      "correct_answer": {{
+        "definition": "Total resistance in a circuit depends on how resistors are connected (series or parallel).",
+        "explanation": "From the diagram, we can identify the series and parallel connections. For series: R_total = R1 + R2. For parallel: 1/R_total = 1/R1 + 1/R2.",
+        "example": "Using the values from the diagram: R1 = 4Ω (series), R2 and R3 = 6Ω each (parallel). First, calculate parallel: 1/R_parallel = 1/6 + 1/6 = 2/6 = 1/3, so R_parallel = 3Ω. Then total: R_total = 4 + 3 = 7Ω",
+        "conclusion": "The total resistance of the circuit is 7Ω."
+      }}
+    }},
+    {{
+      "marks": 5,
+      "type": "descriptive",
+      "difficulty": "medium",
+      "question": "Study the force diagram showing a block on an inclined plane. Calculate the components of force and determine if the block will slide down.",
+      "image_description": "A force diagram showing a block on an inclined plane at angle θ, with weight vector, normal force, and friction force labeled",
+      "correct_answer": {{
+        "definition": "Forces on an inclined plane can be resolved into components parallel and perpendicular to the surface.",
+        "explanation": "From the diagram, the weight mg can be resolved into mg sin(θ) parallel to the plane and mg cos(θ) perpendicular. The normal force N balances mg cos(θ). Friction f = μN opposes motion.",
+        "example": "Given from diagram: m = 5 kg, θ = 30°, μ = 0.3, g = 10 m/s². Parallel component: mg sin(30°) = 5×10×0.5 = 25 N. Normal: N = mg cos(30°) = 5×10×0.866 = 43.3 N. Friction: f = 0.3×43.3 = 13 N. Since 25 N > 13 N, block will slide.",
+        "conclusion": "The block will slide down the inclined plane as the parallel component of weight exceeds the frictional force."
+      }}
+    }},
+    {{
+      "marks": 2,
+      "type": "short",
+      "difficulty": "easy",
+      "question": "From the diagram showing a cell structure, identify the organelle labeled X.",
+      "image_description": "A labeled diagram of a cell showing various organelles with one marked as X",
+      "correct_answer": "The organelle labeled X is the mitochondria, which is responsible for energy production in the cell."
+    }},
+    {{
+      "marks": 10,
+      "type": "descriptive",
+      "difficulty": "hard",
+      "question": "Refer to the detailed diagram of the experimental setup. Explain the experiment, analyze the results shown in the graph, and draw conclusions.",
+      "image_description": "A comprehensive diagram showing an experimental setup with apparatus labeled, and a graph showing experimental results with data points",
+      "correct_answer": {{
+        "definition": "This experiment demonstrates the relationship between two variables as shown in the experimental setup and results graph.",
+        "explanation": "From the diagram, the setup includes [describe components]. The graph shows [describe trend]. The relationship can be analyzed by examining the data points and the curve fit. The experimental procedure involves [steps from diagram].",
+        "example": "Specific analysis: At point A on the graph, the value is X. At point B, it is Y. The slope indicates [relationship]. The intercept shows [initial condition]. Error bars suggest [precision].",
+        "conclusion": "The experiment successfully demonstrates [conclusion]. The results from the graph support the hypothesis that [statement]. The diagram clearly shows the setup required for accurate measurements."
+      }}
+    }},
+    {{
+      "marks": 3,
+      "type": "descriptive",
+      "difficulty": "medium",
       "question": "Describe the main character's development in the story.",
       "correct_answer": "The main character undergoes significant growth throughout the narrative. Initially, they are portrayed as naive and inexperienced. As the story progresses, they face various challenges that test their resolve. These experiences shape their personality and worldview. By the end, they emerge as a more mature and understanding individual."
-    }},
+    }}
+  ]
+}}
+""" if should_generate_images else """
+{{
+  "questions": [
     {{
       "marks": 5,
       "type": "descriptive",
@@ -2264,7 +2357,7 @@ For {detected_subject.upper()} subjects:
     }}
   ]
 }}
-"""
+""")
     
     math_notation_examples = """
 EXAM-FRIENDLY NOTATION EXAMPLES (MATHEMATICS ONLY):
@@ -2349,6 +2442,105 @@ If you cannot generate enough unique questions without overlapping with previous
 ━━━━━━━━━━━━━━━━━━━━━━
 """
     
+    # Build image-based question instruction if applicable
+    image_based_instruction = ""
+    if should_generate_images:
+        image_based_instruction = f"""
+━━━━━━━━━━━━━━━━━━━━━━
+[CRITICAL] IMAGE-BASED QUESTIONS GENERATION (MANDATORY FOR {detected_subject.upper()})
+━━━━━━━━━━━━━━━━━━━━━━
+
+✅ MANDATORY: Generate IMAGE-BASED questions for this subject ({detected_subject.upper()}).
+
+IMAGE-BASED QUESTIONS REQUIREMENTS:
+1. ✅ Include image descriptions/requirements in questions that benefit from visual representation
+2. ✅ For ALL mark patterns (1, 2, 3, 5, 10 marks), include image-based questions where appropriate
+3. ✅ Questions should reference diagrams, graphs, figures, or visual representations when relevant
+
+IMAGE-BASED QUESTION EXAMPLES BY MARKS:
+
+• 1 MARK IMAGE-BASED QUESTIONS:
+  - "Identify the type of triangle shown in the figure"
+  - "What is the value of angle X in the given diagram?"
+  - "Label the parts of the diagram shown"
+  - "From the graph, what is the value at point X?"
+
+• 2 MARKS IMAGE-BASED QUESTIONS:
+  - "Using the diagram provided, calculate the area of the shaded region"
+  - "Analyze the graph and determine the slope at point P"
+  - "From the figure, identify and explain the relationship between X and Y"
+  - "Using the given diagram, solve for the unknown value"
+
+• 3 MARKS IMAGE-BASED QUESTIONS:
+  - "Study the diagram carefully. Calculate the perimeter of the composite figure shown"
+  - "Analyze the graph provided and explain the trend observed"
+  - "Using the figure, derive the relationship between the given parameters"
+  - "From the diagram, solve the problem step-by-step showing all working"
+
+• 5 MARKS IMAGE-BASED QUESTIONS:
+  - "Refer to the diagram provided. Solve the problem completely, showing all steps:
+     a) Identify the given values from the figure
+     b) Apply the appropriate formula
+     c) Show all calculations
+     d) State the final answer"
+  - "Study the graph carefully and answer:
+     a) What does the graph represent?
+     b) Calculate the required values using the graph
+     c) Explain your reasoning"
+  - "Using the given figure, solve the problem with complete working:
+     a) Extract information from the diagram
+     b) Apply relevant formulas
+     c) Show step-by-step solution
+     d) Provide the final answer"
+
+• 10 MARKS IMAGE-BASED QUESTIONS:
+  - "Refer to the detailed diagram provided. Solve the problem completely:
+     Given: [Extract all given information from the figure]
+     Formula: [State the formula/theorem to be used]
+     Steps: [Show complete step-by-step working using the diagram]
+     Final Answer: [Provide the complete solution]"
+  - "Study the comprehensive graph/figure and answer in detail:
+     a) Introduction: Describe what the figure represents
+     b) Analysis: Analyze all components shown in the figure
+     c) Calculation: Perform all necessary calculations using the figure
+     d) Conclusion: Provide the complete solution with reasoning"
+
+IMAGE GENERATION GUIDELINES:
+- ✅ Include clear image descriptions in the question text
+- ✅ Specify what should be shown in the image (diagrams, graphs, figures, etc.)
+- ✅ For Mathematics: Include geometric figures, graphs, coordinate systems, function plots
+- ✅ For Science/Physics: Include circuit diagrams, force diagrams, molecular structures, experimental setups
+- ✅ For Chemistry: Include molecular structures, reaction mechanisms, periodic table references
+- ✅ For Biology: Include cell structures, anatomical diagrams, process flowcharts
+
+IMAGE DESCRIPTION FORMAT:
+When generating image-based questions, include image descriptions in this format:
+- "Refer to the diagram showing [description]"
+- "Using the figure that illustrates [description]"
+- "Study the graph that represents [description]"
+- "From the given diagram of [description]"
+
+IMPORTANT NOTES:
+- ✅ Mix image-based questions with text-based questions for variety
+- ✅ Not every question needs to be image-based, but include them regularly (30-50% of questions)
+- ✅ Image descriptions should be clear and specific
+- ✅ Questions should be solvable even if the image is not yet generated (include enough context in text)
+
+━━━━━━━━━━━━━━━━━━━━━━
+"""
+    else:
+        # For subjects that should NOT have image-based questions
+        image_based_instruction = f"""
+━━━━━━━━━━━━━━━━━━━━━━
+NOTE: IMAGE-BASED QUESTIONS NOT REQUIRED
+━━━━━━━━━━━━━━━━━━━━━━
+
+For {detected_subject.upper()} subject, image-based questions are NOT required.
+Generate standard text-based questions only.
+
+━━━━━━━━━━━━━━━━━━━━━━
+"""
+    
     user_prompt = f"""Generate exam questions from the following study material:
 
 [STUDY_MATERIAL]
@@ -2363,6 +2555,7 @@ Question Distribution (Strict):
 
 {subject_instruction}
 {previous_questions_section}
+{image_based_instruction}
 
 ━━━━━━━━━━━━━━━━━━━━━━
 [CRITICAL] CRITICAL: QUESTION COMPLEXITY REQUIREMENT [CRITICAL]
