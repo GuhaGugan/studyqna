@@ -197,3 +197,4 @@ cd ~/studyqna/studyqna && git pull origin main && cd frontend && rm -rf dist nod
 
 
 
+

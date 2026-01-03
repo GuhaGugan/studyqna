@@ -51,7 +51,7 @@ def extract_text_from_image(image_path: str) -> Optional[str]:
 
 def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
     """
-    Extract text from PDF
+    Extract text from PDF (handles both text-based and image-based/scanned PDFs)
     """
     try:
         from PyPDF2 import PdfReader
@@ -61,6 +61,7 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
         pdf_data = read_file(pdf_path)
         pdf_reader = PdfReader(io.BytesIO(pdf_data))
         
+        # First, try to extract text directly (for text-based PDFs)
         text_parts = []
         for page in pdf_reader.pages:
             text = page.extract_text()
@@ -68,14 +69,73 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
                 text_parts.append(text)
         
         combined = "\n\n".join(text_parts) if text_parts else ""
-
-        # If mathpix is available and the PDF seems scanned/low-text, try mathpix PDF OCR
+        
+        # Check if we got sufficient text (at least 50 characters per page on average)
+        num_pages = len(pdf_reader.pages)
+        min_expected_text = max(50, num_pages * 50)  # At least 50 chars per page
+        
+        # If we have good text extraction, return it
+        if combined and len(combined.strip()) >= min_expected_text:
+            print(f"✅ PDF text extraction successful: {len(combined.strip())} characters from {num_pages} pages")
+            return combined.strip()
+        
+        # If text extraction is weak or empty, it's likely an image-based PDF
+        # Use OCR on PDF pages converted to images
+        print(f"⚠️ PDF appears to be image-based (extracted only {len(combined.strip()) if combined else 0} chars). Using OCR...")
+        
+        try:
+            from pdf2image import convert_from_bytes
+            import tempfile
+            import os
+            
+            # Convert PDF pages to images
+            images = convert_from_bytes(pdf_data, dpi=300)  # Higher DPI for better OCR quality
+            print(f"📄 Converted {len(images)} PDF pages to images for OCR")
+            
+            ocr_text_parts = []
+            for i, image in enumerate(images):
+                try:
+                    # Preprocess image for better OCR
+                    img_array = np.array(image)
+                    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+                    
+                    # Apply thresholding
+                    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                    
+                    # Convert back to PIL Image
+                    processed_image = Image.fromarray(thresh)
+                    
+                    # Extract text using OCR
+                    page_text = pytesseract.image_to_string(processed_image, lang='eng', config='--psm 6')
+                    if page_text and page_text.strip():
+                        ocr_text_parts.append(page_text.strip())
+                        print(f"✅ OCR extracted {len(page_text.strip())} characters from page {i+1}")
+                except Exception as page_error:
+                    print(f"⚠️ OCR error on page {i+1}: {page_error}")
+                    continue
+            
+            if ocr_text_parts:
+                ocr_combined = "\n\n".join(ocr_text_parts)
+                print(f"✅ OCR extraction successful: {len(ocr_combined)} total characters from {len(ocr_text_parts)} pages")
+                return ocr_combined.strip()
+            else:
+                print("⚠️ OCR failed to extract text from any pages")
+        except ImportError:
+            print("⚠️ pdf2image not available. Install with: pip install pdf2image")
+            print("⚠️ Also install poppler: On Windows: choco install poppler, On Linux: sudo apt-get install poppler-utils")
+        except Exception as ocr_error:
+            print(f"⚠️ PDF OCR error: {ocr_error}")
+        
+        # If OCR fails, try Mathpix as fallback (if available)
         if (not combined or len(combined.strip()) < 100) and _mathpix_available():
+            print("🔄 Trying Mathpix PDF OCR as fallback...")
             pdf_text = _mathpix_ocr_pdf(pdf_data)
             if pdf_text:
+                print(f"✅ Mathpix OCR successful: {len(pdf_text.strip())} characters")
                 return pdf_text.strip()
         
-        return combined if combined else None
+        # Return whatever text we got (even if minimal)
+        return combined.strip() if combined else None
         
     except Exception as e:
         print(f"PDF extraction error: {e}")
