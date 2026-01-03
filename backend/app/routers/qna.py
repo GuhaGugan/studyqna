@@ -100,6 +100,11 @@ async def generate_qna_endpoint(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"OCR processing failed for Part {part.part_number}: Poppler utilities are required for image-based PDFs. Please install poppler utilities on the server. Error: {error_msg}"
                     )
+                elif "tesseract" in error_msg.lower() and ("not found" in error_msg.lower() or "not installed" in error_msg.lower()):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"OCR processing failed for Part {part.part_number}: Tesseract OCR is required for image-based PDFs. Please install tesseract-ocr on the server (sudo apt-get install tesseract-ocr). Error: {error_msg}"
+                    )
                 elif "pdf2image" in error_msg.lower():
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -241,12 +246,16 @@ async def generate_qna_endpoint(
         error_detail = f"Could not extract sufficient text from file. Extracted {extracted_length} characters (minimum 50 required)."
         if upload and upload.file_type.value == "pdf":
             error_detail += "\n\nThis appears to be an image-based/scanned PDF. Possible issues:"
-            error_detail += "\n1. Poppler utilities may not be installed on the server"
+            error_detail += "\n1. Poppler utilities may not be installed on the server (required for PDF to image conversion)"
             error_detail += "\n   - Windows: choco install poppler (or download from poppler website)"
             error_detail += "\n   - Linux: sudo apt-get install poppler-utils"
             error_detail += "\n   - macOS: brew install poppler"
-            error_detail += "\n2. The PDF may contain very low-quality images"
-            error_detail += "\n3. The document may be corrupted or unreadable"
+            error_detail += "\n2. Tesseract OCR may not be installed on the server (required for text extraction from images)"
+            error_detail += "\n   - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki"
+            error_detail += "\n   - Linux: sudo apt-get install tesseract-ocr"
+            error_detail += "\n   - macOS: brew install tesseract"
+            error_detail += "\n3. The PDF may contain very low-quality images"
+            error_detail += "\n4. The document may be corrupted or unreadable"
             error_detail += "\n\nPlease check server logs for detailed OCR error messages."
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

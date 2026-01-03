@@ -100,7 +100,18 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
                 else:
                     raise Exception(f"Failed to convert PDF to images: {convert_error}")
             
+            # Check if Tesseract is available before processing
+            try:
+                pytesseract.get_tesseract_version()
+            except Exception as tesseract_check_error:
+                error_str = str(tesseract_check_error).lower()
+                if "tesseract" in error_str and ("not found" in error_str or "not installed" in error_str):
+                    raise Exception(f"Tesseract OCR is not installed or not in PATH. Please install tesseract: On Ubuntu/Debian: sudo apt-get install tesseract-ocr, On CentOS/RHEL: sudo yum install tesseract, On Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki. Original error: {tesseract_check_error}")
+                else:
+                    raise Exception(f"Tesseract check failed: {tesseract_check_error}")
+            
             ocr_text_parts = []
+            tesseract_error_occurred = False
             for i, image in enumerate(images):
                 try:
                     # Preprocess image for better OCR
@@ -118,16 +129,32 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
                     if page_text and page_text.strip():
                         ocr_text_parts.append(page_text.strip())
                         print(f"✅ OCR extracted {len(page_text.strip())} characters from page {i+1}")
+                except pytesseract.TesseractNotFoundError as tesseract_error:
+                    tesseract_error_occurred = True
+                    error_msg = f"Tesseract OCR is not installed or not in PATH. Please install tesseract: On Ubuntu/Debian: sudo apt-get install tesseract-ocr, On CentOS/RHEL: sudo yum install tesseract, On Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki. Original error: {tesseract_error}"
+                    print(f"❌ {error_msg}")
+                    raise Exception(error_msg)
                 except Exception as page_error:
-                    print(f"⚠️ OCR error on page {i+1}: {page_error}")
-                    continue
+                    error_str = str(page_error).lower()
+                    if "tesseract" in error_str and ("not found" in error_str or "not installed" in error_str):
+                        tesseract_error_occurred = True
+                        error_msg = f"Tesseract OCR is not installed or not in PATH. Please install tesseract: On Ubuntu/Debian: sudo apt-get install tesseract-ocr, On CentOS/RHEL: sudo yum install tesseract, On Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki. Original error: {page_error}"
+                        print(f"❌ {error_msg}")
+                        raise Exception(error_msg)
+                    else:
+                        print(f"⚠️ OCR error on page {i+1}: {page_error}")
+                        continue
             
             if ocr_text_parts:
                 ocr_combined = "\n\n".join(ocr_text_parts)
                 print(f"✅ OCR extraction successful: {len(ocr_combined)} total characters from {len(ocr_text_parts)} pages")
                 return ocr_combined.strip()
             else:
-                print("⚠️ OCR failed to extract text from any pages")
+                if tesseract_error_occurred:
+                    raise Exception("Tesseract OCR failed. Please ensure Tesseract is installed and in PATH.")
+                else:
+                    print("⚠️ OCR failed to extract text from any pages")
+                    # Return None to allow fallback to Mathpix
         except ImportError as import_err:
             error_msg = f"pdf2image not available: {import_err}"
             print(f"⚠️ {error_msg}")
