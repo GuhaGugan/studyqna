@@ -112,8 +112,10 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
             
             ocr_text_parts = []
             tesseract_error_occurred = False
+            failed_pages = []
             for i, image in enumerate(images):
                 try:
+                    print(f"📄 Processing page {i+1}/{len(images)} for OCR...")
                     # Preprocess image for better OCR
                     img_array = np.array(image)
                     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
@@ -129,6 +131,9 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
                     if page_text and page_text.strip():
                         ocr_text_parts.append(page_text.strip())
                         print(f"✅ OCR extracted {len(page_text.strip())} characters from page {i+1}")
+                    else:
+                        print(f"⚠️ OCR returned empty text for page {i+1} (image may be blank or unreadable)")
+                        failed_pages.append(i+1)
                 except pytesseract.TesseractNotFoundError as tesseract_error:
                     tesseract_error_occurred = True
                     error_msg = f"Tesseract OCR is not installed or not in PATH. Please install tesseract: On Ubuntu/Debian: sudo apt-get install tesseract-ocr, On CentOS/RHEL: sudo yum install tesseract, On Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki. Original error: {tesseract_error}"
@@ -143,18 +148,24 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
                         raise Exception(error_msg)
                     else:
                         print(f"⚠️ OCR error on page {i+1}: {page_error}")
+                        failed_pages.append(i+1)
                         continue
             
             if ocr_text_parts:
                 ocr_combined = "\n\n".join(ocr_text_parts)
                 print(f"✅ OCR extraction successful: {len(ocr_combined)} total characters from {len(ocr_text_parts)} pages")
+                if failed_pages:
+                    print(f"⚠️ Note: {len(failed_pages)} page(s) failed OCR: {failed_pages}")
                 return ocr_combined.strip()
             else:
                 if tesseract_error_occurred:
                     raise Exception("Tesseract OCR failed. Please ensure Tesseract is installed and in PATH.")
                 else:
-                    print("⚠️ OCR failed to extract text from any pages")
-                    # Return None to allow fallback to Mathpix
+                    failed_info = f" Failed pages: {failed_pages}" if failed_pages else ""
+                    error_msg = f"OCR failed to extract text from any of the {len(images)} page(s).{failed_info} This could indicate: 1) Very low-quality or corrupted images, 2) Images with no readable text, 3) OCR processing errors. Please check the PDF quality and ensure images contain readable text."
+                    print(f"⚠️ {error_msg}")
+                    # Raise exception instead of returning None to provide better error message
+                    raise Exception(error_msg)
         except ImportError as import_err:
             error_msg = f"pdf2image not available: {import_err}"
             print(f"⚠️ {error_msg}")

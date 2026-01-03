@@ -110,6 +110,11 @@ async def generate_qna_endpoint(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"OCR processing failed for Part {part.part_number}: pdf2image library is required. Please install it on the server. Error: {error_msg}"
                     )
+                elif "ocr failed to extract text" in error_msg.lower():
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"OCR processing failed for Part {part.part_number}: {error_msg}"
+                    )
                 else:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
