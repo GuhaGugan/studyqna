@@ -80,18 +80,36 @@ async def generate_qna_endpoint(
         combined_text = []
         part_info_map = {}  # Map to store part info by part_number
         for part in sorted(parts, key=lambda p: p.part_number):
-            part_text = extract_text_from_pdf(part.file_path)
-            if part_text:
-                part_marker = f"--- Part {part.part_number} (Pages {part.start_page}-{part.end_page}) ---"
-                combined_text.append(f"\n\n{part_marker}\n\n")
-                combined_text.append(part_text)
-                # Store part info for source tracking
-                part_info_map[part.part_number] = {
-                    "part_number": part.part_number,
-                    "start_page": part.start_page,
-                    "end_page": part.end_page,
-                    "marker": part_marker
-                }
+            try:
+                part_text = extract_text_from_pdf(part.file_path)
+                if part_text:
+                    part_marker = f"--- Part {part.part_number} (Pages {part.start_page}-{part.end_page}) ---"
+                    combined_text.append(f"\n\n{part_marker}\n\n")
+                    combined_text.append(part_text)
+                    # Store part info for source tracking
+                    part_info_map[part.part_number] = {
+                        "part_number": part.part_number,
+                        "start_page": part.start_page,
+                        "end_page": part.end_page,
+                        "marker": part_marker
+                    }
+            except Exception as extract_error:
+                error_msg = str(extract_error)
+                if "poppler" in error_msg.lower() or "pdftoppm" in error_msg.lower():
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"OCR processing failed for Part {part.part_number}: Poppler utilities are required for image-based PDFs. Please install poppler utilities on the server. Error: {error_msg}"
+                    )
+                elif "pdf2image" in error_msg.lower():
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"OCR processing failed for Part {part.part_number}: pdf2image library is required. Please install it on the server. Error: {error_msg}"
+                    )
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Failed to extract text from Part {part.part_number}: {error_msg}"
+                    )
         
         text_content = "".join(combined_text)
         
@@ -137,10 +155,29 @@ async def generate_qna_endpoint(
             )
         
         # Extract text
-        if upload.file_type.value == "pdf":
-            text_content = extract_text_from_pdf(upload.file_path)
-        else:
-            text_content = extract_text_from_image(upload.file_path)
+        try:
+            if upload.file_type.value == "pdf":
+                text_content = extract_text_from_pdf(upload.file_path)
+            else:
+                text_content = extract_text_from_image(upload.file_path)
+        except Exception as extract_error:
+            error_msg = str(extract_error)
+            # Provide helpful error message based on error type
+            if "poppler" in error_msg.lower() or "pdftoppm" in error_msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"OCR processing failed: Poppler utilities are required for image-based PDFs. Please install poppler utilities on the server. Error: {error_msg}"
+                )
+            elif "pdf2image" in error_msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"OCR processing failed: pdf2image library is required. Please install it on the server. Error: {error_msg}"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to extract text from PDF: {error_msg}"
+                )
         
         # Get subject from upload or request (request takes precedence)
         upload_subject = getattr(upload, 'subject', None)
@@ -199,9 +236,21 @@ async def generate_qna_endpoint(
     
     # Text content is already extracted above (either from single upload or combined parts)
     if not text_content or len(text_content.strip()) < 50:
+        # Provide more detailed error message
+        extracted_length = len(text_content.strip()) if text_content else 0
+        error_detail = f"Could not extract sufficient text from file. Extracted {extracted_length} characters (minimum 50 required)."
+        if upload and upload.file_type.value == "pdf":
+            error_detail += "\n\nThis appears to be an image-based/scanned PDF. Possible issues:"
+            error_detail += "\n1. Poppler utilities may not be installed on the server"
+            error_detail += "\n   - Windows: choco install poppler (or download from poppler website)"
+            error_detail += "\n   - Linux: sudo apt-get install poppler-utils"
+            error_detail += "\n   - macOS: brew install poppler"
+            error_detail += "\n2. The PDF may contain very low-quality images"
+            error_detail += "\n3. The document may be corrupted or unreadable"
+            error_detail += "\n\nPlease check server logs for detailed OCR error messages."
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not extract sufficient text from file"
+            detail=error_detail
         )
     
     # Check total and daily question limits BEFORE generation

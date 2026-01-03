@@ -89,8 +89,16 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
             import os
             
             # Convert PDF pages to images
-            images = convert_from_bytes(pdf_data, dpi=300)  # Higher DPI for better OCR quality
-            print(f"📄 Converted {len(images)} PDF pages to images for OCR")
+            try:
+                images = convert_from_bytes(pdf_data, dpi=300)  # Higher DPI for better OCR quality
+                print(f"📄 Converted {len(images)} PDF pages to images for OCR")
+            except Exception as convert_error:
+                # Check if it's a poppler error
+                error_str = str(convert_error).lower()
+                if "poppler" in error_str or "pdftoppm" in error_str or "cannot find" in error_str:
+                    raise Exception(f"Poppler utilities not found or not in PATH. Please install poppler: On Windows: choco install poppler (or download from poppler website), On Linux: sudo apt-get install poppler-utils, On macOS: brew install poppler. Original error: {convert_error}")
+                else:
+                    raise Exception(f"Failed to convert PDF to images: {convert_error}")
             
             ocr_text_parts = []
             for i, image in enumerate(images):
@@ -120,11 +128,20 @@ def extract_text_from_pdf(pdf_path: str) -> Optional[str]:
                 return ocr_combined.strip()
             else:
                 print("⚠️ OCR failed to extract text from any pages")
-        except ImportError:
-            print("⚠️ pdf2image not available. Install with: pip install pdf2image")
+        except ImportError as import_err:
+            error_msg = f"pdf2image not available: {import_err}"
+            print(f"⚠️ {error_msg}")
+            print("⚠️ Install with: pip install pdf2image")
             print("⚠️ Also install poppler: On Windows: choco install poppler, On Linux: sudo apt-get install poppler-utils")
+            # Re-raise with more context for better error handling
+            raise Exception(f"OCR dependencies missing: {error_msg}. Please install pdf2image and poppler utilities.")
         except Exception as ocr_error:
-            print(f"⚠️ PDF OCR error: {ocr_error}")
+            error_msg = f"PDF OCR error: {ocr_error}"
+            print(f"⚠️ {error_msg}")
+            # Check if it's a poppler error
+            if "poppler" in str(ocr_error).lower() or "pdftoppm" in str(ocr_error).lower():
+                raise Exception(f"Poppler utilities not found. Please install poppler: On Windows: choco install poppler, On Linux: sudo apt-get install poppler-utils. Original error: {ocr_error}")
+            raise Exception(f"OCR processing failed: {ocr_error}")
         
         # If OCR fails, try Mathpix as fallback (if available)
         if (not combined or len(combined.strip()) < 100) and _mathpix_available():
