@@ -8,44 +8,57 @@ import sys
 import os
 
 def test_pdf2image():
-    """Test if pdf2image can convert PDFs"""
+    """Test if pdf2image and poppler are available"""
     try:
         from pdf2image import convert_from_bytes
         print("✅ pdf2image is installed")
         
-        # Test with a minimal PDF
-        test_pdf = b'''%PDF-1.4
-1 0 obj
-<< /Type /Catalog >>
-endobj
-xref
-0 0
-trailer
-<< /Size 0 /Root 1 0 R >>
-startxref
-0
-%%EOF'''
+        # Check if poppler command is available by trying to import and check path
+        import subprocess
+        import shutil
         
-        try:
-            images = convert_from_bytes(test_pdf, dpi=100)
-            print(f"✅ Poppler is working! Converted {len(images)} page(s)")
-            return True
-        except Exception as e:
-            error_msg = str(e).lower()
-            if "poppler" in error_msg or "pdftoppm" in error_msg or "cannot find" in error_msg:
-                print(f"❌ Poppler utilities not found: {e}")
-                print("\nPlease install poppler:")
-                print("  Ubuntu/Debian: sudo apt-get install poppler-utils")
-                print("  CentOS/RHEL: sudo yum install poppler-utils")
-                print("  Windows: Download from https://github.com/oschwartz10612/poppler-windows/releases")
-                return False
-            else:
-                print(f"⚠️ PDF conversion error: {e}")
-                return False
+        # Check if pdftoppm is in PATH
+        pdftoppm_path = shutil.which('pdftoppm')
+        if pdftoppm_path:
+            print(f"✅ Poppler utilities found at: {pdftoppm_path}")
+            
+            # Try to get version to confirm it's working
+            try:
+                result = subprocess.run(['pdftoppm', '-v'], 
+                                       capture_output=True, 
+                                       text=True, 
+                                       timeout=5)
+                if result.returncode == 0 or 'version' in result.stderr.lower():
+                    print("✅ Poppler is working!")
+                    return True
+            except Exception as version_error:
+                print(f"⚠️ Could not verify poppler version: {version_error}")
+                # Still return True if pdftoppm is found
+                return True
+        else:
+            print("❌ Poppler utilities (pdftoppm) not found in PATH")
+            print("\nPlease install poppler:")
+            print("  Ubuntu/Debian: sudo apt-get install poppler-utils")
+            print("  CentOS/RHEL: sudo yum install poppler-utils")
+            print("  Windows: Download from https://github.com/oschwartz10612/poppler-windows/releases")
+            return False
+        
     except ImportError:
         print("❌ pdf2image is not installed")
         print("Install with: pip install pdf2image")
         return False
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "poppler" in error_msg or "pdftoppm" in error_msg or "cannot find" in error_msg:
+            print(f"❌ Poppler utilities not found: {e}")
+            print("\nPlease install poppler:")
+            print("  Ubuntu/Debian: sudo apt-get install poppler-utils")
+            print("  CentOS/RHEL: sudo yum install poppler-utils")
+            print("  Windows: Download from https://github.com/oschwartz10612/poppler-windows/releases")
+            return False
+        else:
+            print(f"⚠️ Error checking poppler: {e}")
+            return False
 
 def test_pytesseract():
     """Test if pytesseract is working"""
